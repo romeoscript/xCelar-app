@@ -6,11 +6,14 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
+import { PhoneField } from '@/components/ui/phone-field';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { TextField } from '@/components/ui/text-field';
+import { DEFAULT_COUNTRY, type Country } from '@/constants/countries';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { login, type LoginInput } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
+import { toE164 } from '@/lib/phone';
 
 type IdentifierMethod = 'email' | 'phone';
 
@@ -19,7 +22,9 @@ export default function SignInScreen() {
   const startSession = useAuthStore((state) => state.startSession);
 
   const [method, setMethod] = useState<IdentifierMethod>('email');
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
   const signIn = useMutation({
@@ -31,28 +36,26 @@ export default function SignInScreen() {
   });
 
   const handleSubmit = () => {
-    signIn.mutate({ identifier: identifier.trim(), password });
+    const identifier = method === 'email' ? email.trim() : toE164(country, phone);
+    signIn.mutate({ identifier, password });
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-night">
-      <StatusBar style="light" />
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View className="flex-1 px-6 pb-8 pt-2">
             <Pressable onPress={() => router.back()} className="active:opacity-70">
-              <Text className="text-base text-brand-blue-light">Back</Text>
+              <Text className="text-base text-brand-blue">Back</Text>
             </Pressable>
 
             <View className="mt-6 gap-2">
-              <Text className="text-3xl font-extrabold text-white">Welcome back</Text>
-              <Text className="text-base text-brand-muted">
+              <Text className="text-3xl font-extrabold text-brand-navy">Welcome back</Text>
+              <Text className="text-base text-gray-500">
                 Sign in with your email or phone number.
               </Text>
             </View>
@@ -64,30 +67,26 @@ export default function SignInScreen() {
                   { label: 'Phone', value: 'phone' },
                 ]}
                 value={method}
-                onChange={(next) => {
-                  setMethod(next);
-                  setIdentifier('');
-                }}
+                onChange={setMethod}
               />
 
               {method === 'email' ? (
                 <TextField
                   label="Email"
-                  value={identifier}
-                  onChangeText={setIdentifier}
+                  value={email}
+                  onChangeText={setEmail}
                   placeholder="you@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
                 />
               ) : (
-                <TextField
+                <PhoneField
                   label="Phone number"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  placeholder="+1 555 234 5678"
-                  keyboardType="phone-pad"
-                  autoComplete="tel"
+                  country={country}
+                  onSelectCountry={setCountry}
+                  value={phone}
+                  onChangeText={setPhone}
                 />
               )}
 
@@ -101,7 +100,7 @@ export default function SignInScreen() {
               />
 
               {signIn.isError ? (
-                <Text className="text-sm text-red-400">{getApiErrorMessage(signIn.error)}</Text>
+                <Text className="text-sm text-red-500">{getApiErrorMessage(signIn.error)}</Text>
               ) : null}
             </View>
 
@@ -113,8 +112,8 @@ export default function SignInScreen() {
               onPress={() => router.replace('/sign-up')}
               className="mt-6 flex-row justify-center active:opacity-70"
             >
-              <Text className="text-base text-brand-muted">New to Xcellar? </Text>
-              <Text className="text-base font-semibold text-brand-blue-light">Create an account</Text>
+              <Text className="text-base text-gray-500">New to Xcellar? </Text>
+              <Text className="text-base font-semibold text-brand-blue">Create an account</Text>
             </Pressable>
           </View>
         </ScrollView>

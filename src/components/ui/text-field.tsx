@@ -10,13 +10,13 @@ export type TextFieldProps = TextInputProps & {
 export function TextField({ label, error, ...rest }: TextFieldProps) {
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-brand-mist">{label}</Text>
+      <Text className="text-sm font-medium text-gray-700">{label}</Text>
       <TextInput
         placeholderTextColor={Brand.muted}
-        className="h-14 rounded-2xl border border-white/10 bg-white/5 px-4 text-base text-white"
+        className="h-14 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
         {...rest}
       />
-      {error ? <Text className="text-sm text-red-400">{error}</Text> : null}
+      {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
     </View>
   );
 }

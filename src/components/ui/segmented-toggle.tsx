@@ -17,7 +17,7 @@ export function SegmentedToggle<T extends string>({
   onChange,
 }: SegmentedToggleProps<T>) {
   return (
-    <View className="flex-row rounded-full bg-white/5 p-1">
+    <View className="flex-row rounded-full bg-gray-100 p-1">
       {options.map((option) => {
         const isSelected = option.value === value;
         return (
@@ -27,7 +27,7 @@ export function SegmentedToggle<T extends string>({
             className={`flex-1 items-center rounded-full py-2.5 ${isSelected ? 'bg-brand-blue' : ''}`}
           >
             <Text
-              className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-brand-mist'}`}
+              className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-gray-500'}`}
             >
               {option.label}
             </Text>
