@@ -5,11 +5,13 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ChevronLeftIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PhoneField } from '@/components/ui/phone-field';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { TextField } from '@/components/ui/text-field';
 import { DEFAULT_COUNTRY, type Country } from '@/constants/countries';
+import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { register, type RegisterInput } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -54,8 +56,12 @@ export default function SignUpScreen() {
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View className="flex-1 px-6 pb-8 pt-2">
-            <Pressable onPress={() => router.back()} className="active:opacity-70">
-              <Text className="text-base text-brand-blue">Back</Text>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={8}
+              className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 active:opacity-70"
+            >
+              <ChevronLeftIcon size={22} color={Brand.navy} />
             </Pressable>
 
             <View className="mt-6 gap-2">
