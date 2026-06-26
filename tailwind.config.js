@@ -18,6 +18,11 @@ module.exports = {
           night: '#0B0A18',
           mist: '#E8EBF3',
           muted: '#7E83A8',
+          // Soft tints for cards / chips.
+          'blue-tint': '#EAF3FE',
+          'gold-tint': '#FEF4E0',
+          'indigo-tint': '#EEEDFB',
+          surface: '#F2F4F8',
         },
       },
     },

@@ -1,4 +1,4 @@
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 export type IconProps = {
   size?: number;
@@ -90,6 +90,78 @@ export function ChatIcon({ size = 24, color = '#ffffff', dotColor = '#000000' }:
       <Circle cx={9} cy={10} r={1.2} fill={dotColor} />
       <Circle cx={12} cy={10} r={1.2} fill={dotColor} />
       <Circle cx={15} cy={10} r={1.2} fill={dotColor} />
+    </Svg>
+  );
+}
+
+export function SearchIcon({ size = 22, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={11} cy={11} r={7} stroke={color} strokeWidth={2} />
+      <Path d="m20 20-3-3" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function WalletIcon({ size = 18, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={6} width={18} height={13} rx={2.5} stroke={color} strokeWidth={2} />
+      <Path d="M3 9h18" stroke={color} strokeWidth={2} />
+      <Circle cx={16.5} cy={13.5} r={1.2} fill={color} />
+    </Svg>
+  );
+}
+
+export function HomeIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 11.5 12 4l8 7.5M6 10v9a1 1 0 0 0 1 1h3v-5h4v5h3a1 1 0 0 0 1-1v-9"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function PackageIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="M3 7.5 12 12l9-4.5M12 12v9" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function LockerIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={4} y={4} width={7} height={7} rx={1.5} stroke={color} strokeWidth={2} />
+      <Rect x={13} y={4} width={7} height={7} rx={1.5} stroke={color} strokeWidth={2} />
+      <Rect x={4} y={13} width={7} height={7} rx={1.5} stroke={color} strokeWidth={2} />
+      <Rect x={13} y={13} width={7} height={7} rx={1.5} stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
+export function UserIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={8} r={4} stroke={color} strokeWidth={2} />
+      <Path
+        d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
