@@ -1,12 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { type ComponentType, useState } from 'react';
-import {
-  ActivityIndicator,
-  LayoutAnimation,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import {
   ChevronRightIcon,
@@ -17,9 +11,9 @@ import {
 } from '@/components/icons';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { TextField } from '@/components/ui/text-field';
-import { PICKUP_ZONES } from '@/constants/zones';
 import { Brand } from '@/constants/theme';
 import { getCurrentLocation, type PickedLocation } from '@/lib/location';
+import { getZones } from '@/lib/zone-api';
 import { MapPicker } from './map-picker';
 
 export type SenderValues = {
@@ -39,10 +33,6 @@ export type SenderStepProps = {
   defaultPhone: string;
 };
 
-function animate() {
-  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-}
-
 export function SenderStep({ values, onChange, defaultName, defaultPhone }: SenderStepProps) {
   const [methodSheet, setMethodSheet] = useState(false);
   const [zoneSheet, setZoneSheet] = useState(false);
@@ -51,16 +41,16 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
+
   const hasChosenSender = values.senderIsSelf !== null;
   const hasAddress = values.senderAddress.trim().length > 0;
 
   const chooseSelf = () => {
-    animate();
     onChange({ senderIsSelf: true, senderName: defaultName, senderPhone: defaultPhone });
   };
 
   const chooseOther = () => {
-    animate();
     onChange({
       senderIsSelf: false,
       ...(values.senderIsSelf === true ? { senderName: '', senderPhone: '' } : {}),
@@ -68,7 +58,6 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
   };
 
   const applyLocation = (location: PickedLocation) => {
-    animate();
     setManualMode(false);
     setLocationError(null);
     onChange({
@@ -80,7 +69,6 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
 
   const useManual = () => {
     setMethodSheet(false);
-    animate();
     setManualMode(true);
     onChange({ senderLat: null, senderLng: null });
   };
@@ -199,26 +187,38 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
 
       <BottomSheet visible={zoneSheet} onClose={() => setZoneSheet(false)}>
         <Text className="text-xl font-bold text-brand-navy">Pickup zone</Text>
-        <ScrollView style={{ maxHeight: 340 }} className="mt-3">
-          {PICKUP_ZONES.map((zone) => {
-            const selected = zone === values.pickupZone;
-            return (
-              <Pressable
-                key={zone}
-                onPress={() => {
-                  onChange({ pickupZone: zone });
-                  setZoneSheet(false);
-                }}
-                className="flex-row items-center justify-between py-3 active:opacity-60"
-              >
-                <Text className={`text-base ${selected ? 'font-semibold text-brand-blue' : 'text-gray-800'}`}>
-                  {zone}
-                </Text>
-                {selected ? <Text className="text-brand-blue">✓</Text> : null}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        {zonesQuery.isLoading ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color={Brand.blue} />
+          </View>
+        ) : zonesQuery.data && zonesQuery.data.length > 0 ? (
+          <ScrollView style={{ maxHeight: 340 }} className="mt-3">
+            {zonesQuery.data.map((zone) => {
+              const selected = zone.name === values.pickupZone;
+              return (
+                <Pressable
+                  key={zone.id}
+                  onPress={() => {
+                    onChange({ pickupZone: zone.name });
+                    setZoneSheet(false);
+                  }}
+                  className="flex-row items-center justify-between py-3 active:opacity-60"
+                >
+                  <Text
+                    className={`text-base ${selected ? 'font-semibold text-brand-blue' : 'text-gray-800'}`}
+                  >
+                    {zone.name}
+                  </Text>
+                  {selected ? <Text className="text-brand-blue">✓</Text> : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <Text className="py-8 text-center text-base text-gray-500">
+            No pickup zones available right now.
+          </Text>
+        )}
       </BottomSheet>
 
       <MapPicker
