@@ -3,68 +3,37 @@ import { Pressable, Text, View } from 'react-native';
 type QuickAction = {
   key: string;
   emoji: string;
-  title: string;
-  subtitle: string;
-  cardClassName: string;
+  label: string;
+  tileClassName: string;
 };
 
 const ACTIONS: QuickAction[] = [
-  {
-    key: 'ship-local',
-    emoji: '🇳🇬',
-    title: 'Ship locally',
-    subtitle: 'Send within Nigeria',
-    cardClassName: 'bg-brand-blue-tint',
-  },
-  {
-    key: 'export',
-    emoji: '✈️',
-    title: 'Export',
-    subtitle: 'Send from Nigeria',
-    cardClassName: 'bg-brand-gold-tint',
-  },
-  {
-    key: 'import',
-    emoji: '📦',
-    title: 'Import',
-    subtitle: 'Send to Nigeria',
-    cardClassName: 'bg-brand-indigo-tint',
-  },
-  {
-    key: 'quote',
-    emoji: '🧮',
-    title: 'Quote',
-    subtitle: 'Estimate shipment cost',
-    cardClassName: 'bg-brand-surface',
-  },
+  { key: 'ship-local', emoji: '🇳🇬', label: 'Ship locally', tileClassName: 'bg-brand-blue-tint' },
+  { key: 'export', emoji: '✈️', label: 'Export', tileClassName: 'bg-brand-gold-tint' },
+  { key: 'import', emoji: '📦', label: 'Import', tileClassName: 'bg-brand-indigo-tint' },
+  { key: 'quote', emoji: '🧮', label: 'Quote', tileClassName: 'bg-brand-surface' },
 ];
 
 export function QuickActions() {
   return (
-    <View className="flex-row flex-wrap justify-between">
+    <View className="flex-row justify-between">
       {ACTIONS.map((action) => (
-        <QuickActionCard key={action.key} action={action} />
+        <QuickActionTile key={action.key} action={action} />
       ))}
     </View>
   );
 }
 
-function QuickActionCard({ action }: { action: QuickAction }) {
+function QuickActionTile({ action }: { action: QuickAction }) {
   // TODO: route each action to its booking flow once those screens exist.
   const handlePress = () => {};
 
   return (
-    <Pressable
-      onPress={handlePress}
-      className={`mb-4 w-[48%] gap-6 rounded-3xl p-5 active:opacity-80 ${action.cardClassName}`}
-    >
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
-        <Text className="text-lg">{action.emoji}</Text>
+    <Pressable onPress={handlePress} className="items-center gap-2 active:opacity-70" style={{ width: '23%' }}>
+      <View className={`h-16 w-16 items-center justify-center rounded-2xl ${action.tileClassName}`}>
+        <Text className="text-2xl">{action.emoji}</Text>
       </View>
-      <View className="gap-1">
-        <Text className="text-lg font-bold text-brand-navy">{action.title}</Text>
-        <Text className="text-sm text-gray-500">{action.subtitle}</Text>
-      </View>
+      <Text className="text-center text-xs font-medium text-gray-700">{action.label}</Text>
     </Pressable>
   );
 }
