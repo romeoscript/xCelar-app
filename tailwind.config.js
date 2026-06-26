@@ -17,6 +17,7 @@ module.exports = {
           gold: '#F8B81B',
           night: '#0B0A18',
           mist: '#E8EBF3',
+          muted: '#7E83A8',
         },
       },
     },

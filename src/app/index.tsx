@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatIcon, CheckCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
+import { useAuthStore } from '@/lib/auth-store';
 
 const logo = require('@/assets/images/logo.png');
 // Dotted world map — Wikimedia Commons, CC BY 3.0. See assets/ATTRIBUTIONS.md.
@@ -14,10 +15,14 @@ const worldMap = require('@/assets/images/world-map.png');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const status = useAuthStore((state) => state.status);
 
-  // TODO: point these at the real auth screens once they exist.
   const handleGetStarted = () => router.push('/sign-up');
   const handleSignIn = () => router.push('/sign-in');
+
+  if (status === 'authenticated') {
+    return <Redirect href="/home" />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-brand-night" edges={['top', 'bottom']}>
