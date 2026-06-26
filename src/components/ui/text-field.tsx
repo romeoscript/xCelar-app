@@ -15,7 +15,7 @@ export function TextField({ label, error, secureTextEntry, ...rest }: TextFieldP
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-gray-700">{label}</Text>
+      {label ? <Text className="text-sm font-medium text-gray-700">{label}</Text> : null}
       <View>
         <TextInput
           placeholderTextColor={Brand.muted}

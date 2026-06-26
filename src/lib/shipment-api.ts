@@ -15,9 +15,13 @@ export type Shipment = {
   type: ShipmentType;
   status: ShipmentStatus;
   currentStep: number;
+  senderIsSelf: boolean | null;
   senderName: string | null;
   senderPhone: string | null;
   senderAddress: string | null;
+  senderLat: number | null;
+  senderLng: number | null;
+  pickupZone: string | null;
   receiverName: string | null;
   receiverPhone: string | null;
   receiverAddress: string | null;
@@ -33,9 +37,13 @@ export type Shipment = {
 
 export type ShipmentUpdate = Partial<{
   currentStep: number;
+  senderIsSelf: boolean;
   senderName: string;
   senderPhone: string;
   senderAddress: string;
+  senderLat: number;
+  senderLng: number;
+  pickupZone: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { ChipGroup } from '@/components/ship/chip-group';
+import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
@@ -31,9 +32,13 @@ import {
 } from '@/lib/shipment-api';
 
 type Form = {
+  senderIsSelf: boolean | null;
   senderName: string;
   senderPhone: string;
   senderAddress: string;
+  senderLat: number | null;
+  senderLng: number | null;
+  pickupZone: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
@@ -44,9 +49,13 @@ type Form = {
 };
 
 const EMPTY_FORM: Form = {
+  senderIsSelf: null,
   senderName: '',
   senderPhone: '',
   senderAddress: '',
+  senderLat: null,
+  senderLng: null,
+  pickupZone: '',
   receiverName: '',
   receiverPhone: '',
   receiverAddress: '',
@@ -62,9 +71,13 @@ const TOTAL_STEPS = 4;
 
 function formFromShipment(shipment: Shipment): Form {
   return {
+    senderIsSelf: shipment.senderIsSelf,
     senderName: shipment.senderName ?? '',
     senderPhone: shipment.senderPhone ?? '',
     senderAddress: shipment.senderAddress ?? '',
+    senderLat: shipment.senderLat,
+    senderLng: shipment.senderLng,
+    pickupZone: shipment.pickupZone ?? '',
     receiverName: shipment.receiverName ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
@@ -77,7 +90,13 @@ function formFromShipment(shipment: Shipment): Form {
 
 function isStepValid(step: number, form: Form): boolean {
   if (step === 0) {
-    return Boolean(form.senderName.trim() && form.senderPhone.trim().length >= 7 && form.senderAddress.trim());
+    return Boolean(
+      form.senderIsSelf !== null &&
+        form.senderName.trim() &&
+        form.senderPhone.trim().length >= 7 &&
+        form.senderAddress.trim() &&
+        form.pickupZone.trim(),
+    );
   }
   if (step === 1) {
     return Boolean(
@@ -95,9 +114,14 @@ function isStepValid(step: number, form: Form): boolean {
 function patchForStep(step: number, form: Form): ShipmentUpdate {
   if (step === 0) {
     return {
+      senderIsSelf: form.senderIsSelf ?? false,
       senderName: form.senderName.trim(),
       senderPhone: form.senderPhone.trim(),
       senderAddress: form.senderAddress.trim(),
+      pickupZone: form.pickupZone.trim(),
+      ...(form.senderLat != null && form.senderLng != null
+        ? { senderLat: form.senderLat, senderLng: form.senderLng }
+        : {}),
       currentStep: 1,
     };
   }
@@ -122,6 +146,7 @@ export default function ShipLocalScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const status = useAuthStore((state) => state.status);
+  const user = useAuthStore((state) => state.user);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const shipmentQuery = useQuery({
@@ -180,6 +205,9 @@ export default function ShipLocalScreen() {
   const setField = (key: keyof Form) => (value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  const patchForm = (partial: Partial<Form>) =>
+    setForm((current) => ({ ...current, ...partial }));
+
   const handleBack = () => {
     if (step === 0) {
       router.back();
@@ -230,28 +258,12 @@ export default function ShipLocalScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {step === 0 ? (
-            <>
-              <TextField
-                label="Full name"
-                value={form.senderName}
-                onChangeText={setField('senderName')}
-                placeholder="Sender's name"
-                autoCapitalize="words"
-              />
-              <TextField
-                label="Phone number"
-                value={form.senderPhone}
-                onChangeText={setField('senderPhone')}
-                placeholder="0801 234 5678"
-                keyboardType="phone-pad"
-              />
-              <TextField
-                label="Pickup address"
-                value={form.senderAddress}
-                onChangeText={setField('senderAddress')}
-                placeholder="Street, area, city"
-              />
-            </>
+            <SenderStep
+              values={form}
+              onChange={patchForm}
+              defaultName={user?.fullName ?? ''}
+              defaultPhone={user?.phoneNumber ?? ''}
+            />
           ) : null}
 
           {step === 1 ? (
@@ -341,7 +353,15 @@ export default function ShipLocalScreen() {
 function ReviewSummary({ form, price }: { form: Form; price: number | null }) {
   return (
     <View className="gap-4">
-      <SummaryCard title="Sender" lines={[form.senderName, form.senderPhone, form.senderAddress]} />
+      <SummaryCard
+        title="Sender"
+        lines={[
+          form.senderName,
+          form.senderPhone,
+          form.senderAddress,
+          form.pickupZone ? `Zone: ${form.pickupZone}` : '',
+        ].filter(Boolean)}
+      />
       <SummaryCard
         title="Receiver"
         lines={[form.receiverName, form.receiverPhone, form.receiverAddress]}

@@ -35,7 +35,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Xcelar uses your location to set pickup and delivery addresses."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
