@@ -14,22 +14,23 @@ const ACTIONS: QuickAction[] = [
   { key: 'quote', emoji: '🧮', label: 'Quote', tileClassName: 'bg-brand-surface' },
 ];
 
-export function QuickActions() {
+export type QuickActionsProps = {
+  onSelect: (key: string) => void;
+};
+
+export function QuickActions({ onSelect }: QuickActionsProps) {
   return (
     <View className="flex-row justify-between">
       {ACTIONS.map((action) => (
-        <QuickActionTile key={action.key} action={action} />
+        <QuickActionTile key={action.key} action={action} onPress={() => onSelect(action.key)} />
       ))}
     </View>
   );
 }
 
-function QuickActionTile({ action }: { action: QuickAction }) {
-  // TODO: route each action to its booking flow once those screens exist.
-  const handlePress = () => {};
-
+function QuickActionTile({ action, onPress }: { action: QuickAction; onPress: () => void }) {
   return (
-    <Pressable onPress={handlePress} className="items-center gap-2 active:opacity-70" style={{ width: '23%' }}>
+    <Pressable onPress={onPress} className="items-center gap-2 active:opacity-70" style={{ width: '23%' }}>
       <View className={`h-16 w-16 items-center justify-center rounded-2xl ${action.tileClassName}`}>
         <Text className="text-2xl">{action.emoji}</Text>
       </View>
