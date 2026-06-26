@@ -15,10 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { ChipGroup } from '@/components/ship/chip-group';
+import { ReceiverStep } from '@/components/ship/receiver-step';
 import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
-import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
@@ -44,10 +44,14 @@ type Form = {
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
+  receiverLat: number | null;
+  receiverLng: number | null;
+  deliveryZone: string;
   packageCategory: string;
   weightKg: string;
   declaredValue: string;
   description: string;
+  fragile: boolean;
 };
 
 const EMPTY_FORM: Form = {
@@ -61,10 +65,14 @@ const EMPTY_FORM: Form = {
   receiverName: '',
   receiverPhone: '',
   receiverAddress: '',
+  receiverLat: null,
+  receiverLng: null,
+  deliveryZone: '',
   packageCategory: '',
   weightKg: '',
   declaredValue: '',
   description: '',
+  fragile: false,
 };
 
 const CATEGORIES = ['Documents', 'Electronics', 'Clothing', 'Food', 'Furniture', 'Other'];
@@ -83,10 +91,14 @@ function formFromShipment(shipment: Shipment): Form {
     receiverName: shipment.receiverName ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
+    receiverLat: shipment.receiverLat,
+    receiverLng: shipment.receiverLng,
+    deliveryZone: shipment.deliveryZone ?? '',
     packageCategory: shipment.packageCategory ?? '',
     weightKg: shipment.weightKg != null ? String(shipment.weightKg) : '',
     declaredValue: shipment.declaredValue != null ? String(shipment.declaredValue) : '',
     description: shipment.description ?? '',
+    fragile: shipment.fragile,
   };
 }
 
@@ -102,7 +114,10 @@ function isStepValid(step: number, form: Form): boolean {
   }
   if (step === 1) {
     return Boolean(
-      form.receiverName.trim() && form.receiverPhone.trim().length >= 7 && form.receiverAddress.trim(),
+      form.receiverName.trim() &&
+        form.receiverPhone.trim().length >= 7 &&
+        form.receiverAddress.trim() &&
+        form.deliveryZone.trim(),
     );
   }
   if (step === 2) {
@@ -132,6 +147,10 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
       receiverName: form.receiverName.trim(),
       receiverPhone: form.receiverPhone.trim(),
       receiverAddress: form.receiverAddress.trim(),
+      deliveryZone: form.deliveryZone.trim(),
+      ...(form.receiverLat != null && form.receiverLng != null
+        ? { receiverLat: form.receiverLat, receiverLng: form.receiverLng }
+        : {}),
       currentStep: 2,
     };
   }
@@ -140,6 +159,7 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
     weightKg: Number(form.weightKg),
     declaredValue: Number(form.declaredValue),
     description: form.description.trim() || undefined,
+    fragile: form.fragile,
     currentStep: 3,
   };
 }
@@ -269,28 +289,7 @@ export default function ShipLocalScreen() {
             />
           ) : null}
 
-          {step === 1 ? (
-            <>
-              <TextField
-                label="Full name"
-                value={form.receiverName}
-                onChangeText={setField('receiverName')}
-                placeholder="Receiver's name"
-                autoCapitalize="words"
-              />
-              <PhoneInput
-                label="Phone number"
-                value={form.receiverPhone}
-                onChange={(value) => patchForm({ receiverPhone: value })}
-              />
-              <TextField
-                label="Delivery address"
-                value={form.receiverAddress}
-                onChangeText={setField('receiverAddress')}
-                placeholder="Street, area, city"
-              />
-            </>
-          ) : null}
+          {step === 1 ? <ReceiverStep values={form} onChange={patchForm} /> : null}
 
           {step === 2 ? (
             <>
@@ -322,6 +321,22 @@ export default function ShipLocalScreen() {
                 onChangeText={setField('description')}
                 placeholder="What's inside?"
               />
+              <Pressable
+                onPress={() => patchForm({ fragile: !form.fragile })}
+                className="flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 p-4 active:opacity-80"
+              >
+                <View className="flex-1 pr-3">
+                  <Text className="text-base font-semibold text-gray-900">Fragile item</Text>
+                  <Text className="text-sm text-gray-500">Handle with extra care</Text>
+                </View>
+                <View
+                  className={`h-7 w-12 justify-center rounded-full px-0.5 ${form.fragile ? 'bg-brand-blue' : 'bg-gray-300'}`}
+                >
+                  <View
+                    className={`h-6 w-6 rounded-full bg-white ${form.fragile ? 'self-end' : 'self-start'}`}
+                  />
+                </View>
+              </Pressable>
             </>
           ) : null}
 
@@ -365,11 +380,21 @@ function ReviewSummary({ form, price }: { form: Form; price: number | null }) {
       />
       <SummaryCard
         title="Receiver"
-        lines={[form.receiverName, form.receiverPhone, form.receiverAddress]}
+        lines={[
+          form.receiverName,
+          form.receiverPhone,
+          form.receiverAddress,
+          form.deliveryZone ? `Zone: ${form.deliveryZone}` : '',
+        ].filter(Boolean)}
       />
       <SummaryCard
         title="Package"
-        lines={[form.packageCategory, `${form.weightKg} kg`, form.description].filter(Boolean)}
+        lines={[
+          form.packageCategory,
+          `${form.weightKg} kg`,
+          form.fragile ? 'Fragile' : '',
+          form.description,
+        ].filter(Boolean)}
       />
       <View className="flex-row items-center justify-between rounded-2xl bg-brand-blue-tint px-5 py-4">
         <Text className="text-base font-semibold text-brand-navy">Estimated total</Text>

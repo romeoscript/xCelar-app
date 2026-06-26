@@ -25,10 +25,14 @@ export type Shipment = {
   receiverName: string | null;
   receiverPhone: string | null;
   receiverAddress: string | null;
+  receiverLat: number | null;
+  receiverLng: number | null;
+  deliveryZone: string | null;
   packageCategory: string | null;
   weightKg: number | null;
   description: string | null;
   declaredValue: number | null;
+  fragile: boolean;
   priceEstimate: number | null;
   trackingCode: string | null;
   createdAt: string;
@@ -47,10 +51,14 @@ export type ShipmentUpdate = Partial<{
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
+  receiverLat: number;
+  receiverLng: number;
+  deliveryZone: string;
   packageCategory: string;
   weightKg: number;
   description: string;
   declaredValue: number;
+  fragile: boolean;
 }>;
 
 export async function createDraft(type: ShipmentType): Promise<Shipment> {
