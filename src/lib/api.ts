@@ -4,7 +4,7 @@ import { env } from './env';
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from './session-tokens';
 
 /**
- * Shared HTTP client for the Xcellar API.
+ * Shared HTTP client for the Xcelar API.
  * - Request interceptor attaches the access token.
  * - Response interceptor transparently refreshes an expired access token once
  *   and retries the original request; a failed refresh ends the session.

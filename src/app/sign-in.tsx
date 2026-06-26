@@ -118,7 +118,7 @@ export default function SignInScreen() {
               onPress={() => router.replace('/sign-up')}
               className="mt-6 flex-row justify-center active:opacity-70"
             >
-              <Text className="text-base text-gray-500">New to Xcellar? </Text>
+              <Text className="text-base text-gray-500">New to Xcelar? </Text>
               <Text className="text-base font-semibold text-brand-blue">Create an account</Text>
             </Pressable>
           </View>

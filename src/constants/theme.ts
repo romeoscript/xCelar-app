@@ -65,7 +65,7 @@ export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 
 /**
- * Brand palette taken from the Xcellar logo (indigo X + gold check).
+ * Brand palette taken from the Xcelar logo (indigo X + gold check).
  * We lead with the blue/indigo side and use gold as the accent pop.
  * Mirrored in `tailwind.config.js` so the same colors are available via
  * NativeWind `className`s — keep the two in sync.
