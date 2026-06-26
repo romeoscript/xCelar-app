@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { type ComponentType, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { type ComponentType, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
 import {
   ChevronRightIcon,
@@ -42,8 +42,14 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
   const [manualMode, setManualMode] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [zoneSearch, setZoneSearch] = useState('');
 
   const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
+  const zones = useMemo(() => zonesQuery.data ?? [], [zonesQuery.data]);
+  const filteredZones = useMemo(() => {
+    const term = zoneSearch.trim().toLowerCase();
+    return term ? zones.filter((zone) => zone.name.toLowerCase().includes(term)) : zones;
+  }, [zones, zoneSearch]);
 
   const hasChosenSender = values.senderIsSelf !== null;
   const hasAddress = values.senderAddress.trim().length > 0;
@@ -185,35 +191,59 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
         </View>
       </BottomSheet>
 
-      <BottomSheet visible={zoneSheet} onClose={() => setZoneSheet(false)}>
+      <BottomSheet
+        visible={zoneSheet}
+        onClose={() => {
+          setZoneSheet(false);
+          setZoneSearch('');
+        }}
+      >
         <Text className="text-xl font-bold text-brand-navy">Pickup zone</Text>
         {zonesQuery.isLoading ? (
           <View className="items-center py-8">
             <ActivityIndicator color={Brand.blue} />
           </View>
-        ) : zonesQuery.data && zonesQuery.data.length > 0 ? (
-          <ScrollView style={{ maxHeight: 340 }} className="mt-3">
-            {zonesQuery.data.map((zone) => {
-              const selected = zone.name === values.pickupZone;
-              return (
-                <Pressable
-                  key={zone.id}
-                  onPress={() => {
-                    onChange({ pickupZone: zone.name });
-                    setZoneSheet(false);
-                  }}
-                  className="flex-row items-center justify-between py-3 active:opacity-60"
-                >
-                  <Text
-                    className={`text-base ${selected ? 'font-semibold text-brand-blue' : 'text-gray-800'}`}
+        ) : zones.length > 0 ? (
+          <>
+            <TextInput
+              value={zoneSearch}
+              onChangeText={setZoneSearch}
+              placeholder="Search area or state"
+              placeholderTextColor={Brand.muted}
+              autoCorrect={false}
+              className="mt-3 h-12 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
+            />
+            <FlatList
+              data={filteredZones}
+              keyExtractor={(zone) => zone.id}
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: 320 }}
+              className="mt-2"
+              renderItem={({ item }) => {
+                const selected = item.name === values.pickupZone;
+                return (
+                  <Pressable
+                    onPress={() => {
+                      onChange({ pickupZone: item.name });
+                      setZoneSheet(false);
+                      setZoneSearch('');
+                    }}
+                    className="flex-row items-center justify-between py-3 active:opacity-60"
                   >
-                    {zone.name}
-                  </Text>
-                  {selected ? <Text className="text-brand-blue">✓</Text> : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                    <Text
+                      className={`text-base ${selected ? 'font-semibold text-brand-blue' : 'text-gray-800'}`}
+                    >
+                      {item.name}
+                    </Text>
+                    {selected ? <Text className="text-brand-blue">✓</Text> : null}
+                  </Pressable>
+                );
+              }}
+              ListEmptyComponent={
+                <Text className="py-8 text-center text-base text-gray-500">No matches.</Text>
+              }
+            />
+          </>
         ) : (
           <Text className="py-8 text-center text-base text-gray-500">
             No pickup zones available right now.
