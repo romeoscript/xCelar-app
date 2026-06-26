@@ -52,7 +52,7 @@ export function Button({
     <Pressable
       disabled={isDisabled}
       onPress={handlePress}
-      className={`h-16 items-center justify-center rounded-full px-6 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : 'active:scale-[0.98] active:opacity-90'} ${className ?? ''}`}
+      className={`h-16 items-center justify-center rounded-full px-6 active:opacity-80 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : ''} ${className ?? ''}`}
       {...rest}
     >
       {loading ? (

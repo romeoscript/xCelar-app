@@ -37,7 +37,7 @@ function QuickActionTile({ action, onPress }: { action: QuickAction; onPress: ()
         tapFeedback();
         onPress();
       }}
-      className="items-center gap-2 active:scale-[0.96] active:opacity-70"
+      className="items-center gap-2 active:opacity-70"
       style={{ width: '23%' }}
     >
       <View className={`h-16 w-16 items-center justify-center rounded-2xl ${action.tileClassName}`}>

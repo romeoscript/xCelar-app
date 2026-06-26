@@ -285,7 +285,7 @@ function ChoiceCard({
         tapFeedback();
         onPress();
       }}
-      className={`flex-1 rounded-2xl border p-4 active:scale-[0.98] active:opacity-80 ${
+      className={`flex-1 rounded-2xl border p-4 active:opacity-80 ${
         active ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
       }`}
     >
@@ -314,7 +314,7 @@ function MethodRow({
         tapFeedback();
         onPress();
       }}
-      className="flex-row items-center gap-3 rounded-2xl bg-brand-surface p-4 active:scale-[0.99] active:opacity-70"
+      className="flex-row items-center gap-3 rounded-2xl bg-brand-surface p-4 active:opacity-70"
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
         <Icon size={20} color={Brand.blue} />
