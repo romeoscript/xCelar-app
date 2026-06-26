@@ -1,5 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { tapFeedback } from '@/lib/haptics';
+
 type QuickAction = {
   key: string;
   emoji: string;
@@ -30,7 +32,14 @@ export function QuickActions({ onSelect }: QuickActionsProps) {
 
 function QuickActionTile({ action, onPress }: { action: QuickAction; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} className="items-center gap-2 active:opacity-70" style={{ width: '23%' }}>
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      className="items-center gap-2 active:scale-[0.96] active:opacity-70"
+      style={{ width: '23%' }}
+    >
       <View className={`h-16 w-16 items-center justify-center rounded-2xl ${action.tileClassName}`}>
         <Text className="text-2xl">{action.emoji}</Text>
       </View>

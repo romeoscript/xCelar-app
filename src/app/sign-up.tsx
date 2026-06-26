@@ -7,15 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { PhoneField } from '@/components/ui/phone-field';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { TextField } from '@/components/ui/text-field';
-import { DEFAULT_COUNTRY, type Country } from '@/constants/countries';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { register, type RegisterInput } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
-import { toE164 } from '@/lib/phone';
 
 type IdentifierMethod = 'email' | 'phone';
 
@@ -26,7 +24,6 @@ export default function SignUpScreen() {
   const [fullName, setFullName] = useState('');
   const [method, setMethod] = useState<IdentifierMethod>('email');
   const [email, setEmail] = useState('');
-  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
@@ -41,9 +38,7 @@ export default function SignUpScreen() {
   const handleSubmit = () => {
     const base = { fullName: fullName.trim(), password };
     const input: RegisterInput =
-      method === 'email'
-        ? { ...base, email: email.trim() }
-        : { ...base, phoneNumber: toE164(country, phone) };
+      method === 'email' ? { ...base, email: email.trim() } : { ...base, phoneNumber: phone };
     signUp.mutate(input);
   };
 
@@ -101,13 +96,7 @@ export default function SignUpScreen() {
                   autoComplete="email"
                 />
               ) : (
-                <PhoneField
-                  label="Phone number"
-                  country={country}
-                  onSelectCountry={setCountry}
-                  value={phone}
-                  onChangeText={setPhone}
-                />
+                <PhoneInput label="Phone number" value={phone} onChange={setPhone} />
               )}
 
               <TextField

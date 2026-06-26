@@ -18,11 +18,13 @@ import { ChipGroup } from '@/components/ship/chip-group';
 import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
+import { successFeedback } from '@/lib/haptics';
 import {
   confirmShipment,
   getShipment,
@@ -178,6 +180,7 @@ export default function ShipLocalScreen() {
   const confirm = useMutation({
     mutationFn: () => confirmShipment(id as string),
     onSuccess: (booked) => {
+      successFeedback();
       setConfirmed(booked);
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
@@ -275,12 +278,10 @@ export default function ShipLocalScreen() {
                 placeholder="Receiver's name"
                 autoCapitalize="words"
               />
-              <TextField
+              <PhoneInput
                 label="Phone number"
                 value={form.receiverPhone}
-                onChangeText={setField('receiverPhone')}
-                placeholder="0801 234 5678"
-                keyboardType="phone-pad"
+                onChange={(value) => patchForm({ receiverPhone: value })}
               />
               <TextField
                 label="Delivery address"

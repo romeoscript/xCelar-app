@@ -10,8 +10,10 @@ import {
   PinIcon,
 } from '@/components/icons';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
+import { tapFeedback } from '@/lib/haptics';
 import { getCurrentLocation, type PickedLocation } from '@/lib/location';
 import { getZones } from '@/lib/zone-api';
 import { MapPicker } from './map-picker';
@@ -110,12 +112,10 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
             placeholder="Full name"
             autoCapitalize="words"
           />
-          <TextField
+          <PhoneInput
             label="Sender's phone"
             value={values.senderPhone}
-            onChangeText={(value) => onChange({ senderPhone: value })}
-            placeholder="0801 234 5678"
-            keyboardType="phone-pad"
+            onChange={(value) => onChange({ senderPhone: value })}
           />
 
           <View className="gap-2">
@@ -251,8 +251,11 @@ function ChoiceCard({
 }) {
   return (
     <Pressable
-      onPress={onPress}
-      className={`flex-1 rounded-2xl border p-4 active:opacity-80 ${
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      className={`flex-1 rounded-2xl border p-4 active:scale-[0.98] active:opacity-80 ${
         active ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
       }`}
     >
@@ -277,8 +280,11 @@ function MethodRow({
 }) {
   return (
     <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-2xl bg-brand-surface p-4 active:opacity-70"
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      className="flex-row items-center gap-3 rounded-2xl bg-brand-surface p-4 active:scale-[0.99] active:opacity-70"
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
         <Icon size={20} color={Brand.blue} />

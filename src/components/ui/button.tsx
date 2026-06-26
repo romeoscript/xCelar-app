@@ -1,6 +1,13 @@
-import { ActivityIndicator, Pressable, Text, type PressableProps } from 'react-native';
+import {
+  ActivityIndicator,
+  type GestureResponderEvent,
+  Pressable,
+  Text,
+  type PressableProps,
+} from 'react-native';
 
 import { Brand } from '@/constants/theme';
+import { tapFeedback } from '@/lib/haptics';
 
 type ButtonVariant = 'primary' | 'secondary';
 
@@ -31,14 +38,21 @@ export function Button({
   loading = false,
   disabled,
   className,
+  onPress,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
+  const handlePress = (event: GestureResponderEvent) => {
+    tapFeedback();
+    onPress?.(event);
+  };
+
   return (
     <Pressable
       disabled={isDisabled}
-      className={`h-16 items-center justify-center rounded-full px-6 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : 'active:opacity-90'} ${className ?? ''}`}
+      onPress={handlePress}
+      className={`h-16 items-center justify-center rounded-full px-6 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : 'active:scale-[0.98] active:opacity-90'} ${className ?? ''}`}
       {...rest}
     >
       {loading ? (
