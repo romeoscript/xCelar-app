@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef } from 'react';
-import { Animated, Modal, Pressable, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -21,10 +21,13 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end">
+      <KeyboardAvoidingView
+        className="flex-1 justify-end"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <Pressable className="absolute inset-0 bg-black/50" onPress={onClose} />
         <SheetPanel>{children}</SheetPanel>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
