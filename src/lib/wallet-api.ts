@@ -3,6 +3,8 @@ import { api } from './api';
 export type VerifyResult = {
   purpose: string;
   success: boolean;
+  /** Gateway status: 'success' | 'abandoned' | 'failed' | … */
+  status?: string;
   balanceKobo?: number;
   shipmentId?: string | null;
 };

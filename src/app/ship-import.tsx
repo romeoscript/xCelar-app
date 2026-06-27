@@ -30,6 +30,7 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
 import { successFeedback } from '@/lib/haptics';
+import { toast } from '@/lib/toast-store';
 import {
   getShipment,
   getShipmentBreakdown,
@@ -291,8 +292,11 @@ export default function ShipImportScreen() {
     setCheckout(null);
     if (result.success) {
       await finalizeBooking(await getShipment(id as string));
-    } else {
-      setPayError('Payment was not completed. If you were charged, it will reflect shortly.');
+      return;
+    }
+    // Cancelled/abandoned: close quietly — the shipment stays a resumable draft.
+    if (result.status && result.status !== 'abandoned') {
+      toast('Payment didn’t go through. Your shipment is saved — try again anytime.');
     }
   };
 
