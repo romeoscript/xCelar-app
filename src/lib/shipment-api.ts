@@ -39,6 +39,9 @@ export type Shipment = {
   description: string | null;
   declaredValue: number | null;
   fragile: boolean;
+  vendorName: string | null;
+  vendorTrackingId: string | null;
+  invoiceUrl: string | null;
   priceEstimate: number | null;
   trackingCode: string | null;
   paid: boolean;
@@ -74,6 +77,9 @@ export type ShipmentUpdate = Partial<{
   description: string;
   declaredValue: number;
   fragile: boolean;
+  vendorName: string;
+  vendorTrackingId: string;
+  invoiceUrl: string;
 }>;
 
 export async function createDraft(type: ShipmentType): Promise<Shipment> {
@@ -141,9 +147,19 @@ export async function getQuote(input: QuoteInput): Promise<PriceBreakdown> {
   return data;
 }
 
+export type Warehouse = {
+  address: string;
+  phone: string | null;
+  state: string | null;
+  city: string | null;
+  postcode: string | null;
+};
+
 export type RateCountry = {
   code: string;
   name: string;
+  /** IMPORT only: the warehouse customers ship their purchases to. */
+  warehouse?: Warehouse | null;
 };
 
 /** Countries we ship to (EXPORT) or from (IMPORT), for the quote picker. */

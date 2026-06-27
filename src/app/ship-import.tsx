@@ -21,7 +21,6 @@ import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-op
 import { ReceiverStep } from '@/components/ship/receiver-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
-import { DateField } from '@/components/ui/date-field';
 import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
@@ -41,31 +40,29 @@ import {
 } from '@/lib/shipment-api';
 import { getWalletBalance, type VerifyResult } from '@/lib/wallet-api';
 
-const STEP_TITLES = [
-  'Import details',
-  'Sender details',
-  'Recipient details',
-  'Package details',
-  'Review & pay',
-];
+const STEP_TITLES = ['Sender details', 'Recipient details', 'Package details', 'Review & pay'];
 const TOTAL_STEPS = STEP_TITLES.length;
 const REVIEW_STEP = TOTAL_STEPS - 1;
 
-const WEIGHT_OPTIONS = [0.5, 1, 2, 3, 5, 10, 15, 20, 30].map((kg) => ({
-  value: String(kg),
-  label: `${kg} kg`,
-}));
+const ITEM_CATEGORIES = [
+  'Documents',
+  'Electronics',
+  'Fashion & Clothing',
+  'Food and Groceries',
+  'Health & Beauty',
+  'Home & Kitchen',
+  'Phones & Accessories',
+  'Other',
+].map((category) => ({ value: category, label: category }));
 
 type Form = {
-  weightKg: string;
-  pickupDate: Date | null;
+  senderIsSelf: boolean | null;
   destinationCountry: string;
   destinationCountryName: string;
   senderName: string;
-  senderPhone: string;
   senderAddress: string;
-  senderLat: number | null;
-  senderLng: number | null;
+  vendorName: string;
+  vendorTrackingId: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
@@ -73,6 +70,8 @@ type Form = {
   receiverLng: number | null;
   deliveryZone: string;
   quantity: string;
+  weightKg: string;
+  packageCategory: string;
   declaredValue: string;
   description: string;
   fragile: boolean;
@@ -81,15 +80,13 @@ type Form = {
 type FormErrors = Partial<Record<keyof Form, string>>;
 
 const EMPTY_FORM: Form = {
-  weightKg: '',
-  pickupDate: null,
+  senderIsSelf: null,
   destinationCountry: '',
   destinationCountryName: '',
   senderName: '',
-  senderPhone: '',
   senderAddress: '',
-  senderLat: null,
-  senderLng: null,
+  vendorName: '',
+  vendorTrackingId: '',
   receiverName: '',
   receiverPhone: '',
   receiverAddress: '',
@@ -97,30 +94,22 @@ const EMPTY_FORM: Form = {
   receiverLng: null,
   deliveryZone: '',
   quantity: '',
+  weightKg: '',
+  packageCategory: '',
   declaredValue: '',
   description: '',
   fragile: false,
 };
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
 function formFromShipment(shipment: Shipment): Form {
   return {
-    weightKg: shipment.weightKg != null ? String(shipment.weightKg) : '',
-    pickupDate: shipment.pickupDate ? new Date(shipment.pickupDate) : null,
+    senderIsSelf: shipment.senderIsSelf,
     destinationCountry: shipment.destinationCountry ?? '',
     destinationCountryName: shipment.destinationCountryName ?? '',
     senderName: shipment.senderName ?? '',
-    senderPhone: shipment.senderPhone ?? '',
     senderAddress: shipment.senderAddress ?? '',
-    senderLat: shipment.senderLat,
-    senderLng: shipment.senderLng,
+    vendorName: shipment.vendorName ?? '',
+    vendorTrackingId: shipment.vendorTrackingId ?? '',
     receiverName: shipment.receiverName ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
@@ -128,6 +117,8 @@ function formFromShipment(shipment: Shipment): Form {
     receiverLng: shipment.receiverLng,
     deliveryZone: shipment.deliveryZone ?? '',
     quantity: shipment.quantity != null ? String(shipment.quantity) : '',
+    weightKg: shipment.weightKg != null ? String(shipment.weightKg) : '',
+    packageCategory: shipment.packageCategory ?? '',
     declaredValue: shipment.declaredValue != null ? String(shipment.declaredValue) : '',
     description: shipment.description ?? '',
     fragile: shipment.fragile,
@@ -137,23 +128,19 @@ function formFromShipment(shipment: Shipment): Form {
 function validateStep(step: number, form: Form): FormErrors {
   const errors: FormErrors = {};
   if (step === 0) {
-    if (!(Number(form.weightKg) > 0)) errors.weightKg = 'Select a weight';
-    if (form.pickupDate === null) errors.pickupDate = 'Select a pickup date';
+    if (form.senderIsSelf === null) errors.senderIsSelf = 'Choose who you are ordering for';
+    if (!form.destinationCountry) errors.destinationCountry = 'Select the origin country';
+    if (!form.vendorName.trim()) errors.vendorName = 'Enter the vendor or business name';
   }
   if (step === 1) {
-    if (!form.destinationCountry) errors.destinationCountry = 'Select the origin country';
-    if (!form.senderName.trim()) errors.senderName = "Enter the sender's name";
-    if (form.senderPhone.trim().length < 7) errors.senderPhone = 'Enter a valid phone number';
-    if (!form.senderAddress.trim()) errors.senderAddress = 'Add the pickup address';
-  }
-  if (step === 2) {
     if (!form.receiverName.trim()) errors.receiverName = "Enter the recipient's name";
     if (form.receiverPhone.trim().length < 7) errors.receiverPhone = 'Enter a valid phone number';
     if (!form.receiverAddress.trim()) errors.receiverAddress = 'Add the delivery address';
     if (!form.deliveryZone.trim()) errors.deliveryZone = 'Select a delivery zone';
   }
-  if (step === 3) {
+  if (step === 2) {
     if (!(Number(form.quantity) > 0)) errors.quantity = 'Enter the quantity';
+    if (!(Number(form.weightKg) > 0)) errors.weightKg = 'Enter the weight in kg';
     if (form.declaredValue.trim() === '' || !(Number(form.declaredValue) >= 0)) {
       errors.declaredValue = 'Enter the value of the item';
     }
@@ -165,25 +152,17 @@ function validateStep(step: number, form: Form): FormErrors {
 function patchForStep(step: number, form: Form): ShipmentUpdate {
   if (step === 0) {
     return {
-      weightKg: Number(form.weightKg),
-      ...(form.pickupDate ? { pickupDate: toIsoDate(form.pickupDate) } : {}),
+      senderIsSelf: form.senderIsSelf ?? false,
+      destinationCountry: form.destinationCountry,
+      destinationCountryName: form.destinationCountryName,
+      senderName: form.senderName.trim(),
+      senderAddress: form.senderAddress.trim(),
+      vendorName: form.vendorName.trim(),
+      ...(form.vendorTrackingId.trim() ? { vendorTrackingId: form.vendorTrackingId.trim() } : {}),
       currentStep: 1,
     };
   }
   if (step === 1) {
-    return {
-      destinationCountry: form.destinationCountry,
-      destinationCountryName: form.destinationCountryName,
-      senderName: form.senderName.trim(),
-      senderPhone: form.senderPhone.trim(),
-      senderAddress: form.senderAddress.trim(),
-      ...(form.senderLat != null && form.senderLng != null
-        ? { senderLat: form.senderLat, senderLng: form.senderLng }
-        : {}),
-      currentStep: 2,
-    };
-  }
-  if (step === 2) {
     return {
       receiverName: form.receiverName.trim(),
       receiverPhone: form.receiverPhone.trim(),
@@ -192,15 +171,17 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
       ...(form.receiverLat != null && form.receiverLng != null
         ? { receiverLat: form.receiverLat, receiverLng: form.receiverLng }
         : {}),
-      currentStep: 3,
+      currentStep: 2,
     };
   }
   return {
     quantity: Number(form.quantity),
+    weightKg: Number(form.weightKg),
+    ...(form.packageCategory ? { packageCategory: form.packageCategory } : {}),
     declaredValue: Number(form.declaredValue),
     description: form.description.trim(),
     fragile: form.fragile,
-    currentStep: 4,
+    currentStep: 3,
   };
 }
 
@@ -333,6 +314,19 @@ export default function ShipImportScreen() {
     clearErrors(Object.keys(partial) as (keyof Form)[]);
   };
 
+  // Ordering for "Myself" prefills the Nigerian recipient from the profile.
+  const handleSenderChange = (partial: Partial<Form>) => {
+    if (partial.senderIsSelf === true) {
+      patchForm({
+        ...partial,
+        receiverName: form.receiverName || user?.fullName || '',
+        receiverPhone: form.receiverPhone || user?.phoneNumber || '',
+      });
+    } else {
+      patchForm(partial);
+    }
+  };
+
   const handleBack = () => {
     setErrors({});
     if (step === 0) {
@@ -390,37 +384,14 @@ export default function ShipImportScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {step === 0 ? (
-            <>
-              <SelectField
-                label="Weight"
-                required
-                error={errors.weightKg}
-                value={form.weightKg || null}
-                options={WEIGHT_OPTIONS}
-                onChange={setField('weightKg')}
-                placeholder="Select weight"
-              />
-              <DateField
-                label="Schedule pick-up date"
-                required
-                error={errors.pickupDate}
-                value={form.pickupDate}
-                onChange={(date) => patchForm({ pickupDate: date })}
-                placeholder="Select date"
-                minimumDate={new Date()}
-              />
-            </>
+            <ImportSenderStep values={form} onChange={handleSenderChange} errors={errors} />
           ) : null}
 
           {step === 1 ? (
-            <ImportSenderStep values={form} onChange={patchForm} errors={errors} />
-          ) : null}
-
-          {step === 2 ? (
             <ReceiverStep values={form} onChange={patchForm} errors={errors} />
           ) : null}
 
-          {step === 3 ? (
+          {step === 2 ? (
             <>
               <TextField
                 label="Quantity"
@@ -432,7 +403,23 @@ export default function ShipImportScreen() {
                 keyboardType="number-pad"
               />
               <TextField
-                label="Value of item (₦)"
+                label="Weight (kg)"
+                required
+                error={errors.weightKg}
+                value={form.weightKg}
+                onChangeText={setField('weightKg')}
+                placeholder="e.g. 2.5"
+                keyboardType="decimal-pad"
+              />
+              <SelectField
+                label="Item category"
+                value={form.packageCategory || null}
+                options={ITEM_CATEGORIES}
+                onChange={setField('packageCategory')}
+                placeholder="Select item category"
+              />
+              <TextField
+                label="Value of item ($)"
                 required
                 error={errors.declaredValue}
                 value={form.declaredValue}
@@ -535,20 +522,11 @@ function ReviewSummary({
   return (
     <View className="gap-4">
       <SummaryCard
-        title="Shipment"
-        lines={[
-          form.pickupDate ? `Pickup: ${formatDate(form.pickupDate)}` : '',
-          form.weightKg ? `Weight: ${form.weightKg} kg` : '',
-          breakdown ? `Delivery: ${breakdown.minDays}–${breakdown.maxDays} days` : '',
-        ].filter(Boolean)}
-      />
-      <SummaryCard
         title="Sender (abroad)"
         lines={[
-          form.senderName,
-          form.senderPhone,
+          form.vendorName,
           form.destinationCountryName ? `Country: ${form.destinationCountryName}` : '',
-          form.senderAddress,
+          form.vendorTrackingId ? `Tracking: ${form.vendorTrackingId}` : '',
         ].filter(Boolean)}
       />
       <SummaryCard
@@ -564,12 +542,22 @@ function ReviewSummary({
         title="Package"
         lines={[
           form.quantity ? `Quantity: ${form.quantity}` : '',
+          form.weightKg ? `Weight: ${form.weightKg} kg` : '',
+          form.declaredValue ? `Value: $${form.declaredValue}` : '',
           form.fragile ? 'Fragile' : '',
           form.description,
         ].filter(Boolean)}
       />
       {breakdown ? (
-        <CostBreakdown breakdown={breakdown} paymentMethod={null} />
+        <>
+          <CostBreakdown breakdown={breakdown} paymentMethod={null} />
+          {breakdown.currency !== 'NGN' && price != null ? (
+            <View className="flex-row items-center justify-between rounded-2xl bg-brand-blue-tint px-5 py-4">
+              <Text className="text-base font-semibold text-brand-navy">You&apos;ll pay</Text>
+              <Text className="text-xl font-extrabold text-brand-blue">{formatNaira(price)}</Text>
+            </View>
+          ) : null}
+        </>
       ) : (
         <View className="flex-row items-center justify-between rounded-2xl bg-brand-blue-tint px-5 py-4">
           <Text className="text-base font-semibold text-brand-navy">Estimated total</Text>
@@ -608,7 +596,8 @@ function BookedView({ shipment, onDone }: { shipment: Shipment; onDone: () => vo
         </View>
         <Text className="text-2xl font-extrabold text-brand-navy">Import booked!</Text>
         <Text className="text-center text-base text-gray-500">
-          Your inbound shipment is created. Save your tracking code to follow it.
+          Ship your purchase to our warehouse, and we&apos;ll bring it home. Save your tracking code
+          to follow it.
         </Text>
         <View className="mt-2 w-full rounded-2xl bg-brand-surface p-5">
           <Text className="text-xs uppercase tracking-wider text-gray-500">Tracking code</Text>
