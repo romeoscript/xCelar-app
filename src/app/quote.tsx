@@ -151,7 +151,8 @@ export default function QuoteScreen() {
       });
       return draft.id;
     },
-    onSuccess: (id) => router.replace({ pathname: '/ship-export', params: { id } }),
+    onSuccess: (id) =>
+      router.replace({ pathname: mode === 'IMPORT' ? '/ship-import' : '/ship-export', params: { id } }),
   });
 
   const pickupLabel = labelFor('pickup', mode, pickup.address, countryName);
