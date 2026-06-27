@@ -19,12 +19,12 @@ import { ReceiverStep } from '@/components/ship/receiver-step';
 import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
+import { PaystackCheckout } from '@/components/paystack-checkout';
 import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
-import { runPaystackCheckout } from '@/lib/checkout';
 import { formatNaira } from '@/lib/format';
 import { successFeedback } from '@/lib/haptics';
 import {
@@ -35,7 +35,7 @@ import {
   type Shipment,
   type ShipmentUpdate,
 } from '@/lib/shipment-api';
-import { getWalletBalance } from '@/lib/wallet-api';
+import { getWalletBalance, type VerifyResult } from '@/lib/wallet-api';
 
 type Form = {
   senderIsSelf: boolean | null;
@@ -188,6 +188,10 @@ export default function ShipLocalScreen() {
   const [confirmed, setConfirmed] = useState<Shipment | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('balance');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [checkout, setCheckout] = useState<{ authorizationUrl: string; reference: string } | null>(
+    null,
+  );
+  const [payError, setPayError] = useState<string | null>(null);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -204,29 +208,48 @@ export default function ShipLocalScreen() {
     onSuccess: (updated) => setPrice(updated.priceEstimate),
   });
 
-  const pay = useMutation({
-    mutationFn: async (): Promise<Shipment> => {
-      if (paymentMethod === 'balance') {
-        return payWithBalance(id as string, termsAccepted);
-      }
-      const init = await initPaystackForShipment(id as string, termsAccepted);
-      const result = await runPaystackCheckout(init.authorizationUrl, init.reference);
-      if (!result.success) {
-        throw new Error('Payment was not completed. If you were charged, it will reflect shortly.');
-      }
-      return getShipment(id as string);
-    },
-    onSuccess: async (booked) => {
-      successFeedback();
-      try {
-        updateUser({ balanceKobo: await getWalletBalance() });
-      } catch {
-        // Non-fatal: balance will refresh on next load.
-      }
-      setConfirmed(booked);
-      queryClient.invalidateQueries({ queryKey: ['shipments'] });
-    },
+  const finalizeBooking = async (booked: Shipment) => {
+    successFeedback();
+    try {
+      updateUser({ balanceKobo: await getWalletBalance() });
+    } catch {
+      // Non-fatal: balance refreshes on next load.
+    }
+    setConfirmed(booked);
+    queryClient.invalidateQueries({ queryKey: ['shipments'] });
+  };
+
+  const payBalance = useMutation({
+    mutationFn: () => payWithBalance(id as string, termsAccepted),
+    onSuccess: finalizeBooking,
+    onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
   });
+
+  const initPaystack = useMutation({
+    mutationFn: () => initPaystackForShipment(id as string, termsAccepted),
+    onSuccess: (init) => setCheckout(init),
+    onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
+  });
+
+  const handlePay = () => {
+    setPayError(null);
+    if (paymentMethod === 'balance') {
+      payBalance.mutate();
+    } else {
+      initPaystack.mutate();
+    }
+  };
+
+  const handleCheckoutResult = async (result: VerifyResult) => {
+    setCheckout(null);
+    if (result.success) {
+      await finalizeBooking(await getShipment(id as string));
+    } else {
+      setPayError('Payment was not completed. If you were charged, it will reflect shortly.');
+    }
+  };
+
+  const payPending = payBalance.isPending || initPaystack.isPending || checkout != null;
 
   if (status !== 'authenticated') {
     return <Redirect href="/" />;
@@ -377,9 +400,9 @@ export default function ShipLocalScreen() {
             </>
           ) : null}
 
-          {saveStep.isError || pay.isError ? (
+          {saveStep.isError || payError ? (
             <Text className="text-sm text-red-500">
-              {getApiErrorMessage(saveStep.error ?? pay.error)}
+              {payError ?? getApiErrorMessage(saveStep.error)}
             </Text>
           ) : null}
         </ScrollView>
@@ -397,8 +420,8 @@ export default function ShipLocalScreen() {
               <Button
                 label={price != null ? `Pay ${formatNaira(price)}` : 'Pay'}
                 disabled={!termsAccepted}
-                loading={pay.isPending}
-                onPress={() => pay.mutate()}
+                loading={payPending}
+                onPress={handlePay}
               />
               <Pressable
                 onPress={() => router.back()}
@@ -410,6 +433,13 @@ export default function ShipLocalScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <PaystackCheckout
+        authorizationUrl={checkout?.authorizationUrl ?? null}
+        reference={checkout?.reference ?? null}
+        onCancel={() => setCheckout(null)}
+        onResult={handleCheckoutResult}
+      />
     </SafeAreaView>
   );
 }

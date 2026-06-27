@@ -118,7 +118,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.push('/wallet-topup')}
+              onPress={() => router.push('/wallet')}
               className="rounded-full bg-brand-gold px-4 py-2 active:opacity-90"
             >
               <Text className="text-sm font-bold text-brand-navy">Top up</Text>

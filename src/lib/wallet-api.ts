@@ -12,9 +12,23 @@ export type PaymentInit = {
   reference: string;
 };
 
+export type Transaction = {
+  id: string;
+  reference: string;
+  amountKobo: number;
+  purpose: 'WALLET_TOPUP' | 'SHIPMENT';
+  state: 'PENDING' | 'SUCCESS' | 'FAILED';
+  createdAt: string;
+};
+
 export async function getWalletBalance(): Promise<number> {
   const { data } = await api.get<{ balanceKobo: number }>('/wallet');
   return data.balanceKobo;
+}
+
+export async function getTransactions(): Promise<Transaction[]> {
+  const { data } = await api.get<Transaction[]>('/wallet/transactions');
+  return data;
 }
 
 export async function topupWallet(amount: number): Promise<PaymentInit> {
