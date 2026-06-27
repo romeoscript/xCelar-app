@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { Brand } from '@/constants/theme';
@@ -8,6 +8,25 @@ import { verifyPayment, type VerifyResult } from '@/lib/wallet-api';
 
 // Must match PAYSTACK_CALLBACK_URL on the backend.
 const CALLBACK_URL = 'https://xcelar.app/paystack/callback';
+
+// Paystack's "Cancel Payment" inside a WebView often just calls window.close()
+// (a no-op in RN) instead of redirecting. We intercept that and the cancel
+// click, and post a message back so the sheet can close.
+const INJECTED_JS = `
+(function() {
+  function notify(msg) { try { window.ReactNativeWebView.postMessage(msg); } catch (e) {} }
+  window.close = function() { notify('PSTK_CANCEL'); };
+  document.addEventListener('click', function(event) {
+    var el = event.target;
+    for (var i = 0; el && i < 4; i++) {
+      var text = (el.innerText || el.textContent || '').trim().toLowerCase();
+      if (text.indexOf('cancel payment') !== -1) { notify('PSTK_CANCEL'); break; }
+      el = el.parentElement;
+    }
+  }, true);
+})();
+true;
+`;
 
 export type PaystackCheckoutProps = {
   authorizationUrl: string | null;
@@ -27,6 +46,7 @@ export function PaystackCheckout({
   onCancel,
   onResult,
 }: PaystackCheckoutProps) {
+  const insets = useSafeAreaInsets();
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
   const visible = Boolean(authorizationUrl && reference);
@@ -54,8 +74,6 @@ export function PaystackCheckout({
 
   const isCallback = (url: string) => url.startsWith(CALLBACK_URL);
 
-  // Paystack redirects to the callback for both success and cancellation; catch
-  // it in the request interceptor and again on navigation changes for safety.
   const onNavigationStateChange = (nav: WebViewNavigation) => {
     if (isCallback(nav.url)) {
       void completeWith();
@@ -64,7 +82,7 @@ export function PaystackCheckout({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onCancel}>
-      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+      <View className="flex-1 bg-white" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View className="flex-row items-center justify-between border-b border-gray-100 px-5 py-3">
           <Text className="text-lg font-bold text-brand-navy">Complete payment</Text>
           <Pressable
@@ -81,8 +99,14 @@ export function PaystackCheckout({
           {authorizationUrl ? (
             <WebView
               source={{ uri: authorizationUrl }}
+              injectedJavaScript={INJECTED_JS}
               onLoadStart={() => setLoading(true)}
               onLoadEnd={() => setLoading(false)}
+              onMessage={(event) => {
+                if (event.nativeEvent.data === 'PSTK_CANCEL') {
+                  onCancel();
+                }
+              }}
               onShouldStartLoadWithRequest={(request) => {
                 if (isCallback(request.url)) {
                   void completeWith();
@@ -103,7 +127,7 @@ export function PaystackCheckout({
             </View>
           ) : null}
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
