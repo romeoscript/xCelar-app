@@ -81,6 +81,11 @@ export async function getShipments(): Promise<Shipment[]> {
   return data;
 }
 
+export async function getShipmentByTracking(code: string): Promise<Shipment> {
+  const { data } = await api.get<Shipment>(`/shipments/track/${encodeURIComponent(code)}`);
+  return data;
+}
+
 export async function getShipment(id: string): Promise<Shipment> {
   const { data } = await api.get<Shipment>(`/shipments/${id}`);
   return data;

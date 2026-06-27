@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BannerCarousel } from '@/components/home/banner-carousel';
@@ -20,6 +20,7 @@ import {
   createDraft,
   discardShipment,
   getOpenDraft,
+  getShipmentByTracking,
   getShipments,
   type Shipment,
 } from '@/lib/shipment-api';
@@ -49,8 +50,29 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const [trackingId, setTrackingId] = useState('');
+  const [trackError, setTrackError] = useState<string | null>(null);
   const [resumeDraft, setResumeDraft] = useState<Shipment | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const trackMutation = useMutation({
+    mutationFn: (code: string) => getShipmentByTracking(code),
+    onSuccess: (shipment) => {
+      setTrackingId('');
+      setTrackError(null);
+      router.push(`/shipment/${shipment.id}`);
+    },
+    onError: () => setTrackError('No shipment found with that tracking code.'),
+  });
+
+  const handleTrack = () => {
+    const code = trackingId.trim();
+    if (!code) {
+      return;
+    }
+    Keyboard.dismiss();
+    setTrackError(null);
+    trackMutation.mutate(code);
+  };
 
   const queryClient = useQueryClient();
   const bannersQuery = useQuery({ queryKey: ['banners'], queryFn: getBanners });
@@ -163,15 +185,34 @@ export default function HomeScreen() {
           <SearchIcon size={20} color={Brand.muted} />
           <TextInput
             value={trackingId}
-            onChangeText={setTrackingId}
+            onChangeText={(value) => {
+              setTrackingId(value);
+              if (trackError) {
+                setTrackError(null);
+              }
+            }}
             placeholder="Enter tracking ID"
             placeholderTextColor={Brand.muted}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={handleTrack}
             className="flex-1 text-base text-gray-900"
           />
-          <Pressable className="rounded-xl bg-brand-blue px-5 py-3 active:opacity-90">
-            <Text className="text-sm font-semibold text-white">Track</Text>
+          <Pressable
+            onPress={handleTrack}
+            disabled={trackMutation.isPending}
+            className="rounded-xl bg-brand-blue px-5 py-3 active:opacity-90"
+          >
+            <Text className="text-sm font-semibold text-white">
+              {trackMutation.isPending ? '…' : 'Track'}
+            </Text>
           </Pressable>
         </View>
+
+        {trackError ? (
+          <Text className="mx-6 mt-2 text-sm text-red-500">{trackError}</Text>
+        ) : null}
 
         {draft && draft.currentStep < 3 ? (
           <View className="mx-6 mt-6 rounded-3xl bg-white p-5" style={cardShadow}>

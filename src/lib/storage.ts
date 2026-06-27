@@ -7,6 +7,8 @@ import * as SecureStore from 'expo-secure-store';
 export const StorageKeys = {
   accessToken: 'access_token',
   refreshToken: 'refresh_token',
+  biometricEnabled: 'biometric_enabled',
+  pushEnabled: 'push_enabled',
 } as const;
 
 export async function getItem(key: string): Promise<string | null> {
