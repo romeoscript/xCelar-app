@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvatarPicker } from '@/components/account/avatar-picker';
 import { Button } from '@/components/ui/button';
 import { DateField } from '@/components/ui/date-field';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -19,6 +20,13 @@ import { updateProfile, type UpdateProfileInput } from '@/lib/profile-api';
 import { toast } from '@/lib/toast-store';
 
 const STATE_OPTIONS = NIGERIAN_STATES.map((state) => ({ value: state, label: state }));
+
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase() || '?';
+}
 
 /** Parse a YYYY-MM-DD(...) string as a local date, avoiding timezone shifts. */
 function parseDate(iso: string | null): Date | null {
@@ -53,6 +61,15 @@ export default function ProfileScreen() {
       updateUser(updated);
       toast('Profile updated');
       router.back();
+    },
+  });
+
+  // Saving the avatar updates the profile in place without leaving the screen.
+  const avatarMutation = useMutation({
+    mutationFn: (avatarKey: string) => updateProfile({ avatarKey }),
+    onSuccess: (updated) => {
+      updateUser(updated);
+      toast('Photo updated');
     },
   });
 
@@ -99,6 +116,13 @@ export default function ProfileScreen() {
       <ScreenHeader title="My profile" />
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }} keyboardShouldPersistTaps="handled">
+          <AvatarPicker
+            avatarUrl={user?.avatarUrl ?? null}
+            initials={initials(user?.fullName ?? '?')}
+            onChange={async (key) => {
+              await avatarMutation.mutateAsync(key);
+            }}
+          />
           <TextField
             label="Full name"
             value={fullName}

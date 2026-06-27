@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, Text, View, type ViewToken } from 'react-native';
+import { Dimensions, FlatList, Image, Text, View, type ViewToken } from 'react-native';
 
 import { Brand } from '@/constants/theme';
 import { type Banner } from '@/lib/banner-api';
@@ -79,8 +79,19 @@ function BannerCard({ banner }: { banner: Banner }) {
     <View style={{ width: SCREEN_WIDTH }} className="px-6">
       <View
         style={{ backgroundColor: banner.bgColor ?? DEFAULT_BG }}
-        className="h-40 justify-between rounded-3xl p-5"
+        className="h-40 justify-between overflow-hidden rounded-3xl p-5"
       >
+        {banner.imageUrl ? (
+          <>
+            <Image
+              source={{ uri: banner.imageUrl }}
+              resizeMode="cover"
+              className="absolute inset-0 h-full w-full"
+            />
+            <View className="absolute inset-0 bg-black/30" />
+          </>
+        ) : null}
+
         {banner.badge ? (
           <View className="self-end rounded-full bg-white/20 px-3 py-1">
             <Text className="text-xs font-bold tracking-wide text-white">{banner.badge}</Text>

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SettingsRow } from '@/components/account/settings-row';
@@ -146,8 +146,12 @@ export default function AccountScreen() {
       <StatusBar style="dark" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, gap: 24 }}>
         <View className="items-center gap-3">
-          <View className="h-20 w-20 items-center justify-center rounded-full bg-brand-navy">
-            <Text className="text-2xl font-bold text-white">{initials(user?.fullName ?? '?')}</Text>
+          <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-brand-navy">
+            {user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} className="h-20 w-20" resizeMode="cover" />
+            ) : (
+              <Text className="text-2xl font-bold text-white">{initials(user?.fullName ?? '?')}</Text>
+            )}
           </View>
           <View className="items-center gap-1.5">
             <Text className="text-xl font-bold text-brand-navy">{user?.fullName}</Text>

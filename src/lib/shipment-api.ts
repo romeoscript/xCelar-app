@@ -100,6 +100,14 @@ export async function getOpenDraft(type: ShipmentType): Promise<Shipment | null>
   return data.shipment;
 }
 
+/** In-progress drafts worth resuming (started but not at payment), by type. */
+export async function getOpenDrafts(type?: ShipmentType): Promise<Shipment[]> {
+  const { data } = await api.get<Shipment[]>('/shipments/drafts', {
+    params: type ? { type } : {},
+  });
+  return data;
+}
+
 export async function getShipments(): Promise<Shipment[]> {
   const { data } = await api.get<Shipment[]>('/shipments');
   return data;

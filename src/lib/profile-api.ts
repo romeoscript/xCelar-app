@@ -10,6 +10,8 @@ export type UpdateProfileInput = {
   state?: string;
   /** ISO date string (YYYY-MM-DD). */
   dateOfBirth?: string;
+  /** Object key of an uploaded avatar image. */
+  avatarKey?: string;
 };
 
 export async function updateProfile(input: UpdateProfileInput): Promise<User> {

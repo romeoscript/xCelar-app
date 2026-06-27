@@ -10,6 +10,7 @@ export type User = {
   email: string | null;
   phoneNumber: string | null;
   fullName: string;
+  avatarUrl: string | null;
   gender: Gender | null;
   state: string | null;
   /** ISO date string (YYYY-MM-DD), or null if not set. */

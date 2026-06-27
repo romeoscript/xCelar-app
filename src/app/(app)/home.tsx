@@ -2,16 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BannerCarousel } from '@/components/home/banner-carousel';
 import { QuickActions } from '@/components/home/quick-actions';
+import { ResumeDraftsSheet } from '@/components/home/resume-drafts-sheet';
 import { ShipmentCard } from '@/components/shipments/shipment-card';
 import { ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
 import { SupportWidget } from '@/components/support-widget';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
-import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -20,12 +19,27 @@ import {
   createDraft,
   discardShipment,
   getOpenDraft,
+  getOpenDrafts,
   getShipmentByTracking,
   getShipments,
   type Shipment,
+  type ShipmentType,
 } from '@/lib/shipment-api';
 
 const TOTAL_STEPS = 4;
+
+// Each shipment type resumes in its own booking flow.
+const SHIP_ROUTE: Record<ShipmentType, '/ship-local' | '/ship-export' | '/ship-import'> = {
+  LOCAL: '/ship-local',
+  EXPORT: '/ship-export',
+  IMPORT: '/ship-import',
+};
+
+const QUICK_ACTION_TYPE: Record<string, ShipmentType> = {
+  'ship-local': 'LOCAL',
+  export: 'EXPORT',
+  import: 'IMPORT',
+};
 
 function draftProgress(currentStep: number): number {
   return Math.min(100, Math.max(0, Math.round((currentStep / TOTAL_STEPS) * 100)));
@@ -51,7 +65,7 @@ export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const [trackingId, setTrackingId] = useState('');
   const [trackError, setTrackError] = useState<string | null>(null);
-  const [resumeDraft, setResumeDraft] = useState<Shipment | null>(null);
+  const [resumeDrafts, setResumeDrafts] = useState<Shipment[]>([]);
   const [busy, setBusy] = useState(false);
 
   const trackMutation = useMutation({
@@ -95,69 +109,63 @@ export default function HomeScreen() {
   const shipments = shipmentsQuery.data ?? [];
   const name = user?.fullName ?? 'there';
 
-  const openShipLocal = (shipmentId: string) =>
-    router.push({ pathname: '/ship-local', params: { id: shipmentId } });
+  const openFlow = (type: ShipmentType, id: string) =>
+    router.push({ pathname: SHIP_ROUTE[type], params: { id } });
 
-  const startFreshLocal = async () => {
-    const draft = await createDraft('LOCAL');
-    openShipLocal(draft.id);
+  // Reuse an untouched (0%) draft or create a brand-new one, then open its flow.
+  const startFresh = async (type: ShipmentType) => {
+    const existing = await getOpenDraft(type);
+    const draft = existing && existing.currentStep === 0 ? existing : await createDraft(type);
+    openFlow(type, draft.id);
   };
 
-  const handleQuickAction = async (key: string) => {
-    if (key === 'quote') {
-      router.push('/quote');
-      return;
-    }
-    if (busy) {
-      return;
-    }
-    if (key === 'export' || key === 'import') {
-      const type = key === 'export' ? 'EXPORT' : 'IMPORT';
-      const route = key === 'export' ? '/ship-export' : '/ship-import';
-      setBusy(true);
-      try {
-        const draft = (await getOpenDraft(type)) ?? (await createDraft(type));
-        router.push({ pathname: route, params: { id: draft.id } });
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
-    if (key !== 'ship-local') {
-      return;
-    }
+  // Quick action: prompt to resume when in-progress drafts exist, else start fresh.
+  const startFlow = async (type: ShipmentType) => {
     setBusy(true);
     try {
-      const draft = await getOpenDraft('LOCAL');
-      if (draft) {
-        setResumeDraft(draft);
+      const drafts = await getOpenDrafts(type);
+      if (drafts.length > 0) {
+        setResumeDrafts(drafts);
       } else {
-        await startFreshLocal();
+        await startFresh(type);
       }
     } finally {
       setBusy(false);
     }
   };
 
-  const handleResume = () => {
-    if (!resumeDraft) {
+  const handleQuickAction = (key: string) => {
+    if (key === 'quote') {
+      router.push('/quote');
       return;
     }
-    const draftId = resumeDraft.id;
-    setResumeDraft(null);
-    openShipLocal(draftId);
+    const type = QUICK_ACTION_TYPE[key];
+    if (type && !busy) {
+      void startFlow(type);
+    }
+  };
+
+  const handleResume = (draft: Shipment) => {
+    setResumeDrafts([]);
+    openFlow(draft.type, draft.id);
+  };
+
+  const handleDiscardDraft = async (draft: Shipment) => {
+    setResumeDrafts((current) => current.filter((item) => item.id !== draft.id));
+    await discardShipment(draft.id);
+    queryClient.invalidateQueries({ queryKey: ['shipment-draft'] });
+    queryClient.invalidateQueries({ queryKey: ['shipments'] });
   };
 
   const handleStartNew = async () => {
-    if (!resumeDraft) {
+    const type = resumeDrafts[0]?.type;
+    if (!type) {
       return;
     }
-    const oldId = resumeDraft.id;
-    setResumeDraft(null);
+    setResumeDrafts([]);
     setBusy(true);
     try {
-      await discardShipment(oldId);
-      await startFreshLocal();
+      await startFresh(type);
     } finally {
       setBusy(false);
     }
@@ -176,8 +184,12 @@ export default function HomeScreen() {
               <Text className="text-sm text-white/60">{greeting()}</Text>
               <Text className="text-2xl font-bold text-white">{name.split(' ')[0]}</Text>
             </View>
-            <View className="h-11 w-11 items-center justify-center rounded-full bg-brand-gold">
-              <Text className="text-base font-bold text-brand-navy">{initials(name)}</Text>
+            <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-brand-gold">
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} className="h-11 w-11" resizeMode="cover" />
+              ) : (
+                <Text className="text-base font-bold text-brand-navy">{initials(name)}</Text>
+              )}
             </View>
           </View>
 
@@ -233,7 +245,7 @@ export default function HomeScreen() {
           <Text className="mx-6 mt-2 text-sm text-red-500">{trackError}</Text>
         ) : null}
 
-        {draft && draft.currentStep < 3 ? (
+        {draft && draft.currentStep > 0 && draft.currentStep < 3 ? (
           <View className="mx-6 mt-6 rounded-3xl bg-white p-5" style={cardShadow}>
             <View className="flex-row items-center gap-3">
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue-tint">
@@ -254,7 +266,7 @@ export default function HomeScreen() {
               />
             </View>
             <Pressable
-              onPress={() => openShipLocal(draft.id)}
+              onPress={() => openFlow('LOCAL', draft.id)}
               className="mt-4 flex-row items-center justify-center gap-1 rounded-full bg-brand-blue py-3 active:opacity-90"
             >
               <Text className="text-sm font-semibold text-white">Continue</Text>
@@ -307,16 +319,14 @@ export default function HomeScreen() {
 
       <SupportWidget />
 
-      <BottomSheet visible={resumeDraft != null} onClose={() => setResumeDraft(null)}>
-        <Text className="text-xl font-bold text-brand-navy">Unfinished shipment</Text>
-        <Text className="mt-2 text-base text-gray-500">
-          You have a local shipment in progress. Continue where you left off, or start a new one?
-        </Text>
-        <View className="mt-6 gap-3">
-          <Button label="Resume" onPress={handleResume} />
-          <Button label="Start new" variant="secondary" onPress={handleStartNew} />
-        </View>
-      </BottomSheet>
+      <ResumeDraftsSheet
+        drafts={resumeDrafts}
+        busy={busy}
+        onResume={handleResume}
+        onDiscard={handleDiscardDraft}
+        onStartNew={handleStartNew}
+        onClose={() => setResumeDrafts([])}
+      />
     </View>
   );
 }
