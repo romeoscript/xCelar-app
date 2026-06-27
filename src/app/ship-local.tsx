@@ -14,15 +14,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
-import { FieldLabel } from '@/components/ui/field-label';
-import { ChipGroup } from '@/components/ship/chip-group';
 import { ReceiverStep } from '@/components/ship/receiver-step';
 import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
 import { PaystackCheckout } from '@/components/paystack-checkout';
 import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
+import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
+import { ITEM_CATEGORY_OPTIONS } from '@/constants/categories';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
@@ -90,7 +90,6 @@ const EMPTY_FORM: Form = {
   fragile: false,
 };
 
-const CATEGORIES = ['Documents', 'Electronics', 'Clothing', 'Food', 'Furniture', 'Other'];
 const STEP_TITLES = ['Sender details', 'Receiver details', 'Package details', 'Review & confirm'];
 const TOTAL_STEPS = 4;
 
@@ -378,17 +377,15 @@ export default function ShipLocalScreen() {
 
           {step === 2 ? (
             <>
-              <View className="gap-2">
-                <FieldLabel label="Package category" required />
-                <ChipGroup
-                  options={CATEGORIES}
-                  value={form.packageCategory}
-                  onChange={setField('packageCategory')}
-                />
-                {errors.packageCategory ? (
-                  <Text className="text-sm text-red-500">{errors.packageCategory}</Text>
-                ) : null}
-              </View>
+              <SelectField
+                label="Item category"
+                required
+                error={errors.packageCategory}
+                value={form.packageCategory || null}
+                options={ITEM_CATEGORY_OPTIONS}
+                onChange={setField('packageCategory')}
+                placeholder="Select item category"
+              />
               <TextField
                 label="Weight (kg)"
                 required
