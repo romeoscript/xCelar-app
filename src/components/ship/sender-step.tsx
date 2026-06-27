@@ -59,26 +59,6 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
 
       {hasChosenSender ? (
         <View className="gap-4">
-          <SavedAddresses
-            draft={{
-              contactName: values.senderName,
-              contactPhone: values.senderPhone,
-              address: values.senderAddress,
-              lat: values.senderLat,
-              lng: values.senderLng,
-              zone: values.pickupZone,
-            }}
-            onSelect={(entry) =>
-              onChange({
-                senderName: entry.contactName,
-                senderPhone: entry.contactPhone,
-                senderAddress: entry.address,
-                senderLat: entry.lat,
-                senderLng: entry.lng,
-                pickupZone: entry.zone ?? '',
-              })
-            }
-          />
           <TextField
             label="Sender's name"
             value={values.senderName}
@@ -104,6 +84,26 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
             value={values.pickupZone}
             onChange={(zone) => onChange({ pickupZone: zone })}
             placeholder="Select pickup zone"
+          />
+          <SavedAddresses
+            draft={{
+              contactName: values.senderName,
+              contactPhone: values.senderPhone,
+              address: values.senderAddress,
+              lat: values.senderLat,
+              lng: values.senderLng,
+              zone: values.pickupZone,
+            }}
+            onSelect={(entry) =>
+              onChange({
+                senderName: entry.contactName,
+                senderPhone: entry.contactPhone,
+                senderAddress: entry.address,
+                senderLat: entry.lat,
+                senderLng: entry.lng,
+                pickupZone: entry.zone ?? '',
+              })
+            }
           />
         </View>
       ) : null}

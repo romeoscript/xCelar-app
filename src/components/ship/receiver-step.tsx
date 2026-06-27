@@ -35,26 +35,6 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
 
   return (
     <View className="gap-4">
-      <SavedAddresses
-        draft={{
-          contactName: values.receiverName,
-          contactPhone: values.receiverPhone,
-          address: values.receiverAddress,
-          lat: values.receiverLat,
-          lng: values.receiverLng,
-          zone: values.deliveryZone,
-        }}
-        onSelect={(entry) =>
-          onChange({
-            receiverName: entry.contactName,
-            receiverPhone: entry.contactPhone,
-            receiverAddress: entry.address,
-            receiverLat: entry.lat,
-            receiverLng: entry.lng,
-            deliveryZone: entry.zone ?? '',
-          })
-        }
-      />
       <TextField
         label="Receiver's name"
         value={values.receiverName}
@@ -80,6 +60,26 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
         value={values.deliveryZone}
         onChange={(zone) => onChange({ deliveryZone: zone })}
         placeholder="Select delivery zone"
+      />
+      <SavedAddresses
+        draft={{
+          contactName: values.receiverName,
+          contactPhone: values.receiverPhone,
+          address: values.receiverAddress,
+          lat: values.receiverLat,
+          lng: values.receiverLng,
+          zone: values.deliveryZone,
+        }}
+        onSelect={(entry) =>
+          onChange({
+            receiverName: entry.contactName,
+            receiverPhone: entry.contactPhone,
+            receiverAddress: entry.address,
+            receiverLat: entry.lat,
+            receiverLng: entry.lng,
+            deliveryZone: entry.zone ?? '',
+          })
+        }
       />
     </View>
   );

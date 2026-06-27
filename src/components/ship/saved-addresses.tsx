@@ -52,9 +52,16 @@ export function SavedAddresses({ draft, onSelect }: SavedAddressesProps) {
     onSuccess: invalidate,
   });
 
-  const canSave = Boolean(
-    draft.contactName.trim() && draft.contactPhone.trim() && draft.address.trim(),
+  const alreadySaved = saved.some(
+    (entry) =>
+      entry.contactName === draft.contactName.trim() &&
+      entry.contactPhone === draft.contactPhone.trim() &&
+      entry.address === draft.address.trim(),
   );
+
+  const canSave =
+    !alreadySaved &&
+    Boolean(draft.contactName.trim() && draft.contactPhone.trim() && draft.address.trim());
 
   return (
     <View className="flex-row gap-2">
@@ -81,7 +88,7 @@ export function SavedAddresses({ draft, onSelect }: SavedAddressesProps) {
         className={`flex-1 items-center rounded-2xl border border-gray-200 py-3 ${canSave ? 'active:opacity-70' : 'opacity-50'}`}
       >
         <Text className="text-sm font-semibold text-gray-700">
-          {saveMutation.isSuccess ? 'Saved ✓' : 'Save these details'}
+          {alreadySaved || saveMutation.isSuccess ? 'Saved ✓' : 'Save these details'}
         </Text>
       </Pressable>
 
