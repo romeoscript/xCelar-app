@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
+import { FieldLabel } from '@/components/ui/field-label';
 import { ChipGroup } from '@/components/ship/chip-group';
 import { ReceiverStep } from '@/components/ship/receiver-step';
 import { SenderStep } from '@/components/ship/sender-step';
@@ -352,7 +353,7 @@ export default function ShipLocalScreen() {
           {step === 2 ? (
             <>
               <View className="gap-2">
-                <Text className="text-sm font-medium text-gray-700">Package category</Text>
+                <FieldLabel label="Package category" required />
                 <ChipGroup
                   options={CATEGORIES}
                   value={form.packageCategory}
@@ -361,6 +362,7 @@ export default function ShipLocalScreen() {
               </View>
               <TextField
                 label="Weight (kg)"
+                required
                 value={form.weightKg}
                 onChangeText={setField('weightKg')}
                 placeholder="e.g. 2.5"
@@ -368,6 +370,7 @@ export default function ShipLocalScreen() {
               />
               <TextField
                 label="Declared value (₦)"
+                required
                 value={form.declaredValue}
                 onChangeText={setField('declaredValue')}
                 placeholder="e.g. 50000"

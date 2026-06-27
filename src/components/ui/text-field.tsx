@@ -3,19 +3,21 @@ import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-nat
 
 import { EyeIcon, EyeOffIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
+import { FieldLabel } from './field-label';
 
 export type TextFieldProps = TextInputProps & {
   label: string;
   error?: string;
+  required?: boolean;
 };
 
-export function TextField({ label, error, secureTextEntry, ...rest }: TextFieldProps) {
+export function TextField({ label, error, required, secureTextEntry, ...rest }: TextFieldProps) {
   const isPassword = Boolean(secureTextEntry);
   const [isHidden, setIsHidden] = useState(true);
 
   return (
     <View className="gap-2">
-      {label ? <Text className="text-sm font-medium text-gray-700">{label}</Text> : null}
+      <FieldLabel label={label} required={required} />
       <View>
         <TextInput
           placeholderTextColor={Brand.muted}

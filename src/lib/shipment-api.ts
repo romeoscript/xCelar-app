@@ -105,6 +105,21 @@ export async function getShipmentBreakdown(id: string): Promise<PriceBreakdown |
   return data;
 }
 
+export type QuoteInput = {
+  weightKg: number;
+  fragile?: boolean;
+  senderLat?: number;
+  senderLng?: number;
+  receiverLat?: number;
+  receiverLng?: number;
+};
+
+/** Price estimate for arbitrary inputs, without creating a shipment. */
+export async function getQuote(input: QuoteInput): Promise<PriceBreakdown> {
+  const { data } = await api.post<PriceBreakdown>('/shipments/quote', input);
+  return data;
+}
+
 export async function getShipment(id: string): Promise<Shipment> {
   const { data } = await api.get<Shipment>(`/shipments/${id}`);
   return data;

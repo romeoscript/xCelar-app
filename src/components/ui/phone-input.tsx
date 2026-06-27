@@ -5,9 +5,11 @@ import { type Country } from '@/constants/countries';
 import { Brand } from '@/constants/theme';
 import { parseE164, toE164 } from '@/lib/phone';
 import { CountryCodePicker } from './country-code-picker';
+import { FieldLabel } from './field-label';
 
 export type PhoneInputProps = {
   label?: string;
+  required?: boolean;
   /** Stored value in E.164 (e.g. +2348012345678). */
   value: string;
   onChange: (e164: string) => void;
@@ -18,7 +20,7 @@ export type PhoneInputProps = {
  * Phone entry with a country-code dropdown (default Nigeria). Emits the value
  * in E.164 form. Prefills the country + national number from an existing value.
  */
-export function PhoneInput({ label, value, onChange, error }: PhoneInputProps) {
+export function PhoneInput({ label, required, value, onChange, error }: PhoneInputProps) {
   const initial = parseE164(value);
   const [country, setCountry] = useState<Country>(initial.country);
   const [national, setNational] = useState(initial.national);
@@ -30,7 +32,7 @@ export function PhoneInput({ label, value, onChange, error }: PhoneInputProps) {
 
   return (
     <View className="gap-2">
-      {label ? <Text className="text-sm font-medium text-gray-700">{label}</Text> : null}
+      <FieldLabel label={label} required={required} />
       <View className="flex-row gap-2">
         <CountryCodePicker
           value={country}

@@ -104,8 +104,12 @@ export default function HomeScreen() {
   };
 
   const handleQuickAction = async (key: string) => {
+    if (key === 'quote') {
+      router.push('/quote');
+      return;
+    }
     if (key !== 'ship-local' || busy) {
-      return; // Other flows aren't built yet.
+      return; // Export/import flows aren't built yet.
     }
     setBusy(true);
     try {

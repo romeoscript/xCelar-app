@@ -63,6 +63,7 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
         <View className="gap-4">
           <TextField
             label="Sender's name"
+            required
             value={values.senderName}
             onChangeText={(value) => onChange({ senderName: value })}
             placeholder="Full name"
@@ -70,11 +71,13 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           />
           <PhoneInput
             label="Sender's phone"
+            required
             value={values.senderPhone}
             onChange={(value) => onChange({ senderPhone: value })}
           />
           <AddressField
             label="Pickup address"
+            required
             value={{ address: values.senderAddress, lat: values.senderLat, lng: values.senderLng }}
             onChange={(next) =>
               onChange({ senderAddress: next.address, senderLat: next.lat, senderLng: next.lng })
@@ -83,12 +86,14 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           />
           <ZoneField
             label="Pickup zone"
+            required
             value={values.pickupZone}
             onChange={(zone) => onChange({ pickupZone: zone })}
             placeholder="Select pickup zone"
           />
           <DateField
             label="Pickup date"
+            required
             value={values.pickupDate}
             onChange={(date) => onChange({ pickupDate: date })}
             placeholder="Select pickup date"

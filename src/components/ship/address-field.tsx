@@ -9,6 +9,7 @@ import {
   PinIcon,
 } from '@/components/icons';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { FieldLabel } from '@/components/ui/field-label';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { tapFeedback } from '@/lib/haptics';
@@ -23,6 +24,7 @@ export type AddressValue = {
 
 export type AddressFieldProps = {
   label: string;
+  required?: boolean;
   value: AddressValue;
   onChange: (value: AddressValue) => void;
   /** Fired when an address comes from the device/map, to suggest a zone. */
@@ -30,7 +32,7 @@ export type AddressFieldProps = {
 };
 
 /** Address entry with three methods: manual, current location, or map pin. */
-export function AddressField({ label, value, onChange, onZoneHint }: AddressFieldProps) {
+export function AddressField({ label, required, value, onChange, onZoneHint }: AddressFieldProps) {
   const [methodSheet, setMethodSheet] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -72,7 +74,7 @@ export function AddressField({ label, value, onChange, onZoneHint }: AddressFiel
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-gray-700">{label}</Text>
+      <FieldLabel label={label} required={required} />
 
       {locating ? (
         <View className="h-14 flex-row items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4">

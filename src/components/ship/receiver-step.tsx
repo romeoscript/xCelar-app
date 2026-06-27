@@ -37,6 +37,7 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
     <View className="gap-4">
       <TextField
         label="Receiver's name"
+        required
         value={values.receiverName}
         onChangeText={(value) => onChange({ receiverName: value })}
         placeholder="Full name"
@@ -44,11 +45,13 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
       />
       <PhoneInput
         label="Receiver's phone"
+        required
         value={values.receiverPhone}
         onChange={(value) => onChange({ receiverPhone: value })}
       />
       <AddressField
         label="Delivery address"
+        required
         value={{ address: values.receiverAddress, lat: values.receiverLat, lng: values.receiverLng }}
         onChange={(next) =>
           onChange({ receiverAddress: next.address, receiverLat: next.lat, receiverLng: next.lng })
@@ -57,6 +60,7 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
       />
       <ZoneField
         label="Delivery zone"
+        required
         value={values.deliveryZone}
         onChange={(zone) => onChange({ deliveryZone: zone })}
         placeholder="Select delivery zone"

@@ -4,9 +4,11 @@ import { Platform, Pressable, Text, View } from 'react-native';
 
 import { Button } from './button';
 import { BottomSheet } from './bottom-sheet';
+import { FieldLabel } from './field-label';
 
 export type DateFieldProps = {
   label: string;
+  required?: boolean;
   value: Date | null;
   onChange: (date: Date) => void;
   placeholder?: string;
@@ -29,6 +31,7 @@ function clampToRange(date: Date, min?: Date, max?: Date): Date {
 
 export function DateField({
   label,
+  required,
   value,
   onChange,
   placeholder = 'Select date',
@@ -61,7 +64,7 @@ export function DateField({
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-gray-700">{label}</Text>
+      <FieldLabel label={label} required={required} />
       <Pressable
         onPress={openPicker}
         className="h-14 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 active:opacity-70"

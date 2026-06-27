@@ -7,18 +7,14 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CostBreakdown } from '@/components/ship/cost-breakdown';
 import { ChevronLeftIcon } from '@/components/icons';
 import { PaidPill, StatusBadge } from '@/components/shipments/badges';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
-import {
-  getShipment,
-  getShipmentBreakdown,
-  type PriceBreakdown,
-  type Shipment,
-} from '@/lib/shipment-api';
+import { getShipment, getShipmentBreakdown, type Shipment } from '@/lib/shipment-api';
 import { DELIVERY_STAGES } from '@/lib/shipment-status';
 
 export default function ShipmentDetailScreen() {
@@ -201,56 +197,6 @@ function DeliveryTimeline({ shipment }: { shipment: Shipment }) {
           </View>
         );
       })}
-    </View>
-  );
-}
-
-function CostBreakdown({
-  breakdown,
-  paymentMethod,
-}: {
-  breakdown: PriceBreakdown;
-  paymentMethod: string | null;
-}) {
-  return (
-    <View className="rounded-2xl border border-gray-100 bg-white p-5">
-      <Text className="mb-3 text-base font-semibold text-brand-navy">Cost breakdown</Text>
-
-      <CostRow label="Base fare" value={breakdown.baseFare} />
-      {breakdown.distanceFee > 0 ? (
-        <CostRow label={`Distance (${breakdown.distanceKm} km)`} value={breakdown.distanceFee} />
-      ) : null}
-      <CostRow label="Weight" value={breakdown.weightFee} />
-      {breakdown.fragileSurcharge > 0 ? (
-        <CostRow label="Fragile handling" value={breakdown.fragileSurcharge} />
-      ) : null}
-
-      <View className="my-3 h-px bg-gray-100" />
-      <CostRow label="Subtotal" value={breakdown.subtotal} />
-      <CostRow label={`VAT (${breakdown.vatPercent}%)`} value={breakdown.vat} />
-
-      <View className="my-3 h-px bg-gray-100" />
-      <View className="flex-row items-center justify-between">
-        <Text className="text-base font-bold text-brand-navy">Total</Text>
-        <Text className="text-lg font-extrabold text-brand-navy">
-          {formatNaira(breakdown.total)}
-        </Text>
-      </View>
-
-      {paymentMethod ? (
-        <Text className="mt-2 text-sm text-gray-500">
-          Paid with {paymentMethod === 'BALANCE' ? 'wallet balance' : 'card / Paystack'}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-function CostRow({ label, value }: { label: string; value: number }) {
-  return (
-    <View className="flex-row items-center justify-between py-1">
-      <Text className="text-sm text-gray-500">{label}</Text>
-      <Text className="text-sm font-medium text-gray-900">{formatNaira(value)}</Text>
     </View>
   );
 }

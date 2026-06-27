@@ -3,17 +3,25 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { FieldLabel } from '@/components/ui/field-label';
 import { Brand } from '@/constants/theme';
 import { getZones } from '@/lib/zone-api';
 
 export type ZoneFieldProps = {
   label: string;
+  required?: boolean;
   value: string;
   onChange: (zone: string) => void;
   placeholder?: string;
 };
 
-export function ZoneField({ label, value, onChange, placeholder = 'Select zone' }: ZoneFieldProps) {
+export function ZoneField({
+  label,
+  required,
+  value,
+  onChange,
+  placeholder = 'Select zone',
+}: ZoneFieldProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -31,7 +39,7 @@ export function ZoneField({ label, value, onChange, placeholder = 'Select zone' 
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-gray-700">{label}</Text>
+      <FieldLabel label={label} required={required} />
       <Pressable
         onPress={() => setSheetOpen(true)}
         className="h-14 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 active:opacity-70"
