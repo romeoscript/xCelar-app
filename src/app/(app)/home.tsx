@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BannerCarousel } from '@/components/home/banner-carousel';
 import { QuickActions } from '@/components/home/quick-actions';
-import { PackageIcon, SearchIcon } from '@/components/icons';
+import { ShipmentCard } from '@/components/shipments/shipment-card';
+import { ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
 import { SupportWidget } from '@/components/support-widget';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -28,14 +29,6 @@ const TOTAL_STEPS = 4;
 function draftProgress(currentStep: number): number {
   return Math.min(100, Math.max(0, Math.round((currentStep / TOTAL_STEPS) * 100)));
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Awaiting pickup',
-  CONFIRMED: 'Confirmed',
-  IN_TRANSIT: 'In transit',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-};
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -181,17 +174,20 @@ export default function HomeScreen() {
         </View>
 
         {draft ? (
-          <View className="mx-6 mt-6 rounded-3xl border border-brand-blue/30 bg-brand-blue-tint p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-bold text-brand-navy">Continue your shipment</Text>
-              <Text className="text-sm font-bold text-brand-blue">
+          <View className="mx-6 mt-6 rounded-3xl bg-white p-5" style={cardShadow}>
+            <View className="flex-row items-center gap-3">
+              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue-tint">
+                <PackageIcon size={22} color={Brand.blue} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-brand-navy">Continue your shipment</Text>
+                <Text className="mt-0.5 text-sm text-gray-500">Pick up where you left off</Text>
+              </View>
+              <Text className="text-lg font-extrabold text-brand-blue">
                 {draftProgress(draft.currentStep)}%
               </Text>
             </View>
-            <Text className="mt-1 text-sm text-gray-600">
-              You have an unfinished local shipment.
-            </Text>
-            <View className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+            <View className="mt-4 h-2 overflow-hidden rounded-full bg-brand-surface">
               <View
                 className="h-2 rounded-full bg-brand-blue"
                 style={{ width: `${draftProgress(draft.currentStep)}%` }}
@@ -199,9 +195,10 @@ export default function HomeScreen() {
             </View>
             <Pressable
               onPress={() => openShipLocal(draft.id)}
-              className="mt-4 items-center rounded-full bg-brand-blue py-3 active:opacity-90"
+              className="mt-4 flex-row items-center justify-center gap-1 rounded-full bg-brand-blue py-3 active:opacity-90"
             >
               <Text className="text-sm font-semibold text-white">Continue</Text>
+              <ChevronRightIcon size={18} color="#ffffff" />
             </Pressable>
           </View>
         ) : null}
@@ -218,11 +215,22 @@ export default function HomeScreen() {
         ) : null}
 
         <View className="mt-8 px-6">
-          <Text className="mb-3 text-lg font-bold text-brand-navy">Recent shipments</Text>
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-brand-navy">Recent shipments</Text>
+            {shipments.length > 0 ? (
+              <Pressable onPress={() => router.push('/shipments')} hitSlop={8} className="active:opacity-70">
+                <Text className="text-sm font-semibold text-brand-blue">See all</Text>
+              </Pressable>
+            ) : null}
+          </View>
           {shipments.length > 0 ? (
             <View className="gap-2">
-              {shipments.slice(0, 5).map((shipment) => (
-                <ShipmentRow key={shipment.id} shipment={shipment} />
+              {shipments.slice(0, 3).map((shipment) => (
+                <ShipmentCard
+                  key={shipment.id}
+                  shipment={shipment}
+                  onPress={() => router.push(`/shipment/${shipment.id}`)}
+                />
               ))}
             </View>
           ) : (
@@ -249,31 +257,6 @@ export default function HomeScreen() {
           <Button label="Start new" variant="secondary" onPress={handleStartNew} />
         </View>
       </BottomSheet>
-    </View>
-  );
-}
-
-function ShipmentRow({ shipment }: { shipment: Shipment }) {
-  const route =
-    [shipment.pickupZone, shipment.deliveryZone].filter(Boolean).join('  →  ') ||
-    shipment.receiverName ||
-    'Local delivery';
-
-  return (
-    <View className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4">
-      <View className="flex-1 pr-3">
-        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
-          {route}
-        </Text>
-        <Text className="text-xs text-gray-500">
-          {shipment.trackingCode ?? '—'} · {STATUS_LABELS[shipment.status] ?? shipment.status}
-        </Text>
-      </View>
-      {shipment.priceEstimate != null ? (
-        <Text className="text-sm font-bold text-brand-navy">
-          {formatNaira(shipment.priceEstimate)}
-        </Text>
-      ) : null}
     </View>
   );
 }
