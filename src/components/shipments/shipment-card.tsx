@@ -1,10 +1,19 @@
+import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { ChevronRightIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
-import { type Shipment } from '@/lib/shipment-api';
+import { tapFeedback } from '@/lib/haptics';
+import { type Shipment, type ShipmentType } from '@/lib/shipment-api';
 import { PaidPill, StatusBadge } from './badges';
+
+// Each shipment type resumes payment in its own booking flow.
+const PAY_ROUTE: Record<ShipmentType, '/ship-local' | '/ship-export' | '/ship-import'> = {
+  LOCAL: '/ship-local',
+  EXPORT: '/ship-export',
+  IMPORT: '/ship-import',
+};
 
 export type ShipmentCardProps = {
   shipment: Shipment;
@@ -12,8 +21,14 @@ export type ShipmentCardProps = {
 };
 
 export function ShipmentCard({ shipment, onPress }: ShipmentCardProps) {
+  const router = useRouter();
   const origin = shipment.pickupZone || shipment.senderAddress || 'Pickup';
   const destination = shipment.deliveryZone || shipment.receiverAddress || 'Delivery';
+
+  const resumePayment = () => {
+    tapFeedback();
+    router.push({ pathname: PAY_ROUTE[shipment.type], params: { id: shipment.id } });
+  };
 
   return (
     <Pressable
@@ -60,6 +75,18 @@ export function ShipmentCard({ shipment, onPress }: ShipmentCardProps) {
           <ChevronRightIcon size={16} color={Brand.muted} />
         </View>
       </View>
+
+      {!shipment.paid ? (
+        <Pressable
+          onPress={resumePayment}
+          className="mt-3 items-center rounded-2xl bg-brand-blue py-3 active:opacity-90"
+        >
+          <Text className="text-sm font-bold text-white">
+            Resume payment
+            {shipment.priceEstimate != null ? ` · ${formatNaira(shipment.priceEstimate)}` : ''}
+          </Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
