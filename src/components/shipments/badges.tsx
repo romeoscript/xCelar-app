@@ -1,23 +1,21 @@
 import { Text, View } from 'react-native';
 
-import { type ShipmentStatus } from '@/lib/shipment-api';
-import { statusMeta } from '@/lib/shipment-status';
+import { type Shipment } from '@/lib/shipment-api';
+import { shipmentStatusMeta } from '@/lib/shipment-status';
 
-export function StatusBadge({ status }: { status: ShipmentStatus }) {
-  const meta = statusMeta(status);
+export function StatusBadge({ shipment }: { shipment: Pick<Shipment, 'status' | 'paid'> }) {
+  const meta = shipmentStatusMeta(shipment);
   return (
-    <View className={`rounded-full px-2.5 py-1 ${meta.bg}`}>
-      <Text className={`text-xs font-semibold ${meta.text}`}>{meta.label}</Text>
+    <View className={`self-start rounded-full px-3 py-1 ${meta.bg}`}>
+      <Text className={`text-xs font-bold uppercase tracking-wide ${meta.text}`}>{meta.label}</Text>
     </View>
   );
 }
 
-export function PaidBadge({ paid }: { paid: boolean }) {
+export function PaidPill() {
   return (
-    <View className={`rounded-full px-2.5 py-1 ${paid ? 'bg-green-100' : 'bg-gray-100'}`}>
-      <Text className={`text-xs font-semibold ${paid ? 'text-green-700' : 'text-gray-500'}`}>
-        {paid ? 'Paid' : 'Unpaid'}
-      </Text>
+    <View className="rounded-full bg-green-100 px-2.5 py-1">
+      <Text className="text-xs font-bold text-green-700">Paid</Text>
     </View>
   );
 }

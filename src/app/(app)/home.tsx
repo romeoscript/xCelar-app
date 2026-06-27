@@ -173,7 +173,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {draft ? (
+        {draft && draft.currentStep < 3 ? (
           <View className="mx-6 mt-6 rounded-3xl bg-white p-5" style={cardShadow}>
             <View className="flex-row items-center gap-3">
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue-tint">

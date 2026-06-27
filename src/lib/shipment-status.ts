@@ -1,4 +1,4 @@
-import { type ShipmentStatus } from './shipment-api';
+import { type Shipment, type ShipmentStatus } from './shipment-api';
 
 export type StatusMeta = {
   label: string;
@@ -17,6 +17,20 @@ const META: Record<ShipmentStatus, StatusMeta> = {
 
 export function statusMeta(status: ShipmentStatus): StatusMeta {
   return META[status] ?? META.PENDING;
+}
+
+const AWAITING_PAYMENT: StatusMeta = {
+  label: 'Awaiting payment',
+  bg: 'bg-amber-100',
+  text: 'text-amber-700',
+};
+
+/** Status to show for a shipment, accounting for unpaid drafts. */
+export function shipmentStatusMeta(shipment: Pick<Shipment, 'status' | 'paid'>): StatusMeta {
+  if (!shipment.paid && shipment.status === 'DRAFT') {
+    return AWAITING_PAYMENT;
+  }
+  return statusMeta(shipment.status);
 }
 
 /** Ordered delivery journey, for the progress timeline. */

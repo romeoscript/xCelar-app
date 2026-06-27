@@ -1,19 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
-import { PaidBadge, StatusBadge } from '@/components/shipments/badges';
+import { PaidPill, StatusBadge } from '@/components/shipments/badges';
+import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
+import { tapFeedback } from '@/lib/haptics';
 import { getShipment, type Shipment } from '@/lib/shipment-api';
 import { DELIVERY_STAGES } from '@/lib/shipment-status';
 
 export default function ShipmentDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [copied, setCopied] = useState(false);
 
   const query = useQuery({
     queryKey: ['shipment', id],
@@ -27,8 +33,18 @@ export default function ShipmentDetailScreen() {
 
   const shipment = query.data;
 
+  const copyTracking = async () => {
+    if (!shipment?.trackingCode) {
+      return;
+    }
+    tapFeedback();
+    await Clipboard.setStringAsync(shipment.trackingCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <View className="px-6 pt-2">
         <Pressable
@@ -45,66 +61,102 @@ export default function ShipmentDetailScreen() {
           <ActivityIndicator color={Brand.blue} />
         </View>
       ) : shipment ? (
-        <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-          <View className="gap-2">
-            <Text className="text-xs uppercase tracking-wider text-gray-500">Tracking code</Text>
-            <Text className="text-2xl font-extrabold text-brand-navy">
-              {shipment.trackingCode ?? 'Not booked yet'}
-            </Text>
-            <View className="flex-row gap-2">
-              <StatusBadge status={shipment.status} />
-              <PaidBadge paid={shipment.paid} />
-            </View>
-          </View>
+        <>
+          <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+            <LinearGradient
+              colors={[Brand.navy, Brand.indigo]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ borderRadius: 24 }}
+            >
+              <View className="p-6">
+                <Text className="text-xs uppercase tracking-wider text-white/50">Tracking code</Text>
+                <Pressable
+                  onPress={copyTracking}
+                  className="mt-1 flex-row items-center gap-2 active:opacity-70"
+                >
+                  <Text className="text-2xl font-extrabold text-white">
+                    {shipment.trackingCode ?? 'Not booked yet'}
+                  </Text>
+                  {shipment.trackingCode ? (
+                    <Text className="text-sm text-brand-gold">{copied ? 'Copied ✓' : 'Copy'}</Text>
+                  ) : null}
+                </Pressable>
+                <View className="mt-4 flex-row gap-2">
+                  <StatusBadge shipment={shipment} />
+                  {shipment.paid ? <PaidPill /> : null}
+                </View>
+              </View>
+            </LinearGradient>
 
-          {shipment.status !== 'CANCELLED' && shipment.status !== 'DRAFT' ? (
-            <DeliveryTimeline shipment={shipment} />
-          ) : null}
-
-          <DetailCard
-            title="Sender"
-            lines={[
-              shipment.senderName,
-              shipment.senderPhone,
-              shipment.senderAddress,
-              shipment.pickupZone ? `Zone: ${shipment.pickupZone}` : null,
-            ]}
-          />
-          <DetailCard
-            title="Receiver"
-            lines={[
-              shipment.receiverName,
-              shipment.receiverPhone,
-              shipment.receiverAddress,
-              shipment.deliveryZone ? `Zone: ${shipment.deliveryZone}` : null,
-            ]}
-          />
-          <DetailCard
-            title="Package"
-            lines={[
-              shipment.packageCategory,
-              shipment.weightKg != null ? `${shipment.weightKg} kg` : null,
-              shipment.fragile ? 'Fragile' : null,
-              shipment.description,
-            ]}
-          />
-
-          <View className="rounded-2xl bg-brand-surface p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-brand-navy">Amount</Text>
-              <Text className="text-lg font-extrabold text-brand-navy">
-                {shipment.priceEstimate != null ? formatNaira(shipment.priceEstimate) : '—'}
-              </Text>
-            </View>
-            {shipment.paymentMethod ? (
-              <Text className="mt-1 text-sm text-gray-500">
-                Paid with {shipment.paymentMethod === 'BALANCE' ? 'wallet balance' : 'card / Paystack'}
-              </Text>
+            {shipment.paid ? (
+              <DeliveryTimeline shipment={shipment} />
             ) : (
-              <Text className="mt-1 text-sm text-amber-600">Payment pending</Text>
+              <View className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <Text className="text-base font-semibold text-amber-800">Payment pending</Text>
+                <Text className="mt-1 text-sm text-amber-700">
+                  Complete payment to confirm this shipment and get it moving.
+                </Text>
+              </View>
             )}
-          </View>
-        </ScrollView>
+
+            <DetailCard
+              title="Sender"
+              lines={[
+                shipment.senderName,
+                shipment.senderPhone,
+                shipment.senderAddress,
+                shipment.pickupZone ? `Zone: ${shipment.pickupZone}` : null,
+              ]}
+            />
+            <DetailCard
+              title="Receiver"
+              lines={[
+                shipment.receiverName,
+                shipment.receiverPhone,
+                shipment.receiverAddress,
+                shipment.deliveryZone ? `Zone: ${shipment.deliveryZone}` : null,
+              ]}
+            />
+            <DetailCard
+              title="Package"
+              lines={[
+                shipment.packageCategory,
+                shipment.weightKg != null ? `${shipment.weightKg} kg` : null,
+                shipment.fragile ? 'Fragile' : null,
+                shipment.description,
+              ]}
+            />
+
+            <View className="rounded-2xl bg-brand-surface p-5">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-semibold text-brand-navy">Amount</Text>
+                <Text className="text-lg font-extrabold text-brand-navy">
+                  {shipment.priceEstimate != null ? formatNaira(shipment.priceEstimate) : '—'}
+                </Text>
+              </View>
+              {shipment.paymentMethod ? (
+                <Text className="mt-1 text-sm text-gray-500">
+                  Paid with{' '}
+                  {shipment.paymentMethod === 'BALANCE' ? 'wallet balance' : 'card / Paystack'}
+                </Text>
+              ) : null}
+            </View>
+          </ScrollView>
+
+          {!shipment.paid ? (
+            <View className="border-t border-gray-100 px-6 py-3">
+              <Button
+                label={
+                  shipment.priceEstimate != null
+                    ? `Complete payment · ${formatNaira(shipment.priceEstimate)}`
+                    : 'Complete payment'
+                }
+                onPress={() => router.push({ pathname: '/ship-local', params: { id } })}
+              />
+            </View>
+          ) : null}
+        </>
       ) : (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-gray-500">Shipment not found.</Text>
@@ -126,9 +178,7 @@ function DeliveryTimeline({ shipment }: { shipment: Shipment }) {
         return (
           <View key={stage.status} className="flex-row">
             <View className="items-center">
-              <View
-                className={`h-4 w-4 rounded-full ${reached ? 'bg-brand-blue' : 'bg-gray-200'}`}
-              />
+              <View className={`h-4 w-4 rounded-full ${reached ? 'bg-brand-blue' : 'bg-gray-200'}`} />
               {!isLast ? (
                 <View className={`my-0.5 w-0.5 flex-1 ${reached ? 'bg-brand-blue' : 'bg-gray-200'}`} />
               ) : null}
