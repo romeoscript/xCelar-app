@@ -64,12 +64,14 @@ export function DateField({
       {Platform.OS === 'ios' ? (
         <BottomSheet visible={iosOpen} onClose={() => setIosOpen(false)}>
           <Text className="text-xl font-bold text-brand-navy">{label}</Text>
-          <View className="items-center">
+          <View className="my-2">
             <DateTimePicker
               value={draft}
               mode="date"
               display="spinner"
+              themeVariant="light"
               maximumDate={maximumDate}
+              style={{ height: 200 }}
               onChange={(_event, date) => {
                 if (date) {
                   setDraft(date);

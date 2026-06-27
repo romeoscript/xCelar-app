@@ -53,10 +53,13 @@ export function SettingsRow({
       {trailing === 'chevron' ? <ChevronRightIcon size={20} color={Brand.muted} /> : null}
       {trailing === 'toggle' ? (
         <Switch
-          value={toggleValue}
+          value={toggleValue ?? false}
           onValueChange={onToggle}
           disabled={toggleDisabled}
           trackColor={{ true: Brand.blue, false: TRACK_OFF }}
+          // iOS draws the off-state track with ios_backgroundColor; without it
+          // the track is white and the switch is invisible on a white card.
+          ios_backgroundColor={TRACK_OFF}
           thumbColor="#ffffff"
         />
       ) : null}
