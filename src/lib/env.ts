@@ -13,8 +13,4 @@ export const env = {
   // Address autocomplete provider (Photon/OSM by default — keyless, returns
   // coordinates). Swap for a Google/Mapbox endpoint via EXPO_PUBLIC_PLACES_API_URL.
   placesApiUrl: process.env.EXPO_PUBLIC_PLACES_API_URL ?? 'https://photon.komoot.io/api',
-  // Cloudinary unsigned upload for invoice/proof documents. Create an unsigned
-  // upload preset in the Cloudinary dashboard and set both values in `.env`.
-  cloudinaryCloudName: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '',
-  cloudinaryUploadPreset: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? '',
 };

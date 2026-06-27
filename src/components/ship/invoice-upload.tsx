@@ -5,30 +5,26 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { DocumentIcon } from '@/components/icons';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Brand } from '@/constants/theme';
-import { isCloudinaryConfigured, uploadToCloudinary } from '@/lib/cloudinary';
 import { tapFeedback } from '@/lib/haptics';
+import { uploadFile } from '@/lib/uploads';
 
 export type InvoiceUploadProps = {
   label: string;
   required?: boolean;
   error?: string;
-  /** The uploaded document URL, or '' when none. */
+  /** The stored object key, or '' when none. */
   value: string;
-  onChange: (url: string) => void;
+  onChange: (key: string) => void;
 };
 
-/** Picks an invoice/proof document and uploads it to Cloudinary, surfacing the
- *  hosted URL to the form. Accepts images and PDFs. */
+/** Picks an invoice/proof document and uploads it to object storage, surfacing
+ *  the stored object key to the form. Accepts images and PDFs. */
 export function InvoiceUpload({ label, required, error, value, onChange }: InvoiceUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const pickAndUpload = async () => {
     if (uploading) {
-      return;
-    }
-    if (!isCloudinaryConfigured()) {
-      setUploadError('Uploads are not configured yet.');
       return;
     }
     tapFeedback();
@@ -45,12 +41,8 @@ export function InvoiceUpload({ label, required, error, value, onChange }: Invoi
     const asset = result.assets[0];
     setUploading(true);
     try {
-      const url = await uploadToCloudinary({
-        uri: asset.uri,
-        name: asset.name,
-        mimeType: asset.mimeType,
-      });
-      onChange(url);
+      const key = await uploadFile({ uri: asset.uri, mimeType: asset.mimeType }, 'invoices');
+      onChange(key);
     } catch (uploadFailure) {
       setUploadError(uploadFailure instanceof Error ? uploadFailure.message : 'Upload failed.');
     } finally {
