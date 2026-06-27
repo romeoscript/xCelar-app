@@ -35,6 +35,9 @@ export type Shipment = {
   fragile: boolean;
   priceEstimate: number | null;
   trackingCode: string | null;
+  paid: boolean;
+  paymentMethod: string | null;
+  paidAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
