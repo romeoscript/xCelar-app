@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/lib/auth-store';
+import { setupNotificationHandler } from '@/lib/notifications';
+import { usePreferencesStore } from '@/lib/preferences-store';
 import { queryClient } from '@/lib/query-client';
 
 // Keep the native splash up until the session is restored.
@@ -17,10 +19,13 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const status = useAuthStore((state) => state.status);
   const hydrate = useAuthStore((state) => state.hydrate);
+  const hydratePreferences = usePreferencesStore((state) => state.hydrate);
 
   useEffect(() => {
     void hydrate();
-  }, [hydrate]);
+    void hydratePreferences();
+    setupNotificationHandler();
+  }, [hydrate, hydratePreferences]);
 
   // Hide the splash once we know whether the user is signed in. The navigator
   // is always rendered so routes keep their navigation context — auth-gated

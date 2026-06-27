@@ -36,6 +36,13 @@
         }
       ],
       "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Xcelar to use Face ID to unlock the app."
+        }
+      ],
       [
         "expo-location",
         {

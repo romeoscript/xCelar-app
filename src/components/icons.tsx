@@ -299,3 +299,194 @@ export function CalculatorIcon({ size = 24, color = '#000000' }: IconProps) {
     </Svg>
   );
 }
+
+/** ID card — the user's profile. */
+export function IdCardIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={5} width={18} height={14} rx={2.5} stroke={color} strokeWidth={2} />
+      <Circle cx={8.5} cy={11} r={2} stroke={color} strokeWidth={2} />
+      <Path
+        d="M5.5 16c.5-1.6 1.7-2.3 3-2.3s2.5.7 3 2.3"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Path d="M14.5 10h3.5M14.5 13.5h2.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Padlock — password & security. */
+export function LockIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={4} y={10} width={16} height={11} rx={2.5} stroke={color} strokeWidth={2} />
+      <Path d="M8 10V8a4 4 0 0 1 8 0v2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Circle cx={12} cy={15} r={1.4} fill={color} />
+    </Svg>
+  );
+}
+
+/** Fingerprint — biometric unlock. */
+export function FingerprintIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M8.65 22c.21-.66.45-1.32.57-2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M14 13.12c0 2.38 0 6.38-1 8.88" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M21.8 16c.2-2 .13-5.35 0-6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Bell — push notifications. */
+export function BellIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M10.3 21a2 2 0 0 0 3.4 0" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path
+        d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** People — saved recipients. */
+export function UsersIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={9} cy={8} r={3.5} stroke={color} strokeWidth={2} />
+      <Path d="M2.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M16 5a3.5 3.5 0 0 1 0 6.5M18 14.5c2.2.6 3.5 2.2 3.5 4.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Circled "i" — about / info. */
+export function InfoIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} />
+      <Path d="M12 11v5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M12 8h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Circled "?" — FAQ / help. */
+export function HelpCircleIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} />
+      <Path
+        d="M9.5 9.5a2.5 2.5 0 0 1 4.5 1.4c0 1.6-2 2.1-2 3.1"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M12 17h.01" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Document with lines — legal text (terms / privacy). */
+export function DocumentIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="M14 3v5h5" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M9 13h6M9 17h4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Shield with a check — privacy policy. */
+export function ShieldIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3 5 6v5c0 4.4 3 7.5 7 9 4-1.5 7-4.6 7-9V6l-7-3Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="m9 12 2 2 4-4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Arrow leaving a doorway — sign out. */
+export function LogoutIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="m16 17 5-5-5-5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M21 12H9" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Handset — call us. */
+export function PhoneCallIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15.5 21A13.5 13.5 0 0 1 3 8.5 2.5 2.5 0 0 1 5.5 6h2a1 1 0 0 1 1 .76l.9 3.2a1 1 0 0 1-.27.98l-1.4 1.4a12 12 0 0 0 5.03 5.03l1.4-1.4a1 1 0 0 1 .98-.27l3.2.9a1 1 0 0 1 .76 1V18.5A2.5 2.5 0 0 1 15.5 21Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Envelope — email us. */
+export function MailIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={5} width={18} height={14} rx={2.5} stroke={color} strokeWidth={2} />
+      <Path d="m4 7 8 5 8-5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Outlined speech bubble — contact us. */
+export function MessageIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 11.5a8.38 8.38 0 0 1-9 8.5 9 9 0 0 1-3.8-.8L3 21l1.3-4.2A8.38 8.38 0 0 1 3.5 12 8.5 8.5 0 0 1 12 3.5a8.38 8.38 0 0 1 9 8Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Trash can — destructive delete. */
+export function TrashIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 6h18" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M10 11v6M14 11v6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}

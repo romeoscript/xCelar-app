@@ -86,6 +86,23 @@ export async function getShipmentByTracking(code: string): Promise<Shipment> {
   return data;
 }
 
+export type PriceBreakdown = {
+  baseFare: number;
+  distanceKm: number;
+  distanceFee: number;
+  weightFee: number;
+  fragileSurcharge: number;
+  subtotal: number;
+  vatPercent: number;
+  vat: number;
+  total: number;
+};
+
+export async function getShipmentBreakdown(id: string): Promise<PriceBreakdown | null> {
+  const { data } = await api.get<PriceBreakdown | null>(`/shipments/${id}/breakdown`);
+  return data;
+}
+
 export async function getShipment(id: string): Promise<Shipment> {
   const { data } = await api.get<Shipment>(`/shipments/${id}`);
   return data;
