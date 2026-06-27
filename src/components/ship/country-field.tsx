@@ -21,18 +21,21 @@ export type CountryFieldProps = {
   label: string;
   required?: boolean;
   error?: string;
-  /** Selected destination ISO-2 code. */
+  /** EXPORT lists destinations; IMPORT lists origins. Defaults to EXPORT. */
+  direction?: 'EXPORT' | 'IMPORT';
+  /** Selected country ISO-2 code. */
   value: string;
   onChange: (country: RateCountry) => void;
   placeholder?: string;
 };
 
-/** Destination-country picker for export shipments: searchable list of the
- *  countries we ship to, sourced from the admin rate table. */
+/** Country picker for international shipments: a searchable list of the
+ *  countries we ship to/from, sourced from the admin rate table. */
 export function CountryField({
   label,
   required,
   error,
+  direction = 'EXPORT',
   value,
   onChange,
   placeholder = 'Select country',
@@ -41,8 +44,8 @@ export function CountryField({
   const [search, setSearch] = useState('');
 
   const countriesQuery = useQuery({
-    queryKey: ['rate-countries', 'EXPORT'],
-    queryFn: () => getQuoteCountries('EXPORT'),
+    queryKey: ['rate-countries', direction],
+    queryFn: () => getQuoteCountries(direction),
   });
   const countries = useMemo(() => countriesQuery.data ?? [], [countriesQuery.data]);
   const filtered = useMemo(() => {

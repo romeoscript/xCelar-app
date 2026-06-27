@@ -25,6 +25,7 @@ import { useCountUp } from '@/hooks/use-count-up';
 import { getApiErrorMessage } from '@/lib/api-error';
 import {
   createDraft,
+  getOpenDraft,
   getQuote,
   getQuoteCountries,
   updateShipment,
@@ -138,6 +139,21 @@ export default function QuoteScreen() {
     onSuccess: (id) => router.replace({ pathname: '/ship-local', params: { id } }),
   });
 
+  // International handoff: reuse an open draft (or make one), carry over the
+  // country + weight, and continue in the export booking flow.
+  const intlBooking = useMutation({
+    mutationFn: async () => {
+      const draft = (await getOpenDraft(mode)) ?? (await createDraft(mode));
+      await updateShipment(draft.id, {
+        weightKg,
+        ...(country ? { destinationCountry: country } : {}),
+        ...(countryName ? { destinationCountryName: countryName } : {}),
+      });
+      return draft.id;
+    },
+    onSuccess: (id) => router.replace({ pathname: '/ship-export', params: { id } }),
+  });
+
   const pickupLabel = labelFor('pickup', mode, pickup.address, countryName);
   const dropoffLabel = labelFor('dropoff', mode, delivery.address, countryName);
 
@@ -230,22 +246,16 @@ export default function QuoteScreen() {
                 amount={animatedAmount}
                 breakdown={breakdown}
               />
-              {mode === 'LOCAL' ? (
-                <View className="gap-2">
-                  <Button
-                    label="Create shipment"
-                    loading={booking.isPending}
-                    onPress={() => booking.mutate()}
-                  />
-                  <Text className="text-center text-xs text-gray-400">
-                    Final price is confirmed at checkout.
-                  </Text>
-                </View>
-              ) : (
+              <View className="gap-2">
+                <Button
+                  label="Create shipment"
+                  loading={mode === 'LOCAL' ? booking.isPending : intlBooking.isPending}
+                  onPress={() => (mode === 'LOCAL' ? booking.mutate() : intlBooking.mutate())}
+                />
                 <Text className="text-center text-xs text-gray-400">
-                  International bookings are arranged by our team — contact support to ship this.
+                  Final price is confirmed at checkout.
                 </Text>
-              )}
+              </View>
             </View>
           </ScrollView>
         ) : null}

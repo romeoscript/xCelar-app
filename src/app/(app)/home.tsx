@@ -111,18 +111,20 @@ export default function HomeScreen() {
     if (busy) {
       return;
     }
-    if (key === 'export') {
+    if (key === 'export' || key === 'import') {
+      const type = key === 'export' ? 'EXPORT' : 'IMPORT';
+      const route = key === 'export' ? '/ship-export' : '/ship-import';
       setBusy(true);
       try {
-        const draft = (await getOpenDraft('EXPORT')) ?? (await createDraft('EXPORT'));
-        router.push({ pathname: '/ship-export', params: { id: draft.id } });
+        const draft = (await getOpenDraft(type)) ?? (await createDraft(type));
+        router.push({ pathname: route, params: { id: draft.id } });
       } finally {
         setBusy(false);
       }
       return;
     }
     if (key !== 'ship-local') {
-      return; // Import flow isn't built yet.
+      return;
     }
     setBusy(true);
     try {
