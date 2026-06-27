@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Toast } from '@/components/ui/toast';
 import { useAuthStore } from '@/lib/auth-store';
 import { setupNotificationHandler, syncPushToken } from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
@@ -49,6 +50,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <Stack screenOptions={{ headerShown: false }} />
+          <Toast />
           <StatusBar style="auto" />
         </QueryClientProvider>
       </SafeAreaProvider>

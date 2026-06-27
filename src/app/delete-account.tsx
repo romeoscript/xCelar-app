@@ -11,6 +11,7 @@ import { TextField } from '@/components/ui/text-field';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
 import { deleteAccount } from '@/lib/profile-api';
+import { toast } from '@/lib/toast-store';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function DeleteAccountScreen() {
     onSuccess: async () => {
       await endSession();
       router.replace('/');
+      toast('Your account has been deleted');
     },
   });
 

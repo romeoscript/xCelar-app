@@ -10,6 +10,7 @@ export type DateFieldProps = {
   value: Date | null;
   onChange: (date: Date) => void;
   placeholder?: string;
+  minimumDate?: Date;
   maximumDate?: Date;
 };
 
@@ -20,21 +21,31 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function clampToRange(date: Date, min?: Date, max?: Date): Date {
+  if (min && date < min) return min;
+  if (max && date > max) return max;
+  return date;
+}
+
 export function DateField({
   label,
   value,
   onChange,
   placeholder = 'Select date',
+  minimumDate,
   maximumDate,
 }: DateFieldProps) {
   const [iosOpen, setIosOpen] = useState(false);
-  const [draft, setDraft] = useState<Date>(value ?? DEFAULT_DATE);
+  const initialDraft = clampToRange(value ?? DEFAULT_DATE, minimumDate, maximumDate);
+  const [draft, setDraft] = useState<Date>(initialDraft);
 
   const openPicker = () => {
+    const start = clampToRange(value ?? DEFAULT_DATE, minimumDate, maximumDate);
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
-        value: value ?? DEFAULT_DATE,
+        value: start,
         mode: 'date',
+        minimumDate,
         maximumDate,
         onChange: (_event, date) => {
           if (date) {
@@ -44,7 +55,7 @@ export function DateField({
       });
       return;
     }
-    setDraft(value ?? DEFAULT_DATE);
+    setDraft(start);
     setIosOpen(true);
   };
 
@@ -70,6 +81,7 @@ export function DateField({
               mode="date"
               display="spinner"
               themeVariant="light"
+              minimumDate={minimumDate}
               maximumDate={maximumDate}
               style={{ height: 200 }}
               onChange={(_event, date) => {

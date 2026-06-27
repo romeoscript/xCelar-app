@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { TextField } from '@/components/ui/text-field';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { changePassword, type ChangePasswordInput } from '@/lib/profile-api';
+import { toast } from '@/lib/toast-store';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -24,7 +25,7 @@ export default function ChangePasswordScreen() {
   const mutation = useMutation({
     mutationFn: (input: ChangePasswordInput) => changePassword(input),
     onSuccess: () => {
-      Alert.alert('Password changed', 'Your password has been updated.');
+      toast('Password updated');
       router.back();
     },
   });

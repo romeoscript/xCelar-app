@@ -37,6 +37,14 @@ import {
 } from '@/lib/shipment-api';
 import { getWalletBalance, type VerifyResult } from '@/lib/wallet-api';
 
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 type Form = {
   senderIsSelf: boolean | null;
   senderName: string;
@@ -45,6 +53,7 @@ type Form = {
   senderLat: number | null;
   senderLng: number | null;
   pickupZone: string;
+  pickupDate: Date | null;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
@@ -66,6 +75,7 @@ const EMPTY_FORM: Form = {
   senderLat: null,
   senderLng: null,
   pickupZone: '',
+  pickupDate: null,
   receiverName: '',
   receiverPhone: '',
   receiverAddress: '',
@@ -92,6 +102,7 @@ function formFromShipment(shipment: Shipment): Form {
     senderLat: shipment.senderLat,
     senderLng: shipment.senderLng,
     pickupZone: shipment.pickupZone ?? '',
+    pickupDate: shipment.pickupDate ? new Date(shipment.pickupDate) : null,
     receiverName: shipment.receiverName ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
@@ -113,7 +124,8 @@ function isStepValid(step: number, form: Form): boolean {
         form.senderName.trim() &&
         form.senderPhone.trim().length >= 7 &&
         form.senderAddress.trim() &&
-        form.pickupZone.trim(),
+        form.pickupZone.trim() &&
+        form.pickupDate !== null,
     );
   }
   if (step === 1) {
@@ -140,6 +152,7 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
       senderPhone: form.senderPhone.trim(),
       senderAddress: form.senderAddress.trim(),
       pickupZone: form.pickupZone.trim(),
+      ...(form.pickupDate ? { pickupDate: toIsoDate(form.pickupDate) } : {}),
       ...(form.senderLat != null && form.senderLng != null
         ? { senderLat: form.senderLat, senderLng: form.senderLng }
         : {}),
@@ -454,6 +467,7 @@ function ReviewSummary({ form, price }: { form: Form; price: number | null }) {
           form.senderPhone,
           form.senderAddress,
           form.pickupZone ? `Zone: ${form.pickupZone}` : '',
+          form.pickupDate ? `Pickup: ${formatDate(form.pickupDate)}` : '',
         ].filter(Boolean)}
       />
       <SummaryCard

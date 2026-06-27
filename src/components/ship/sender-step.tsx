@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Pressable, Text, View } from 'react-native';
 
+import { DateField } from '@/components/ui/date-field';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { tapFeedback } from '@/lib/haptics';
@@ -18,6 +19,7 @@ export type SenderValues = {
   senderLat: number | null;
   senderLng: number | null;
   pickupZone: string;
+  pickupDate: Date | null;
 };
 
 export type SenderStepProps = {
@@ -84,6 +86,13 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
             value={values.pickupZone}
             onChange={(zone) => onChange({ pickupZone: zone })}
             placeholder="Select pickup zone"
+          />
+          <DateField
+            label="Pickup date"
+            value={values.pickupDate}
+            onChange={(date) => onChange({ pickupDate: date })}
+            placeholder="Select pickup date"
+            minimumDate={new Date()}
           />
           <SavedAddresses
             draft={{

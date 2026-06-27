@@ -16,6 +16,7 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { type Gender } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { updateProfile, type UpdateProfileInput } from '@/lib/profile-api';
+import { toast } from '@/lib/toast-store';
 
 const STATE_OPTIONS = NIGERIAN_STATES.map((state) => ({ value: state, label: state }));
 
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
     mutationFn: (input: UpdateProfileInput) => updateProfile(input),
     onSuccess: (updated) => {
       updateUser(updated);
+      toast('Profile updated');
       router.back();
     },
   });

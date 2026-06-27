@@ -7,6 +7,7 @@ import { PinIcon } from '@/components/icons';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { deleteSavedAddress, getSavedAddresses, type SavedAddress } from '@/lib/address-api';
+import { toast } from '@/lib/toast-store';
 
 export default function SavedAddressesScreen() {
   const queryClient = useQueryClient();
@@ -15,7 +16,10 @@ export default function SavedAddressesScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteSavedAddress(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-addresses'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-addresses'] });
+      toast('Address removed');
+    },
   });
 
   const confirmRemove = (entry: SavedAddress) => {

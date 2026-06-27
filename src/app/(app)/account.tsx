@@ -36,6 +36,7 @@ import {
   syncPushToken,
 } from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
+import { toast } from '@/lib/toast-store';
 
 function initials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
@@ -75,6 +76,7 @@ export default function AccountScreen() {
     }
     if (!next) {
       await setBiometricEnabled(false);
+      toast(`${biometricLabel} disabled`);
       return;
     }
 
@@ -90,6 +92,7 @@ export default function AccountScreen() {
       const ok = await authenticate(`Confirm it's you to enable ${biometricLabel}`);
       if (ok) {
         await setBiometricEnabled(true);
+        toast(`${biometricLabel} enabled`);
       }
     } finally {
       setBusyToggle(false);
@@ -102,6 +105,7 @@ export default function AccountScreen() {
     }
     if (!next) {
       await setPushEnabled(false);
+      toast('Push notifications off');
       // Best-effort: unregister this device's token on the server.
       void getPushToken().then((token) => {
         if (token) {
@@ -122,6 +126,7 @@ export default function AccountScreen() {
         return;
       }
       await setPushEnabled(true);
+      toast('Push notifications on');
       // Best-effort: register this device's push token with the server.
       void syncPushToken();
     } finally {

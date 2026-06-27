@@ -118,6 +118,7 @@ export default function ShipmentDetailScreen() {
                 shipment.senderPhone,
                 shipment.senderAddress,
                 shipment.pickupZone ? `Zone: ${shipment.pickupZone}` : null,
+                shipment.pickupDate ? `Pickup: ${formatDate(shipment.pickupDate)}` : null,
               ]}
             />
             <DetailCard
@@ -252,6 +253,14 @@ function CostRow({ label, value }: { label: string; value: number }) {
       <Text className="text-sm font-medium text-gray-900">{formatNaira(value)}</Text>
     </View>
   );
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 function DetailCard({ title, lines }: { title: string; lines: (string | null)[] }) {

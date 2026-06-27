@@ -22,6 +22,7 @@ export type Shipment = {
   senderLat: number | null;
   senderLng: number | null;
   pickupZone: string | null;
+  pickupDate: string | null;
   receiverName: string | null;
   receiverPhone: string | null;
   receiverAddress: string | null;
@@ -51,6 +52,7 @@ export type ShipmentUpdate = Partial<{
   senderLat: number;
   senderLng: number;
   pickupZone: string;
+  pickupDate: string;
   receiverName: string;
   receiverPhone: string;
   receiverAddress: string;
