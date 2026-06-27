@@ -64,8 +64,10 @@ type Form = {
   senderAddress: string;
   vendorName: string;
   vendorTrackingId: string;
+  ordererName: string;
+  ordererEmail: string;
+  ordererPhone: string;
   receiverName: string;
-  receiverEmail: string;
   receiverPhone: string;
   receiverAddress: string;
   receiverLat: number | null;
@@ -93,8 +95,10 @@ const EMPTY_FORM: Form = {
   senderAddress: '',
   vendorName: '',
   vendorTrackingId: '',
+  ordererName: '',
+  ordererEmail: '',
+  ordererPhone: '',
   receiverName: '',
-  receiverEmail: '',
   receiverPhone: '',
   receiverAddress: '',
   receiverLat: null,
@@ -118,8 +122,10 @@ function formFromShipment(shipment: Shipment): Form {
     senderAddress: shipment.senderAddress ?? '',
     vendorName: shipment.vendorName ?? '',
     vendorTrackingId: shipment.vendorTrackingId ?? '',
+    ordererName: shipment.ordererName ?? '',
+    ordererEmail: shipment.ordererEmail ?? '',
+    ordererPhone: shipment.ordererPhone ?? '',
     receiverName: shipment.receiverName ?? '',
-    receiverEmail: shipment.receiverEmail ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
     receiverLat: shipment.receiverLat,
@@ -139,11 +145,11 @@ function validateStep(step: number, form: Form): FormErrors {
   const errors: FormErrors = {};
   if (step === 0) {
     if (form.senderIsSelf === null) errors.senderIsSelf = 'Choose who you are ordering for';
-    if (!form.receiverName.trim()) errors.receiverName = 'Enter the contact name';
-    if (!/^\S+@\S+\.\S+$/.test(form.receiverEmail.trim())) {
-      errors.receiverEmail = 'Enter a valid email address';
+    if (!form.ordererName.trim()) errors.ordererName = 'Enter the contact name';
+    if (!/^\S+@\S+\.\S+$/.test(form.ordererEmail.trim())) {
+      errors.ordererEmail = 'Enter a valid email address';
     }
-    if (form.receiverPhone.trim().length < 7) errors.receiverPhone = 'Enter a valid phone number';
+    if (form.ordererPhone.trim().length < 7) errors.ordererPhone = 'Enter a valid phone number';
     if (!form.destinationCountry) errors.destinationCountry = 'Select the origin country';
     if (!form.vendorName.trim()) errors.vendorName = 'Enter the vendor or business name';
   }
@@ -177,9 +183,9 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
       senderAddress: form.senderAddress.trim(),
       vendorName: form.vendorName.trim(),
       ...(form.vendorTrackingId.trim() ? { vendorTrackingId: form.vendorTrackingId.trim() } : {}),
-      receiverName: form.receiverName.trim(),
-      receiverEmail: form.receiverEmail.trim(),
-      receiverPhone: form.receiverPhone.trim(),
+      ordererName: form.ordererName.trim(),
+      ordererEmail: form.ordererEmail.trim(),
+      ordererPhone: form.ordererPhone.trim(),
       currentStep: 1,
     };
   }
@@ -345,8 +351,10 @@ export default function ShipImportScreen() {
     if (partial.senderIsSelf === true) {
       patchForm({
         ...partial,
+        ordererName: form.ordererName || user?.fullName || '',
+        ordererEmail: form.ordererEmail || user?.email || '',
+        ordererPhone: form.ordererPhone || user?.phoneNumber || '',
         receiverName: form.receiverName || user?.fullName || '',
-        receiverEmail: form.receiverEmail || user?.email || '',
         receiverPhone: form.receiverPhone || user?.phoneNumber || '',
       });
     } else {

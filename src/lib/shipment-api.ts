@@ -62,6 +62,9 @@ export type ShipmentUpdate = Partial<{
   senderAddress: string;
   senderLat: number;
   senderLng: number;
+  ordererName: string;
+  ordererEmail: string;
+  ordererPhone: string;
   pickupZone: string;
   pickupDate: string;
   receiverName: string;

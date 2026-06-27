@@ -17,9 +17,9 @@ export type ImportSenderValues = {
   senderAddress: string;
   vendorName: string;
   vendorTrackingId: string;
-  receiverName: string;
-  receiverEmail: string;
-  receiverPhone: string;
+  ordererName: string;
+  ordererEmail: string;
+  ordererPhone: string;
 };
 
 export type ImportSenderStepProps = {
@@ -81,18 +81,18 @@ export function ImportSenderStep({ values, onChange, errors }: ImportSenderStepP
       <TextField
         label="Name"
         required
-        error={errors.receiverName}
-        value={values.receiverName}
-        onChangeText={(value) => onChange({ receiverName: value })}
+        error={errors.ordererName}
+        value={values.ordererName}
+        onChangeText={(value) => onChange({ ordererName: value })}
         placeholder="e.g Jane Doe"
         autoCapitalize="words"
       />
       <TextField
         label="Email address"
         required
-        error={errors.receiverEmail}
-        value={values.receiverEmail}
-        onChangeText={(value) => onChange({ receiverEmail: value })}
+        error={errors.ordererEmail}
+        value={values.ordererEmail}
+        onChangeText={(value) => onChange({ ordererEmail: value })}
         placeholder="e.g john.doe@gmail.com"
         keyboardType="email-address"
         autoCapitalize="none"
@@ -101,9 +101,9 @@ export function ImportSenderStep({ values, onChange, errors }: ImportSenderStepP
       <PhoneInput
         label="Phone number"
         required
-        error={errors.receiverPhone}
-        value={values.receiverPhone}
-        onChange={(value) => onChange({ receiverPhone: value })}
+        error={errors.ordererPhone}
+        value={values.ordererPhone}
+        onChange={(value) => onChange({ ordererPhone: value })}
       />
 
       <CountryField
