@@ -88,6 +88,8 @@ export async function getShipmentByTracking(code: string): Promise<Shipment> {
   return data;
 }
 
+export type Currency = 'NGN' | 'USD';
+
 export type PriceBreakdown = {
   baseFare: number;
   distanceKm: number;
@@ -98,6 +100,9 @@ export type PriceBreakdown = {
   vatPercent: number;
   vat: number;
   total: number;
+  currency: Currency;
+  minDays: number;
+  maxDays: number;
 };
 
 export async function getShipmentBreakdown(id: string): Promise<PriceBreakdown | null> {
@@ -105,9 +110,15 @@ export async function getShipmentBreakdown(id: string): Promise<PriceBreakdown |
   return data;
 }
 
+/** LOCAL is priced by distance; EXPORT/IMPORT by destination/origin country. */
+export type QuoteMode = ShipmentType;
+
 export type QuoteInput = {
+  mode: QuoteMode;
   weightKg: number;
   fragile?: boolean;
+  /** ISO-2 country code, for EXPORT/IMPORT modes. */
+  country?: string;
   senderLat?: number;
   senderLng?: number;
   receiverLat?: number;
@@ -117,6 +128,19 @@ export type QuoteInput = {
 /** Price estimate for arbitrary inputs, without creating a shipment. */
 export async function getQuote(input: QuoteInput): Promise<PriceBreakdown> {
   const { data } = await api.post<PriceBreakdown>('/shipments/quote', input);
+  return data;
+}
+
+export type RateCountry = {
+  code: string;
+  name: string;
+};
+
+/** Countries we ship to (EXPORT) or from (IMPORT), for the quote picker. */
+export async function getQuoteCountries(direction: 'EXPORT' | 'IMPORT'): Promise<RateCountry[]> {
+  const { data } = await api.get<RateCountry[]>('/shipments/rates/countries', {
+    params: { direction },
+  });
   return data;
 }
 
