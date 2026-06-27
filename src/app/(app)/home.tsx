@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
+import { formatNaira } from '@/lib/format';
 import { createDraft, discardShipment, getOpenDraft, type Shipment } from '@/lib/shipment-api';
 
 function greeting(): string {
@@ -112,7 +113,9 @@ export default function HomeScreen() {
           <View className="mt-7 flex-row items-end justify-between">
             <View>
               <Text className="text-xs uppercase tracking-wider text-white/50">Wallet balance</Text>
-              <Text className="mt-1 text-3xl font-extrabold text-white">₦0.00</Text>
+              <Text className="mt-1 text-3xl font-extrabold text-white">
+                {formatNaira((user?.balanceKobo ?? 0) / 100)}
+              </Text>
             </View>
             <Pressable className="rounded-full bg-brand-gold px-4 py-2 active:opacity-90">
               <Text className="text-sm font-bold text-brand-navy">Top up</Text>

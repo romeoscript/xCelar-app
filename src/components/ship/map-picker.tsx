@@ -58,8 +58,8 @@ export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerPro
     setResolving(true);
     try {
       const { lat, lng } = center.current;
-      const address = await reverseGeocode(lat, lng);
-      onConfirm({ address, latitude: lat, longitude: lng });
+      const geocode = await reverseGeocode(lat, lng);
+      onConfirm({ ...geocode, latitude: lat, longitude: lng });
     } finally {
       setResolving(false);
     }

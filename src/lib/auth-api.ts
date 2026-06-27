@@ -9,6 +9,7 @@ export type User = {
   phoneNumber: string | null;
   fullName: string;
   role: UserRole;
+  balanceKobo: number;
   createdAt: string;
 };
 

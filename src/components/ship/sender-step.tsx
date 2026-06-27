@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { Pressable, Text, View } from 'react-native';
 
 import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { tapFeedback } from '@/lib/haptics';
+import { getZones } from '@/lib/zone-api';
+import { matchZoneName } from '@/lib/zone-match';
 import { AddressField } from './address-field';
 import { SavedAddresses } from './saved-addresses';
 import { ZoneField } from './zone-field';
@@ -26,6 +29,14 @@ export type SenderStepProps = {
 
 export function SenderStep({ values, onChange, defaultName, defaultPhone }: SenderStepProps) {
   const hasChosenSender = values.senderIsSelf !== null;
+  const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
+
+  const suggestZone = (area: string | null, region: string | null) => {
+    const match = matchZoneName(zonesQuery.data ?? [], area, region);
+    if (match) {
+      onChange({ pickupZone: match });
+    }
+  };
 
   const chooseSelf = () =>
     onChange({ senderIsSelf: true, senderName: defaultName, senderPhone: defaultPhone });
@@ -86,6 +97,7 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
             onChange={(next) =>
               onChange({ senderAddress: next.address, senderLat: next.lat, senderLng: next.lng })
             }
+            onZoneHint={suggestZone}
           />
           <ZoneField
             label="Pickup zone"

@@ -1,7 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { View } from 'react-native';
 
 import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
+import { getZones } from '@/lib/zone-api';
+import { matchZoneName } from '@/lib/zone-match';
 import { AddressField } from './address-field';
 import { SavedAddresses } from './saved-addresses';
 import { ZoneField } from './zone-field';
@@ -21,6 +24,15 @@ export type ReceiverStepProps = {
 };
 
 export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
+  const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
+
+  const suggestZone = (area: string | null, region: string | null) => {
+    const match = matchZoneName(zonesQuery.data ?? [], area, region);
+    if (match) {
+      onChange({ deliveryZone: match });
+    }
+  };
+
   return (
     <View className="gap-4">
       <SavedAddresses
@@ -61,6 +73,7 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
         onChange={(next) =>
           onChange({ receiverAddress: next.address, receiverLat: next.lat, receiverLng: next.lng })
         }
+        onZoneHint={suggestZone}
       />
       <ZoneField
         label="Delivery zone"

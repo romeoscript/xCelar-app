@@ -25,10 +25,12 @@ export type AddressFieldProps = {
   label: string;
   value: AddressValue;
   onChange: (value: AddressValue) => void;
+  /** Fired when an address comes from the device/map, to suggest a zone. */
+  onZoneHint?: (area: string | null, region: string | null) => void;
 };
 
 /** Address entry with three methods: manual, current location, or map pin. */
-export function AddressField({ label, value, onChange }: AddressFieldProps) {
+export function AddressField({ label, value, onChange, onZoneHint }: AddressFieldProps) {
   const [methodSheet, setMethodSheet] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -41,6 +43,7 @@ export function AddressField({ label, value, onChange }: AddressFieldProps) {
     setManualMode(false);
     setLocationError(null);
     onChange({ address: location.address, lat: location.latitude, lng: location.longitude });
+    onZoneHint?.(location.area, location.region);
   };
 
   const useManual = () => {

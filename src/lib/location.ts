@@ -1,23 +1,32 @@
 import * as Location from 'expo-location';
 
-export type PickedLocation = {
+export type GeocodeResult = {
   address: string;
+  /** Best guess at the local-government area / district. */
+  area: string | null;
+  /** State / region. */
+  region: string | null;
+};
+
+export type PickedLocation = GeocodeResult & {
   latitude: number;
   longitude: number;
 };
 
-/** Turn coordinates into a readable address, falling back to the raw coords. */
-export async function reverseGeocode(latitude: number, longitude: number): Promise<string> {
+/** Turn coordinates into an address plus area/region, for display and zone matching. */
+export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodeResult> {
+  const fallback = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
   try {
     const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
     if (!place) {
-      return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      return { address: fallback, area: null, region: null };
     }
     const parts = [place.name, place.street, place.district, place.city, place.region];
-    const address = parts.filter(Boolean).join(', ');
-    return address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    const address = parts.filter(Boolean).join(', ') || fallback;
+    const area = place.subregion ?? place.district ?? place.city ?? null;
+    return { address, area, region: place.region ?? null };
   } catch {
-    return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    return { address: fallback, area: null, region: null };
   }
 }
 
@@ -35,6 +44,6 @@ export async function getCurrentLocation(): Promise<PickedLocation> {
     accuracy: Location.Accuracy.Balanced,
   });
   const { latitude, longitude } = position.coords;
-  const address = await reverseGeocode(latitude, longitude);
-  return { address, latitude, longitude };
+  const geocode = await reverseGeocode(latitude, longitude);
+  return { ...geocode, latitude, longitude };
 }
