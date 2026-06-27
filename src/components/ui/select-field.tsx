@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { BottomSheet } from './bottom-sheet';
+import { FieldLabel } from './field-label';
 
 export type SelectOption<T extends string> = {
   value: T;
@@ -14,6 +15,8 @@ export type SelectFieldProps<T extends string> = {
   options: SelectOption<T>[];
   onChange: (value: T) => void;
   placeholder?: string;
+  required?: boolean;
+  error?: string;
 };
 
 export function SelectField<T extends string>({
@@ -22,6 +25,8 @@ export function SelectField<T extends string>({
   options,
   onChange,
   placeholder = 'Select',
+  required,
+  error,
 }: SelectFieldProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
@@ -33,7 +38,7 @@ export function SelectField<T extends string>({
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-gray-700">{label}</Text>
+      <FieldLabel label={label} required={required} />
       <Pressable
         onPress={() => setIsOpen(true)}
         className="h-14 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 active:opacity-70"
@@ -43,6 +48,7 @@ export function SelectField<T extends string>({
         </Text>
         <Text className="text-xs text-gray-400">▾</Text>
       </Pressable>
+      {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
 
       <BottomSheet visible={isOpen} onClose={() => setIsOpen(false)}>
         <Text className="text-xl font-bold text-brand-navy">{label}</Text>

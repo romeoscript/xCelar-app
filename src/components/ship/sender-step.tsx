@@ -28,6 +28,8 @@ export type SenderStepProps = {
   errors: Partial<Record<keyof SenderValues, string>>;
   defaultName: string;
   defaultPhone: string;
+  /** Export collects the pickup date in its own step, so it hides it here. */
+  showPickupDate?: boolean;
 };
 
 export function SenderStep({
@@ -36,6 +38,7 @@ export function SenderStep({
   errors,
   defaultName,
   defaultPhone,
+  showPickupDate = true,
 }: SenderStepProps) {
   const hasChosenSender = values.senderIsSelf !== null;
   const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
@@ -105,15 +108,17 @@ export function SenderStep({
             onChange={(zone) => onChange({ pickupZone: zone })}
             placeholder="Select pickup zone"
           />
-          <DateField
-            label="Pickup date"
-            required
-            error={errors.pickupDate}
-            value={values.pickupDate}
-            onChange={(date) => onChange({ pickupDate: date })}
-            placeholder="Select pickup date"
-            minimumDate={new Date()}
-          />
+          {showPickupDate ? (
+            <DateField
+              label="Pickup date"
+              required
+              error={errors.pickupDate}
+              value={values.pickupDate}
+              onChange={(date) => onChange({ pickupDate: date })}
+              placeholder="Select pickup date"
+              minimumDate={new Date()}
+            />
+          ) : null}
           <SavedAddresses
             draft={{
               contactName: values.senderName,

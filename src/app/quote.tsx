@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,9 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddressField, type AddressValue } from '@/components/ship/address-field';
 import { QuoteResult } from '@/components/ship/quote-result';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
-import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
@@ -28,6 +28,7 @@ import {
   getQuote,
   getQuoteCountries,
   updateShipment,
+  type PriceBreakdown,
   type QuoteInput,
   type QuoteMode,
   type ShipmentUpdate,
@@ -38,8 +39,8 @@ const EMPTY_ADDRESS: AddressValue = { address: '', lat: null, lng: null };
 
 const MODE_OPTIONS: { label: string; value: QuoteMode }[] = [
   { label: 'Local', value: 'LOCAL' },
-  { label: 'From Nigeria', value: 'EXPORT' },
-  { label: 'To Nigeria', value: 'IMPORT' },
+  { label: 'Send from Nigeria', value: 'EXPORT' },
+  { label: 'Send to Nigeria', value: 'IMPORT' },
 ];
 
 export default function QuoteScreen() {
@@ -51,17 +52,13 @@ export default function QuoteScreen() {
   const [country, setCountry] = useState<string | null>(null);
   const [weight, setWeight] = useState('');
   const [fragile, setFragile] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const isIntl = mode !== 'LOCAL';
   const weightKg = Number(weight);
   const hasWeight = Number.isFinite(weightKg) && weightKg > 0;
   const hasRoute =
     pickup.lat != null && pickup.lng != null && delivery.lat != null && delivery.lng != null;
-
-  const changeMode = (next: QuoteMode) => {
-    setMode(next);
-    setCountry(null);
-  };
 
   const countriesQuery = useQuery({
     queryKey: ['quote-countries', mode],
@@ -74,32 +71,48 @@ export default function QuoteScreen() {
   }));
   const countryName = countryOptions.find((option) => option.value === country)?.label ?? null;
 
-  const quoteInput: QuoteInput = isIntl
-    ? { mode, weightKg, country: country ?? undefined }
-    : {
-        mode: 'LOCAL',
-        weightKg,
-        fragile,
-        ...(hasRoute
-          ? {
-              senderLat: pickup.lat ?? undefined,
-              senderLng: pickup.lng ?? undefined,
-              receiverLat: delivery.lat ?? undefined,
-              receiverLng: delivery.lng ?? undefined,
-            }
-          : {}),
-      };
-
-  const canQuote = hasWeight && (!isIntl || Boolean(country));
-
-  const quoteQuery = useQuery({
-    queryKey: ['quote', mode, weightKg, fragile, country, pickup.lat, pickup.lng, delivery.lat, delivery.lng],
-    queryFn: () => getQuote(quoteInput),
-    enabled: canQuote,
+  const quoteMutation = useMutation({
+    mutationFn: (input: QuoteInput) => getQuote(input),
+    onSuccess: () => setSheetOpen(true),
   });
-
-  const breakdown = quoteQuery.data ?? null;
+  const breakdown: PriceBreakdown | null = quoteMutation.data ?? null;
   const animatedAmount = useCountUp(breakdown ? Math.round(breakdown.total * 100) : 0) / 100;
+
+  const canGetQuote =
+    hasWeight && (isIntl ? Boolean(country) : Boolean(pickup.address.trim() && delivery.address.trim()));
+
+  const handleGetQuote = () => {
+    Keyboard.dismiss();
+    const input: QuoteInput = isIntl
+      ? { mode, weightKg, country: country ?? undefined }
+      : {
+          mode: 'LOCAL',
+          weightKg,
+          fragile,
+          ...(hasRoute
+            ? {
+                senderLat: pickup.lat ?? undefined,
+                senderLng: pickup.lng ?? undefined,
+                receiverLat: delivery.lat ?? undefined,
+                receiverLng: delivery.lng ?? undefined,
+              }
+            : {}),
+        };
+    quoteMutation.mutate(input);
+  };
+
+  // Changing inputs invalidates the last estimate so the sheet can't show stale data.
+  const resetQuote = () => {
+    if (quoteMutation.data || quoteMutation.isError) {
+      quoteMutation.reset();
+    }
+  };
+
+  const changeMode = (next: QuoteMode) => {
+    setMode(next);
+    setCountry(null);
+    resetQuote();
+  };
 
   const booking = useMutation({
     mutationFn: async () => {
@@ -127,10 +140,6 @@ export default function QuoteScreen() {
 
   const pickupLabel = labelFor('pickup', mode, pickup.address, countryName);
   const dropoffLabel = labelFor('dropoff', mode, delivery.address, countryName);
-  const emptyHint =
-    mode === 'LOCAL'
-      ? 'Add a weight to see your estimate'
-      : 'Pick a country and weight to see your estimate';
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -142,72 +151,105 @@ export default function QuoteScreen() {
             Get a free estimate for local, export, or import delivery.
           </Text>
 
-          <SegmentedToggle options={MODE_OPTIONS} value={mode} onChange={changeMode} />
-
-          <View className="gap-5">
-            {mode === 'LOCAL' ? (
-              <>
-                <AddressField label="Pickup address" value={pickup} onChange={setPickup} />
-                <AddressField label="Delivery address" value={delivery} onChange={setDelivery} />
-              </>
-            ) : (
-              <SelectField
-                label={mode === 'EXPORT' ? 'Destination country' : 'Origin country'}
-                value={country}
-                options={countryOptions}
-                onChange={setCountry}
-                placeholder={countriesQuery.isLoading ? 'Loading countries…' : 'Select country'}
-              />
-            )}
-
-            <TextField
-              label="Weight (kg)"
-              value={weight}
-              onChangeText={setWeight}
-              placeholder="e.g. 2.5"
-              keyboardType="decimal-pad"
-            />
-
-            {mode === 'LOCAL' ? <FragileToggle value={fragile} onChange={setFragile} /> : null}
-          </View>
-
-          {quoteQuery.isError ? (
-            <Text className="text-sm text-red-500">{getApiErrorMessage(quoteQuery.error)}</Text>
-          ) : breakdown ? (
-            <QuoteResult
-              pickupLabel={pickupLabel}
-              dropoffLabel={dropoffLabel}
-              amount={animatedAmount}
-              breakdown={breakdown}
-            />
-          ) : quoteQuery.isFetching ? (
-            <View className="flex-row items-center justify-center gap-2 py-3">
-              <ActivityIndicator color={Brand.blue} />
-              <Text className="text-sm text-gray-500">Calculating estimate…</Text>
-            </View>
-          ) : (
-            <Text className="py-3 text-center text-sm text-gray-400">{emptyHint}</Text>
-          )}
+          <SelectField label="Delivery type" value={mode} options={MODE_OPTIONS} onChange={changeMode} />
 
           {mode === 'LOCAL' ? (
-            <View className="gap-2">
-              <Button
-                label="Create shipment"
-                loading={booking.isPending}
-                disabled={!hasWeight}
-                onPress={() => booking.mutate()}
+            <>
+              <AddressField
+                label="Pickup address"
+                value={pickup}
+                onChange={(next) => {
+                  setPickup(next);
+                  resetQuote();
+                }}
               />
-              <Text className="text-center text-xs text-gray-400">
-                Final price is confirmed at checkout.
-              </Text>
-            </View>
-          ) : breakdown ? (
-            <Text className="text-center text-xs text-gray-400">
-              International bookings are arranged by our team — contact support to ship this.
-            </Text>
+              <AddressField
+                label="Delivery address"
+                value={delivery}
+                onChange={(next) => {
+                  setDelivery(next);
+                  resetQuote();
+                }}
+              />
+            </>
+          ) : (
+            <SelectField
+              label={mode === 'EXPORT' ? 'Destination country' : 'Origin country'}
+              value={country}
+              options={countryOptions}
+              onChange={(next) => {
+                setCountry(next);
+                resetQuote();
+              }}
+              placeholder={countriesQuery.isLoading ? 'Loading countries…' : 'Select country'}
+            />
+          )}
+
+          <TextField
+            label="Weight (kg)"
+            value={weight}
+            onChangeText={(text) => {
+              setWeight(text);
+              resetQuote();
+            }}
+            placeholder="e.g. 2.5"
+            keyboardType="decimal-pad"
+          />
+
+          {mode === 'LOCAL' ? (
+            <FragileToggle
+              value={fragile}
+              onChange={(next) => {
+                setFragile(next);
+                resetQuote();
+              }}
+            />
           ) : null}
+
+          {quoteMutation.isError ? (
+            <Text className="text-sm text-red-500">{getApiErrorMessage(quoteMutation.error)}</Text>
+          ) : null}
+
+          <Button
+            label="Get quote"
+            loading={quoteMutation.isPending}
+            disabled={!canGetQuote}
+            onPress={handleGetQuote}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <BottomSheet visible={sheetOpen && breakdown != null} onClose={() => setSheetOpen(false)}>
+        <Text className="text-xl font-bold text-brand-navy">Estimated quote</Text>
+        {breakdown ? (
+          <ScrollView style={{ maxHeight: 460 }} className="mt-3" showsVerticalScrollIndicator={false}>
+            <View className="gap-3 pb-1">
+              <QuoteResult
+                pickupLabel={pickupLabel}
+                dropoffLabel={dropoffLabel}
+                amount={animatedAmount}
+                breakdown={breakdown}
+              />
+              {mode === 'LOCAL' ? (
+                <View className="gap-2">
+                  <Button
+                    label="Create shipment"
+                    loading={booking.isPending}
+                    onPress={() => booking.mutate()}
+                  />
+                  <Text className="text-center text-xs text-gray-400">
+                    Final price is confirmed at checkout.
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-center text-xs text-gray-400">
+                  International bookings are arranged by our team — contact support to ship this.
+                </Text>
+              )}
+            </View>
+          </ScrollView>
+        ) : null}
+      </BottomSheet>
     </SafeAreaView>
   );
 }

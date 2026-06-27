@@ -108,8 +108,21 @@ export default function HomeScreen() {
       router.push('/quote');
       return;
     }
-    if (key !== 'ship-local' || busy) {
-      return; // Export/import flows aren't built yet.
+    if (busy) {
+      return;
+    }
+    if (key === 'export') {
+      setBusy(true);
+      try {
+        const draft = (await getOpenDraft('EXPORT')) ?? (await createDraft('EXPORT'));
+        router.push({ pathname: '/ship-export', params: { id: draft.id } });
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (key !== 'ship-local') {
+      return; // Import flow isn't built yet.
     }
     setBusy(true);
     try {
