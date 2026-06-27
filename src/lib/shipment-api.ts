@@ -91,3 +91,22 @@ export async function confirmShipment(id: string): Promise<Shipment> {
 export async function discardShipment(id: string): Promise<void> {
   await api.delete(`/shipments/${id}`);
 }
+
+export async function payWithBalance(id: string, termsAccepted: boolean): Promise<Shipment> {
+  const { data } = await api.post<Shipment>(`/shipments/${id}/pay`, {
+    method: 'balance',
+    termsAccepted,
+  });
+  return data;
+}
+
+export async function initPaystackForShipment(
+  id: string,
+  termsAccepted: boolean,
+): Promise<{ authorizationUrl: string; reference: string }> {
+  const { data } = await api.post<{ authorizationUrl: string; reference: string }>(
+    `/shipments/${id}/pay`,
+    { method: 'paystack', termsAccepted },
+  );
+  return data;
+}

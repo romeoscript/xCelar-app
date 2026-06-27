@@ -15,6 +15,8 @@ type AuthState = {
   endSession: () => Promise<void>;
   /** Restore a session on app launch by validating the stored access token. */
   hydrate: () => Promise<void>;
+  /** Merge fields into the current user (e.g. an updated wallet balance). */
+  updateUser: (partial: Partial<User>) => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -46,6 +48,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, status: 'unauthenticated' });
     }
   },
+
+  updateUser: (partial) =>
+    set((state) => (state.user ? { user: { ...state.user, ...partial } } : state)),
 }));
 
 // A failed background token refresh means the session is gone — reflect it.

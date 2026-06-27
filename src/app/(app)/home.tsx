@@ -117,7 +117,10 @@ export default function HomeScreen() {
                 {formatNaira((user?.balanceKobo ?? 0) / 100)}
               </Text>
             </View>
-            <Pressable className="rounded-full bg-brand-gold px-4 py-2 active:opacity-90">
+            <Pressable
+              onPress={() => router.push('/wallet-topup')}
+              className="rounded-full bg-brand-gold px-4 py-2 active:opacity-90"
+            >
               <Text className="text-sm font-bold text-brand-navy">Top up</Text>
             </Pressable>
           </View>

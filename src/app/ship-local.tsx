@@ -19,19 +19,23 @@ import { ReceiverStep } from '@/components/ship/receiver-step';
 import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
+import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
+import { runPaystackCheckout } from '@/lib/checkout';
 import { formatNaira } from '@/lib/format';
 import { successFeedback } from '@/lib/haptics';
 import {
-  confirmShipment,
   getShipment,
+  initPaystackForShipment,
+  payWithBalance,
   updateShipment,
   type Shipment,
   type ShipmentUpdate,
 } from '@/lib/shipment-api';
+import { getWalletBalance } from '@/lib/wallet-api';
 
 type Form = {
   senderIsSelf: boolean | null;
@@ -169,6 +173,7 @@ export default function ShipLocalScreen() {
   const queryClient = useQueryClient();
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const shipmentQuery = useQuery({
@@ -181,6 +186,8 @@ export default function ShipLocalScreen() {
   const [form, setForm] = useState<Form>(EMPTY_FORM);
   const [price, setPrice] = useState<number | null>(null);
   const [confirmed, setConfirmed] = useState<Shipment | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('balance');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -197,10 +204,25 @@ export default function ShipLocalScreen() {
     onSuccess: (updated) => setPrice(updated.priceEstimate),
   });
 
-  const confirm = useMutation({
-    mutationFn: () => confirmShipment(id as string),
-    onSuccess: (booked) => {
+  const pay = useMutation({
+    mutationFn: async (): Promise<Shipment> => {
+      if (paymentMethod === 'balance') {
+        return payWithBalance(id as string, termsAccepted);
+      }
+      const init = await initPaystackForShipment(id as string, termsAccepted);
+      const result = await runPaystackCheckout(init.authorizationUrl, init.reference);
+      if (!result.success) {
+        throw new Error('Payment was not completed. If you were charged, it will reflect shortly.');
+      }
+      return getShipment(id as string);
+    },
+    onSuccess: async (booked) => {
       successFeedback();
+      try {
+        updateUser({ balanceKobo: await getWalletBalance() });
+      } catch {
+        // Non-fatal: balance will refresh on next load.
+      }
       setConfirmed(booked);
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
@@ -340,16 +362,29 @@ export default function ShipLocalScreen() {
             </>
           ) : null}
 
-          {step === 3 ? <ReviewSummary form={form} price={price} /> : null}
+          {step === 3 ? (
+            <>
+              <ReviewSummary form={form} price={price} />
+              <PaymentOptions
+                price={price}
+                balanceKobo={user?.balanceKobo ?? 0}
+                method={paymentMethod}
+                onMethodChange={setPaymentMethod}
+                termsAccepted={termsAccepted}
+                onTermsChange={setTermsAccepted}
+                onOpenTerms={() => router.push('/terms')}
+              />
+            </>
+          ) : null}
 
-          {saveStep.isError || confirm.isError ? (
+          {saveStep.isError || pay.isError ? (
             <Text className="text-sm text-red-500">
-              {getApiErrorMessage(saveStep.error ?? confirm.error)}
+              {getApiErrorMessage(saveStep.error ?? pay.error)}
             </Text>
           ) : null}
         </ScrollView>
 
-        <View className="px-6 pb-2">
+        <View className="gap-2 px-6 pb-2">
           {step < 3 ? (
             <Button
               label="Continue"
@@ -358,7 +393,20 @@ export default function ShipLocalScreen() {
               onPress={handleContinue}
             />
           ) : (
-            <Button label="Confirm & book" loading={confirm.isPending} onPress={() => confirm.mutate()} />
+            <>
+              <Button
+                label={price != null ? `Pay ${formatNaira(price)}` : 'Pay'}
+                disabled={!termsAccepted}
+                loading={pay.isPending}
+                onPress={() => pay.mutate()}
+              />
+              <Pressable
+                onPress={() => router.back()}
+                className="items-center py-2 active:opacity-70"
+              >
+                <Text className="text-sm font-medium text-gray-500">Save as draft</Text>
+              </Pressable>
+            </>
           )}
         </View>
       </KeyboardAvoidingView>
