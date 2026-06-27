@@ -3,11 +3,17 @@ import { getRefreshToken } from './session-tokens';
 
 export type UserRole = 'USER' | 'COURIER';
 
+export type Gender = 'male' | 'female' | 'prefer_not_to_say';
+
 export type User = {
   id: string;
   email: string | null;
   phoneNumber: string | null;
   fullName: string;
+  gender: Gender | null;
+  state: string | null;
+  /** ISO date string (YYYY-MM-DD), or null if not set. */
+  dateOfBirth: string | null;
   role: UserRole;
   balanceKobo: number;
   createdAt: string;

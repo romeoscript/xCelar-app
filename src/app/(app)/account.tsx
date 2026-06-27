@@ -29,7 +29,12 @@ import {
   getBiometricLabel,
   isBiometricAvailable,
 } from '@/lib/biometrics';
-import { getPushToken, requestNotificationPermission } from '@/lib/notifications';
+import {
+  getPushToken,
+  removePushToken,
+  requestNotificationPermission,
+  syncPushToken,
+} from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
 
 function initials(fullName: string): string {
@@ -97,6 +102,12 @@ export default function AccountScreen() {
     }
     if (!next) {
       await setPushEnabled(false);
+      // Best-effort: unregister this device's token on the server.
+      void getPushToken().then((token) => {
+        if (token) {
+          void removePushToken(token);
+        }
+      });
       return;
     }
 
@@ -111,8 +122,8 @@ export default function AccountScreen() {
         return;
       }
       await setPushEnabled(true);
-      // Best-effort: register a push token where the platform supports it.
-      void getPushToken();
+      // Best-effort: register this device's push token with the server.
+      void syncPushToken();
     } finally {
       setBusyToggle(false);
     }

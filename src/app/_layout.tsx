@@ -9,7 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/lib/auth-store';
-import { setupNotificationHandler } from '@/lib/notifications';
+import { setupNotificationHandler, syncPushToken } from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
 import { queryClient } from '@/lib/query-client';
 
@@ -20,6 +20,7 @@ export default function RootLayout() {
   const status = useAuthStore((state) => state.status);
   const hydrate = useAuthStore((state) => state.hydrate);
   const hydratePreferences = usePreferencesStore((state) => state.hydrate);
+  const pushEnabled = usePreferencesStore((state) => state.pushEnabled);
 
   useEffect(() => {
     void hydrate();
@@ -35,6 +36,13 @@ export default function RootLayout() {
       void SplashScreen.hideAsync();
     }
   }, [status]);
+
+  // Keep the device's push token registered while signed in with push enabled.
+  useEffect(() => {
+    if (status === 'authenticated' && pushEnabled) {
+      void syncPushToken();
+    }
+  }, [status, pushEnabled]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

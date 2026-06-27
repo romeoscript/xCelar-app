@@ -2,6 +2,8 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { api } from './api';
+
 /**
  * How foreground notifications are presented. Set once on app launch.
  */
@@ -51,3 +53,25 @@ export async function getPushToken(): Promise<string | null> {
     return null;
   }
 }
+
+/** Save this device's push token on the server so it can receive notifications. */
+export async function registerPushToken(token: string): Promise<void> {
+  await api.post('/notifications/token', { token, platform: Platform.OS });
+}
+
+export async function removePushToken(token: string): Promise<void> {
+  await api.delete('/notifications/token', { data: { token } });
+}
+
+/**
+ * Fetch this device's push token and register it on the server. Returns the
+ * token, or null when one isn't available (e.g. Expo Go) — a safe no-op.
+ */
+export async function syncPushToken(): Promise<string | null> {
+  const token = await getPushToken();
+  if (token) {
+    await registerPushToken(token);
+  }
+  return token;
+}
+

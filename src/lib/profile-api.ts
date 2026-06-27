@@ -1,11 +1,15 @@
 import { api } from './api';
-import { type User } from './auth-api';
+import { type Gender, type User } from './auth-api';
 import { getRefreshToken } from './session-tokens';
 
 export type UpdateProfileInput = {
   fullName?: string;
   email?: string;
   phoneNumber?: string;
+  gender?: Gender;
+  state?: string;
+  /** ISO date string (YYYY-MM-DD). */
+  dateOfBirth?: string;
 };
 
 export async function updateProfile(input: UpdateProfileInput): Promise<User> {
