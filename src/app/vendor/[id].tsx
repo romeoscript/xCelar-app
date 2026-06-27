@@ -1,20 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRef } from 'react';
+import { ActivityIndicator, Animated, Image, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MinusIcon, PlusIcon, StarIcon, StorefrontIcon, VerifiedBadgeIcon } from '@/components/icons';
-import { ScreenHeader } from '@/components/ui/screen-header';
+import {
+  ChevronLeftIcon,
+  MinusIcon,
+  PlusIcon,
+  StarIcon,
+  StorefrontIcon,
+  VerifiedBadgeIcon,
+} from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { cartCount, cartSubtotalKobo, useCartStore } from '@/lib/cart-store';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getVendor, type Product, type Vendor } from '@/lib/marketplace-api';
 
+const HEADER_HEIGHT = 280;
+
 export default function VendorScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const vendorQuery = useQuery({
     queryKey: ['vendor', id],
@@ -30,70 +41,113 @@ export default function VendorScreen() {
   }
 
   const vendor = vendorQuery.data;
-  const sections = groupBySection(vendor?.products ?? []);
   const showCartBar = cartVendor?.id === id && lines.length > 0;
 
+  if (vendorQuery.isLoading || !vendor) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <StatusBar style="dark" />
+        <ActivityIndicator color={Brand.blue} />
+      </View>
+    );
+  }
+
+  const sections = groupBySection(vendor.products);
+
+  // Parallax: drift the cover at half-speed on scroll up, stretch it on pull-down.
+  const coverStyle = {
+    transform: [
+      {
+        translateY: scrollY.interpolate({
+          inputRange: [0, HEADER_HEIGHT],
+          outputRange: [0, HEADER_HEIGHT * 0.5],
+          extrapolate: 'clamp' as const,
+        }),
+      },
+      {
+        scale: scrollY.interpolate({
+          inputRange: [-HEADER_HEIGHT, 0],
+          outputRange: [2, 1],
+          extrapolateRight: 'clamp' as const,
+        }),
+      },
+    ],
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
-      <ScreenHeader title={vendor?.name ?? 'Vendor'} />
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+          useNativeDriver: true,
+        })}
+        contentContainerStyle={{ paddingBottom: 140 }}
+      >
+        <Animated.View style={[{ height: HEADER_HEIGHT, backgroundColor: '#F2F4F8' }, coverStyle]}>
+          {vendor.coverImageUrl ? (
+            <Image source={{ uri: vendor.coverImageUrl }} className="h-full w-full" resizeMode="cover" />
+          ) : (
+            <View className="h-full w-full items-center justify-center">
+              <StorefrontIcon size={40} color={Brand.muted} />
+            </View>
+          )}
+          {!vendor.isOpen ? (
+            <View className="absolute inset-0 items-center justify-center bg-black/55">
+              <Text className="text-lg font-bold text-white">Closed</Text>
+            </View>
+          ) : null}
+        </Animated.View>
 
-      {vendorQuery.isLoading || !vendor ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Brand.blue} />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120, gap: 16 }}>
-          <View className="h-40 overflow-hidden rounded-2xl bg-brand-surface">
-            {vendor.coverImageUrl ? (
-              <Image source={{ uri: vendor.coverImageUrl }} className="h-40 w-full" resizeMode="cover" />
-            ) : (
-              <View className="h-40 w-full items-center justify-center">
-                <StorefrontIcon size={32} color={Brand.muted} />
-              </View>
-            )}
-            {!vendor.isOpen ? (
-              <View className="absolute inset-0 items-center justify-center bg-black/55">
-                <Text className="text-base font-bold text-white">Closed</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View className="gap-1">
-            <View className="flex-row items-center gap-1.5">
-              <Text className="text-xl font-extrabold text-brand-navy">{vendor.name}</Text>
-              {vendor.isVerified ? <VerifiedBadgeIcon size={18} color={Brand.blue} /> : null}
+        <View className="-mt-8 gap-5 rounded-t-3xl bg-white px-6 pb-2 pt-6">
+          <View className="gap-1.5">
+            <View className="flex-row items-center gap-2">
+              <Text className="text-2xl font-extrabold text-brand-navy">{vendor.name}</Text>
+              {vendor.isVerified ? <VerifiedBadgeIcon size={20} color={Brand.blue} /> : null}
             </View>
             <View className="flex-row items-center gap-3">
               {vendor.rating != null ? (
                 <View className="flex-row items-center gap-1">
-                  <StarIcon size={14} color={Brand.gold} />
-                  <Text className="text-sm font-medium text-gray-700">{vendor.rating.toFixed(1)}</Text>
+                  <StarIcon size={15} color={Brand.gold} />
+                  <Text className="text-sm font-semibold text-gray-700">{vendor.rating.toFixed(1)}</Text>
                 </View>
               ) : null}
               {vendor.etaLabel ? <Text className="text-sm text-gray-500">{vendor.etaLabel}</Text> : null}
               <Text className="text-sm text-gray-400">· {vendor.category}</Text>
             </View>
             {vendor.description ? (
-              <Text className="text-sm text-gray-500">{vendor.description}</Text>
+              <Text className="text-sm leading-5 text-gray-500">{vendor.description}</Text>
             ) : null}
           </View>
 
           {sections.map((section) => (
             <View key={section.title} className="gap-2">
               {section.title ? (
-                <Text className="text-base font-bold text-brand-navy">{section.title}</Text>
+                <Text className="text-lg font-bold text-brand-navy">{section.title}</Text>
               ) : null}
               {section.products.map((product) => (
                 <ProductRow key={product.id} vendor={vendor} product={product} />
               ))}
             </View>
           ))}
-        </ScrollView>
-      )}
+        </View>
+      </Animated.ScrollView>
+
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={8}
+        style={{ top: insets.top + 8 }}
+        className="absolute left-4 h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-80"
+      >
+        <ChevronLeftIcon size={22} color={Brand.navy} />
+      </Pressable>
 
       {showCartBar ? (
-        <View className="absolute inset-x-0 bottom-0 border-t border-gray-100 bg-white px-6 pb-8 pt-3">
+        <View
+          style={{ paddingBottom: insets.bottom + 12 }}
+          className="absolute inset-x-0 bottom-0 border-t border-gray-100 bg-white px-6 pt-3"
+        >
           <Pressable
             onPress={() => router.push('/cart')}
             className="flex-row items-center justify-between rounded-full bg-brand-blue px-5 py-4 active:opacity-90"
@@ -105,7 +159,7 @@ export default function VendorScreen() {
           </Pressable>
         </View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 

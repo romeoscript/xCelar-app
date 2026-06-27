@@ -13,15 +13,20 @@ import {
   StorefrontIcon,
   VerifiedBadgeIcon,
 } from '@/components/icons';
+import { PromoCarousel } from '@/components/marketplace/promo-carousel';
 import { Brand } from '@/constants/theme';
 import { useFavoritesStore } from '@/lib/favorites-store';
 import { tapFeedback } from '@/lib/haptics';
 import { getVendors, type Vendor } from '@/lib/marketplace-api';
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Restaurant: '🍔',
-  Grocery: '🛒',
-  Pharmacy: '💊',
+const categoryImage = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=200&q=80&auto=format&fit=crop`;
+
+const ALL_IMAGE = categoryImage('1546069901-ba9599a7e63c');
+const CATEGORY_IMAGE: Record<string, string> = {
+  Restaurant: categoryImage('1504674900247-0877df9cc836'),
+  Grocery: categoryImage('1542838132-92c53300491e'),
+  Pharmacy: categoryImage('1587854692152-cbe660dbde88'),
 };
 
 export default function MarketplaceScreen() {
@@ -73,11 +78,11 @@ export default function MarketplaceScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 24, gap: 18 }}
             >
-              <CategoryCircle emoji="🍽️" label="All" active={category === null} onPress={() => setCategory(null)} />
+              <CategoryCircle image={ALL_IMAGE} label="All" active={category === null} onPress={() => setCategory(null)} />
               {categories.map((item) => (
                 <CategoryCircle
                   key={item}
-                  emoji={CATEGORY_EMOJI[item] ?? '🏪'}
+                  image={CATEGORY_IMAGE[item] ?? ALL_IMAGE}
                   label={item}
                   active={category === item}
                   onPress={() => setCategory(item)}
@@ -85,12 +90,7 @@ export default function MarketplaceScreen() {
               ))}
             </ScrollView>
 
-            <View className="mx-6 overflow-hidden rounded-2xl bg-brand-gold-tint p-5">
-              <Text className="text-xs font-medium text-brand-navy/70">Your welcome gift</Text>
-              <Text className="mt-1 text-lg font-extrabold text-brand-navy">
-                Free delivery on your first order
-              </Text>
-            </View>
+            <PromoCarousel />
 
             <Text className="px-6 pt-1 text-lg font-bold text-brand-navy">
               {category ?? 'All partners'}
@@ -115,24 +115,22 @@ export default function MarketplaceScreen() {
 }
 
 function CategoryCircle({
-  emoji,
+  image,
   label,
   active,
   onPress,
 }: {
-  emoji: string;
+  image: string;
   label: string;
   active: boolean;
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} className="items-center gap-1.5 active:opacity-70" style={{ width: 64 }}>
+    <Pressable onPress={onPress} className="items-center gap-1.5 active:opacity-70" style={{ width: 68 }}>
       <View
-        className={`h-16 w-16 items-center justify-center rounded-full ${
-          active ? 'bg-brand-blue-tint' : 'bg-brand-surface'
-        }`}
+        className={`h-16 w-16 overflow-hidden rounded-full ${active ? 'border-2 border-brand-blue' : ''}`}
       >
-        <Text className="text-3xl">{emoji}</Text>
+        <Image source={{ uri: image }} className="h-full w-full" resizeMode="cover" />
       </View>
       <Text
         className={`text-center text-xs font-medium ${active ? 'text-brand-blue' : 'text-gray-600'}`}
