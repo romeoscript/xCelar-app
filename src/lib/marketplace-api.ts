@@ -83,6 +83,13 @@ export async function getVendor(id: string): Promise<VendorDetail> {
   return data;
 }
 
+export type ProductDetail = { product: Product; vendor: Vendor };
+
+export async function getProduct(id: string): Promise<ProductDetail> {
+  const { data } = await api.get<ProductDetail>(`/marketplace/products/${id}`);
+  return data;
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const { data } = await api.post<Order>('/marketplace/orders', input);
   return data;

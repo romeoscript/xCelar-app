@@ -97,6 +97,7 @@ export default function CartScreen() {
   }
 
   const subtotal = cartSubtotalKobo(lines);
+  const vendorClosed = !vendor.isOpen;
   const belowMinimum = subtotal < (vendor.minOrderKobo ?? 0);
   const freeThreshold = vendor.freeDeliveryThresholdKobo;
   const freeDeliveryHint =
@@ -193,7 +194,9 @@ export default function CartScreen() {
             </Text>
           </View>
 
-          {belowMinimum ? (
+          {vendorClosed ? (
+            <Text className="text-sm text-red-500">{vendor.name} is closed right now.</Text>
+          ) : belowMinimum ? (
             <Text className="text-sm text-red-500">
               Minimum order for this vendor is {formatNaira((vendor.minOrderKobo ?? 0) / 100)}.
             </Text>
@@ -204,7 +207,7 @@ export default function CartScreen() {
           <Button
             label="Place order"
             loading={placeOrder.isPending}
-            disabled={belowMinimum}
+            disabled={belowMinimum || vendorClosed}
             onPress={handlePlaceOrder}
           />
         </ScrollView>

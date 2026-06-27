@@ -1,29 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Image,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { useRef } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Image, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ChevronLeftIcon,
+  ChevronRightIcon,
   MinusIcon,
   PlusIcon,
   StarIcon,
   StorefrontIcon,
   VerifiedBadgeIcon,
 } from '@/components/icons';
+import { ProductImageCarousel } from '@/components/marketplace/product-image-carousel';
 import { Brand } from '@/constants/theme';
 import { cartCount, cartSubtotalKobo, useCartStore } from '@/lib/cart-store';
 import { formatNaira } from '@/lib/format';
@@ -133,6 +124,15 @@ export default function VendorScreen() {
             ) : null}
           </View>
 
+          {!vendor.isOpen ? (
+            <View className="rounded-2xl bg-gray-100 px-4 py-3">
+              <Text className="text-sm font-medium text-gray-600">
+                This vendor is currently closed. You can browse the menu, but ordering reopens during
+                their opening hours.
+              </Text>
+            </View>
+          ) : null}
+
           {sections.map((section) => (
             <View key={section.title} className="gap-2">
               {section.title ? (
@@ -175,53 +175,8 @@ export default function VendorScreen() {
   );
 }
 
-function ProductImageCarousel({ images }: { images: string[] }) {
-  const [index, setIndex] = useState(0);
-
-  if (images.length === 0) {
-    return (
-      <View className="h-44 w-full items-center justify-center bg-brand-surface">
-        <StorefrontIcon size={28} color={Brand.muted} />
-      </View>
-    );
-  }
-
-  const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setIndex(Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH));
-  };
-
-  return (
-    <View>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScrollEnd}
-      >
-        {images.map((uri) => (
-          <Image
-            key={uri}
-            source={{ uri }}
-            style={{ width: CARD_WIDTH, height: 176 }}
-            resizeMode="cover"
-          />
-        ))}
-      </ScrollView>
-      {images.length > 1 ? (
-        <View className="absolute bottom-2 left-0 right-0 flex-row justify-center gap-1.5">
-          {images.map((uri, position) => (
-            <View
-              key={uri}
-              className={`h-1.5 rounded-full ${position === index ? 'w-4 bg-white' : 'w-1.5 bg-white/60'}`}
-            />
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 function ProductRow({ vendor, product }: { vendor: Vendor; product: Product }) {
+  const router = useRouter();
   const lines = useCartStore((state) => state.lines);
   const cartVendor = useCartStore((state) => state.vendor);
   const add = useCartStore((state) => state.add);
@@ -233,19 +188,30 @@ function ProductRow({ vendor, product }: { vendor: Vendor; product: Product }) {
 
   return (
     <View className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-      <ProductImageCarousel images={product.imageUrls} />
-      <View className="gap-1 p-4">
-        <Text className="text-base font-bold text-brand-navy">{product.name}</Text>
-        {product.description ? (
-          <Text className="text-sm text-gray-500" numberOfLines={2}>
-            {product.description}
-          </Text>
-        ) : null}
-        <View className="mt-1 flex-row items-center justify-between">
+      <ProductImageCarousel images={product.imageUrls} width={CARD_WIDTH} height={176} />
+      <Pressable onPress={() => router.push(`/product/${product.id}`)} className="active:opacity-70">
+        <View className="gap-1 px-4 pt-4">
+          <View className="flex-row items-center gap-1">
+            <Text className="flex-1 text-base font-bold text-brand-navy">{product.name}</Text>
+            <ChevronRightIcon size={18} color={Brand.muted} />
+          </View>
+          {product.description ? (
+            <Text className="text-sm text-gray-500" numberOfLines={2}>
+              {product.description}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+      <View className="px-4 pb-4 pt-2">
+        <View className="flex-row items-center justify-between">
           <Text className="text-base font-extrabold text-brand-navy">
             {formatNaira(product.priceKobo / 100)}
           </Text>
-          {quantity > 0 ? (
+          {!vendor.isOpen ? (
+            <View className="rounded-full bg-gray-100 px-4 py-2">
+              <Text className="text-sm font-semibold text-gray-400">Closed</Text>
+            </View>
+          ) : quantity > 0 ? (
             <View className="flex-row items-center gap-3">
               <Stepper icon={MinusIcon} onPress={() => setQuantity(product.id, quantity - 1)} />
               <Text className="w-5 text-center text-base font-bold text-brand-navy">{quantity}</Text>

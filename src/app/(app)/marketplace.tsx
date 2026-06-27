@@ -56,31 +56,31 @@ export default function MarketplaceScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar style="dark" />
+      <View className="gap-3 px-6 pb-3 pt-2">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-2xl font-extrabold text-brand-navy">Marketplace</Text>
+          <Pressable onPress={() => router.push('/orders')} hitSlop={8} className="active:opacity-70">
+            <Text className="text-sm font-semibold text-brand-blue">My orders</Text>
+          </Pressable>
+        </View>
+        <View className="flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
+          <SearchIcon size={20} color={Brand.muted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search partners"
+            placeholderTextColor={Brand.muted}
+            className="flex-1 text-base text-gray-900"
+          />
+        </View>
+      </View>
       <FlatList
         data={shown}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         ListHeaderComponent={
-          <View className="gap-4">
-            <View className="flex-row items-center justify-between px-6 pt-2">
-              <Text className="text-2xl font-extrabold text-brand-navy">Marketplace</Text>
-              <Pressable onPress={() => router.push('/orders')} hitSlop={8} className="active:opacity-70">
-                <Text className="text-sm font-semibold text-brand-blue">My orders</Text>
-              </Pressable>
-            </View>
-
-            <View className="mx-6 flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
-              <SearchIcon size={20} color={Brand.muted} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search partners"
-                placeholderTextColor={Brand.muted}
-                className="flex-1 text-base text-gray-900"
-              />
-            </View>
-
+          <View className="gap-4 pt-2">
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
