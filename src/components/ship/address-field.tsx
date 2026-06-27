@@ -25,6 +25,7 @@ export type AddressValue = {
 export type AddressFieldProps = {
   label: string;
   required?: boolean;
+  error?: string;
   value: AddressValue;
   onChange: (value: AddressValue) => void;
   /** Fired when an address comes from the device/map, to suggest a zone. */
@@ -32,7 +33,14 @@ export type AddressFieldProps = {
 };
 
 /** Address entry with three methods: manual, current location, or map pin. */
-export function AddressField({ label, required, value, onChange, onZoneHint }: AddressFieldProps) {
+export function AddressField({
+  label,
+  required,
+  error,
+  value,
+  onChange,
+  onZoneHint,
+}: AddressFieldProps) {
   const [methodSheet, setMethodSheet] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -112,7 +120,9 @@ export function AddressField({ label, required, value, onChange, onZoneHint }: A
         </Pressable>
       )}
 
-      {locationError ? <Text className="text-sm text-red-500">{locationError}</Text> : null}
+      {locationError || error ? (
+        <Text className="text-sm text-red-500">{locationError ?? error}</Text>
+      ) : null}
 
       <BottomSheet visible={methodSheet} onClose={() => setMethodSheet(false)}>
         <Text className="text-xl font-bold text-brand-navy">Set address</Text>

@@ -9,6 +9,7 @@ import { FieldLabel } from './field-label';
 export type DateFieldProps = {
   label: string;
   required?: boolean;
+  error?: string;
   value: Date | null;
   onChange: (date: Date) => void;
   placeholder?: string;
@@ -32,6 +33,7 @@ function clampToRange(date: Date, min?: Date, max?: Date): Date {
 export function DateField({
   label,
   required,
+  error,
   value,
   onChange,
   placeholder = 'Select date',
@@ -74,6 +76,7 @@ export function DateField({
         </Text>
         <Text className="text-xs text-gray-400">▾</Text>
       </Pressable>
+      {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
 
       {Platform.OS === 'ios' ? (
         <BottomSheet visible={iosOpen} onClose={() => setIosOpen(false)}>

@@ -118,31 +118,32 @@ function formFromShipment(shipment: Shipment): Form {
   };
 }
 
-function isStepValid(step: number, form: Form): boolean {
+export type FormErrors = Partial<Record<keyof Form, string>>;
+
+function validateStep(step: number, form: Form): FormErrors {
+  const errors: FormErrors = {};
   if (step === 0) {
-    return Boolean(
-      form.senderIsSelf !== null &&
-        form.senderName.trim() &&
-        form.senderPhone.trim().length >= 7 &&
-        form.senderAddress.trim() &&
-        form.pickupZone.trim() &&
-        form.pickupDate !== null,
-    );
+    if (form.senderIsSelf === null) errors.senderIsSelf = 'Choose who is sending this package';
+    if (!form.senderName.trim()) errors.senderName = "Enter the sender's name";
+    if (form.senderPhone.trim().length < 7) errors.senderPhone = 'Enter a valid phone number';
+    if (!form.senderAddress.trim()) errors.senderAddress = 'Add the pickup address';
+    if (!form.pickupZone.trim()) errors.pickupZone = 'Select a pickup zone';
+    if (form.pickupDate === null) errors.pickupDate = 'Select a pickup date';
   }
   if (step === 1) {
-    return Boolean(
-      form.receiverName.trim() &&
-        form.receiverPhone.trim().length >= 7 &&
-        form.receiverAddress.trim() &&
-        form.deliveryZone.trim(),
-    );
+    if (!form.receiverName.trim()) errors.receiverName = "Enter the receiver's name";
+    if (form.receiverPhone.trim().length < 7) errors.receiverPhone = 'Enter a valid phone number';
+    if (!form.receiverAddress.trim()) errors.receiverAddress = 'Add the delivery address';
+    if (!form.deliveryZone.trim()) errors.deliveryZone = 'Select a delivery zone';
   }
   if (step === 2) {
-    return Boolean(
-      form.packageCategory && Number(form.weightKg) > 0 && form.declaredValue.trim() !== '' && Number(form.declaredValue) >= 0,
-    );
+    if (!form.packageCategory) errors.packageCategory = 'Select a package category';
+    if (!(Number(form.weightKg) > 0)) errors.weightKg = 'Enter the weight in kg';
+    if (form.declaredValue.trim() === '' || !(Number(form.declaredValue) >= 0)) {
+      errors.declaredValue = 'Enter the declared value';
+    }
   }
-  return true;
+  return errors;
 }
 
 function patchForStep(step: number, form: Form): ShipmentUpdate {
@@ -198,6 +199,7 @@ export default function ShipLocalScreen() {
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [price, setPrice] = useState<number | null>(null);
   const [confirmed, setConfirmed] = useState<Shipment | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('balance');
@@ -284,13 +286,28 @@ export default function ShipLocalScreen() {
     );
   }
 
-  const setField = (key: keyof Form) => (value: string) =>
-    setForm((current) => ({ ...current, [key]: value }));
+  const clearErrors = (keys: (keyof Form)[]) =>
+    setErrors((current) => {
+      if (!keys.some((key) => key in current)) {
+        return current;
+      }
+      const next = { ...current };
+      keys.forEach((key) => delete next[key]);
+      return next;
+    });
 
-  const patchForm = (partial: Partial<Form>) =>
+  const setField = (key: keyof Form) => (value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    clearErrors([key]);
+  };
+
+  const patchForm = (partial: Partial<Form>) => {
     setForm((current) => ({ ...current, ...partial }));
+    clearErrors(Object.keys(partial) as (keyof Form)[]);
+  };
 
   const handleBack = () => {
+    setErrors({});
     if (step === 0) {
       router.back();
     } else {
@@ -299,6 +316,12 @@ export default function ShipLocalScreen() {
   };
 
   const handleContinue = async () => {
+    const stepErrors = validateStep(step, form);
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      return;
+    }
+    setErrors({});
     try {
       await saveStep.mutateAsync(patchForStep(step, form));
       setStep((current) => current + 1);
@@ -343,12 +366,15 @@ export default function ShipLocalScreen() {
             <SenderStep
               values={form}
               onChange={patchForm}
+              errors={errors}
               defaultName={user?.fullName ?? ''}
               defaultPhone={user?.phoneNumber ?? ''}
             />
           ) : null}
 
-          {step === 1 ? <ReceiverStep values={form} onChange={patchForm} /> : null}
+          {step === 1 ? (
+            <ReceiverStep values={form} onChange={patchForm} errors={errors} />
+          ) : null}
 
           {step === 2 ? (
             <>
@@ -359,10 +385,14 @@ export default function ShipLocalScreen() {
                   value={form.packageCategory}
                   onChange={setField('packageCategory')}
                 />
+                {errors.packageCategory ? (
+                  <Text className="text-sm text-red-500">{errors.packageCategory}</Text>
+                ) : null}
               </View>
               <TextField
                 label="Weight (kg)"
                 required
+                error={errors.weightKg}
                 value={form.weightKg}
                 onChangeText={setField('weightKg')}
                 placeholder="e.g. 2.5"
@@ -371,6 +401,7 @@ export default function ShipLocalScreen() {
               <TextField
                 label="Declared value (₦)"
                 required
+                error={errors.declaredValue}
                 value={form.declaredValue}
                 onChangeText={setField('declaredValue')}
                 placeholder="e.g. 50000"
@@ -425,12 +456,7 @@ export default function ShipLocalScreen() {
 
         <View className="gap-2 px-6 pb-2">
           {step < 3 ? (
-            <Button
-              label="Continue"
-              disabled={!isStepValid(step, form)}
-              loading={saveStep.isPending}
-              onPress={handleContinue}
-            />
+            <Button label="Continue" loading={saveStep.isPending} onPress={handleContinue} />
           ) : (
             <>
               <Button

@@ -10,6 +10,7 @@ import { getZones } from '@/lib/zone-api';
 export type ZoneFieldProps = {
   label: string;
   required?: boolean;
+  error?: string;
   value: string;
   onChange: (zone: string) => void;
   placeholder?: string;
@@ -18,6 +19,7 @@ export type ZoneFieldProps = {
 export function ZoneField({
   label,
   required,
+  error,
   value,
   onChange,
   placeholder = 'Select zone',
@@ -49,6 +51,7 @@ export function ZoneField({
         </Text>
         <Text className="text-xs text-gray-400">▾</Text>
       </Pressable>
+      {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
 
       <BottomSheet visible={sheetOpen} onClose={close}>
         <Text className="text-xl font-bold text-brand-navy">{label}</Text>

@@ -25,11 +25,18 @@ export type SenderValues = {
 export type SenderStepProps = {
   values: SenderValues;
   onChange: (partial: Partial<SenderValues>) => void;
+  errors: Partial<Record<keyof SenderValues, string>>;
   defaultName: string;
   defaultPhone: string;
 };
 
-export function SenderStep({ values, onChange, defaultName, defaultPhone }: SenderStepProps) {
+export function SenderStep({
+  values,
+  onChange,
+  errors,
+  defaultName,
+  defaultPhone,
+}: SenderStepProps) {
   const hasChosenSender = values.senderIsSelf !== null;
   const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
 
@@ -57,6 +64,9 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           <ChoiceCard label="It's me" hint="Use my details" active={values.senderIsSelf === true} onPress={chooseSelf} />
           <ChoiceCard label="Someone else" hint="Enter details" active={values.senderIsSelf === false} onPress={chooseOther} />
         </View>
+        {errors.senderIsSelf ? (
+          <Text className="text-sm text-red-500">{errors.senderIsSelf}</Text>
+        ) : null}
       </View>
 
       {hasChosenSender ? (
@@ -64,6 +74,7 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           <TextField
             label="Sender's name"
             required
+            error={errors.senderName}
             value={values.senderName}
             onChangeText={(value) => onChange({ senderName: value })}
             placeholder="Full name"
@@ -72,12 +83,14 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           <PhoneInput
             label="Sender's phone"
             required
+            error={errors.senderPhone}
             value={values.senderPhone}
             onChange={(value) => onChange({ senderPhone: value })}
           />
           <AddressField
             label="Pickup address"
             required
+            error={errors.senderAddress}
             value={{ address: values.senderAddress, lat: values.senderLat, lng: values.senderLng }}
             onChange={(next) =>
               onChange({ senderAddress: next.address, senderLat: next.lat, senderLng: next.lng })
@@ -87,6 +100,7 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           <ZoneField
             label="Pickup zone"
             required
+            error={errors.pickupZone}
             value={values.pickupZone}
             onChange={(zone) => onChange({ pickupZone: zone })}
             placeholder="Select pickup zone"
@@ -94,6 +108,7 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
           <DateField
             label="Pickup date"
             required
+            error={errors.pickupDate}
             value={values.pickupDate}
             onChange={(date) => onChange({ pickupDate: date })}
             placeholder="Select pickup date"

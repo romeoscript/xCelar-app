@@ -21,9 +21,10 @@ export type ReceiverValues = {
 export type ReceiverStepProps = {
   values: ReceiverValues;
   onChange: (partial: Partial<ReceiverValues>) => void;
+  errors: Partial<Record<keyof ReceiverValues, string>>;
 };
 
-export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
+export function ReceiverStep({ values, onChange, errors }: ReceiverStepProps) {
   const zonesQuery = useQuery({ queryKey: ['zones'], queryFn: getZones });
 
   const suggestZone = (area: string | null, region: string | null) => {
@@ -38,6 +39,7 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
       <TextField
         label="Receiver's name"
         required
+        error={errors.receiverName}
         value={values.receiverName}
         onChangeText={(value) => onChange({ receiverName: value })}
         placeholder="Full name"
@@ -46,12 +48,14 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
       <PhoneInput
         label="Receiver's phone"
         required
+        error={errors.receiverPhone}
         value={values.receiverPhone}
         onChange={(value) => onChange({ receiverPhone: value })}
       />
       <AddressField
         label="Delivery address"
         required
+        error={errors.receiverAddress}
         value={{ address: values.receiverAddress, lat: values.receiverLat, lng: values.receiverLng }}
         onChange={(next) =>
           onChange({ receiverAddress: next.address, receiverLat: next.lat, receiverLng: next.lng })
@@ -61,6 +65,7 @@ export function ReceiverStep({ values, onChange }: ReceiverStepProps) {
       <ZoneField
         label="Delivery zone"
         required
+        error={errors.deliveryZone}
         value={values.deliveryZone}
         onChange={(zone) => onChange({ deliveryZone: zone })}
         placeholder="Select delivery zone"
