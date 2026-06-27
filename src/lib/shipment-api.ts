@@ -73,6 +73,11 @@ export async function getOpenDraft(type: ShipmentType): Promise<Shipment | null>
   return data.shipment;
 }
 
+export async function getShipments(): Promise<Shipment[]> {
+  const { data } = await api.get<Shipment[]>('/shipments');
+  return data;
+}
+
 export async function getShipment(id: string): Promise<Shipment> {
   const { data } = await api.get<Shipment>(`/shipments/${id}`);
   return data;

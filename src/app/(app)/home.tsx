@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,7 +15,27 @@ import { Brand } from '@/constants/theme';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
-import { createDraft, discardShipment, getOpenDraft, type Shipment } from '@/lib/shipment-api';
+import {
+  createDraft,
+  discardShipment,
+  getOpenDraft,
+  getShipments,
+  type Shipment,
+} from '@/lib/shipment-api';
+
+const TOTAL_STEPS = 4;
+
+function draftProgress(currentStep: number): number {
+  return Math.min(100, Math.max(0, Math.round((currentStep / TOTAL_STEPS) * 100)));
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Awaiting pickup',
+  CONFIRMED: 'Confirmed',
+  IN_TRANSIT: 'In transit',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+};
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -39,8 +59,25 @@ export default function HomeScreen() {
   const [resumeDraft, setResumeDraft] = useState<Shipment | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const queryClient = useQueryClient();
   const bannersQuery = useQuery({ queryKey: ['banners'], queryFn: getBanners });
+  const draftQuery = useQuery({
+    queryKey: ['shipment-draft', 'LOCAL'],
+    queryFn: () => getOpenDraft('LOCAL'),
+  });
+  const shipmentsQuery = useQuery({ queryKey: ['shipments'], queryFn: getShipments });
 
+  // Refresh draft + shipments whenever the home tab regains focus (e.g. after
+  // booking or abandoning a draft).
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['shipment-draft'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+    }, [queryClient]),
+  );
+
+  const draft = draftQuery.data;
+  const shipments = shipmentsQuery.data ?? [];
   const name = user?.fullName ?? 'there';
 
   const openShipLocal = (shipmentId: string) =>
@@ -143,6 +180,32 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {draft ? (
+          <View className="mx-6 mt-6 rounded-3xl border border-brand-blue/30 bg-brand-blue-tint p-5">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-bold text-brand-navy">Continue your shipment</Text>
+              <Text className="text-sm font-bold text-brand-blue">
+                {draftProgress(draft.currentStep)}%
+              </Text>
+            </View>
+            <Text className="mt-1 text-sm text-gray-600">
+              You have an unfinished local shipment.
+            </Text>
+            <View className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+              <View
+                className="h-2 rounded-full bg-brand-blue"
+                style={{ width: `${draftProgress(draft.currentStep)}%` }}
+              />
+            </View>
+            <Pressable
+              onPress={() => openShipLocal(draft.id)}
+              className="mt-4 items-center rounded-full bg-brand-blue py-3 active:opacity-90"
+            >
+              <Text className="text-sm font-semibold text-white">Continue</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View className="mt-8 px-6">
           <QuickActions onSelect={handleQuickAction} />
         </View>
@@ -156,13 +219,21 @@ export default function HomeScreen() {
 
         <View className="mt-8 px-6">
           <Text className="mb-3 text-lg font-bold text-brand-navy">Recent shipments</Text>
-          <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-10">
-            <PackageIcon size={32} color={Brand.muted} />
-            <Text className="font-semibold text-gray-700">No shipments yet</Text>
-            <Text className="text-center text-sm text-gray-500">
-              Book your first delivery and track it right here.
-            </Text>
-          </View>
+          {shipments.length > 0 ? (
+            <View className="gap-2">
+              {shipments.slice(0, 5).map((shipment) => (
+                <ShipmentRow key={shipment.id} shipment={shipment} />
+              ))}
+            </View>
+          ) : (
+            <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-10">
+              <PackageIcon size={32} color={Brand.muted} />
+              <Text className="font-semibold text-gray-700">No shipments yet</Text>
+              <Text className="text-center text-sm text-gray-500">
+                Book your first delivery and track it right here.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -178,6 +249,31 @@ export default function HomeScreen() {
           <Button label="Start new" variant="secondary" onPress={handleStartNew} />
         </View>
       </BottomSheet>
+    </View>
+  );
+}
+
+function ShipmentRow({ shipment }: { shipment: Shipment }) {
+  const route =
+    [shipment.pickupZone, shipment.deliveryZone].filter(Boolean).join('  →  ') ||
+    shipment.receiverName ||
+    'Local delivery';
+
+  return (
+    <View className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white p-4">
+      <View className="flex-1 pr-3">
+        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+          {route}
+        </Text>
+        <Text className="text-xs text-gray-500">
+          {shipment.trackingCode ?? '—'} · {STATUS_LABELS[shipment.status] ?? shipment.status}
+        </Text>
+      </View>
+      {shipment.priceEstimate != null ? (
+        <Text className="text-sm font-bold text-brand-navy">
+          {formatNaira(shipment.priceEstimate)}
+        </Text>
+      ) : null}
     </View>
   );
 }
