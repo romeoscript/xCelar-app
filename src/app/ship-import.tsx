@@ -24,6 +24,7 @@ import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
 import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
+import { ITEM_CATEGORY_OPTIONS } from '@/constants/categories';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
@@ -45,16 +46,6 @@ const STEP_TITLES = ['Sender details', 'Recipient details', 'Package details', '
 const TOTAL_STEPS = STEP_TITLES.length;
 const REVIEW_STEP = TOTAL_STEPS - 1;
 
-const ITEM_CATEGORIES = [
-  'Documents',
-  'Electronics',
-  'Fashion & Clothing',
-  'Food and Groceries',
-  'Health & Beauty',
-  'Home & Kitchen',
-  'Phones & Accessories',
-  'Other',
-].map((category) => ({ value: category, label: category }));
 
 type Form = {
   senderIsSelf: boolean | null;
@@ -449,7 +440,7 @@ export default function ShipImportScreen() {
               <SelectField
                 label="Item category"
                 value={form.packageCategory || null}
-                options={ITEM_CATEGORIES}
+                options={ITEM_CATEGORY_OPTIONS}
                 onChange={setField('packageCategory')}
                 placeholder="Select item category"
               />

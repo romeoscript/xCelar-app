@@ -49,6 +49,13 @@
           "locationWhenInUsePermission": "Xcelar uses your location to set pickup and delivery addresses."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Xcelar needs photo access to upload your invoice or proof of purchase.",
+          "cameraPermission": "Xcelar needs camera access to photograph your invoice or proof of purchase."
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

@@ -476,6 +476,49 @@ export function RouteSwapIcon({ size = 24, color = '#000000' }: IconProps) {
   );
 }
 
+/** Cloud with an up arrow — file upload dropzone. */
+export function CloudUploadIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.24"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M12 12v9" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="m16 16-4-4-4 4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Framed picture — gallery / photos. */
+export function ImageIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={3} width={18} height={18} rx={2.5} stroke={color} strokeWidth={2} />
+      <Circle cx={9} cy={9} r={1.6} stroke={color} strokeWidth={2} />
+      <Path d="m21 15-4-4a2 2 0 0 0-2.8 0L6 19" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Camera — take a photo. */
+export function CameraIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M14.5 4h-5L7.5 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14.5 4Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={13} r={3.2} stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
 /** Outlined speech bubble — contact us. */
 export function MessageIcon({ size = 24, color = '#000000' }: IconProps) {
   return (

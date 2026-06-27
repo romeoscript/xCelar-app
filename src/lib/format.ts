@@ -15,3 +15,12 @@ function formatWithSymbol(amount: number, symbol: string): string {
   const withSeparators = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${symbol}${withSeparators}.${decimals}`;
 }
+
+/** Human-readable file size, e.g. 117760 -> "115.0kb". */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const kb = bytes / 1024;
+  return kb < 1024 ? `${kb.toFixed(1)}kb` : `${(kb / 1024).toFixed(1)}MB`;
+}
