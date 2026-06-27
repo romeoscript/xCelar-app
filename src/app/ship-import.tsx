@@ -17,6 +17,7 @@ import { ChevronLeftIcon } from '@/components/icons';
 import { PaystackCheckout } from '@/components/paystack-checkout';
 import { CostBreakdown } from '@/components/ship/cost-breakdown';
 import { ImportSenderStep } from '@/components/ship/import-sender-step';
+import { InvoiceUpload } from '@/components/ship/invoice-upload';
 import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
 import { ReceiverStep } from '@/components/ship/receiver-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
@@ -64,6 +65,7 @@ type Form = {
   vendorName: string;
   vendorTrackingId: string;
   receiverName: string;
+  receiverEmail: string;
   receiverPhone: string;
   receiverAddress: string;
   receiverLat: number | null;
@@ -73,11 +75,15 @@ type Form = {
   weightKg: string;
   packageCategory: string;
   declaredValue: string;
+  invoiceUrl: string;
   description: string;
   fragile: boolean;
 };
 
 type FormErrors = Partial<Record<keyof Form, string>>;
+
+// Invoice/proof is required at or above this declared value (in USD).
+const INVOICE_REQUIRED_USD = 500;
 
 const EMPTY_FORM: Form = {
   senderIsSelf: null,
@@ -88,6 +94,7 @@ const EMPTY_FORM: Form = {
   vendorName: '',
   vendorTrackingId: '',
   receiverName: '',
+  receiverEmail: '',
   receiverPhone: '',
   receiverAddress: '',
   receiverLat: null,
@@ -97,6 +104,7 @@ const EMPTY_FORM: Form = {
   weightKg: '',
   packageCategory: '',
   declaredValue: '',
+  invoiceUrl: '',
   description: '',
   fragile: false,
 };
@@ -111,6 +119,7 @@ function formFromShipment(shipment: Shipment): Form {
     vendorName: shipment.vendorName ?? '',
     vendorTrackingId: shipment.vendorTrackingId ?? '',
     receiverName: shipment.receiverName ?? '',
+    receiverEmail: shipment.receiverEmail ?? '',
     receiverPhone: shipment.receiverPhone ?? '',
     receiverAddress: shipment.receiverAddress ?? '',
     receiverLat: shipment.receiverLat,
@@ -120,6 +129,7 @@ function formFromShipment(shipment: Shipment): Form {
     weightKg: shipment.weightKg != null ? String(shipment.weightKg) : '',
     packageCategory: shipment.packageCategory ?? '',
     declaredValue: shipment.declaredValue != null ? String(shipment.declaredValue) : '',
+    invoiceUrl: shipment.invoiceUrl ?? '',
     description: shipment.description ?? '',
     fragile: shipment.fragile,
   };
@@ -129,6 +139,11 @@ function validateStep(step: number, form: Form): FormErrors {
   const errors: FormErrors = {};
   if (step === 0) {
     if (form.senderIsSelf === null) errors.senderIsSelf = 'Choose who you are ordering for';
+    if (!form.receiverName.trim()) errors.receiverName = 'Enter the contact name';
+    if (!/^\S+@\S+\.\S+$/.test(form.receiverEmail.trim())) {
+      errors.receiverEmail = 'Enter a valid email address';
+    }
+    if (form.receiverPhone.trim().length < 7) errors.receiverPhone = 'Enter a valid phone number';
     if (!form.destinationCountry) errors.destinationCountry = 'Select the origin country';
     if (!form.vendorName.trim()) errors.vendorName = 'Enter the vendor or business name';
   }
@@ -143,6 +158,9 @@ function validateStep(step: number, form: Form): FormErrors {
     if (!(Number(form.weightKg) > 0)) errors.weightKg = 'Enter the weight in kg';
     if (form.declaredValue.trim() === '' || !(Number(form.declaredValue) >= 0)) {
       errors.declaredValue = 'Enter the value of the item';
+    }
+    if (Number(form.declaredValue) >= INVOICE_REQUIRED_USD && !form.invoiceUrl) {
+      errors.invoiceUrl = 'Upload an invoice/proof for items valued at $500 and above';
     }
     if (!form.description.trim()) errors.description = 'Describe the item';
   }
@@ -159,6 +177,9 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
       senderAddress: form.senderAddress.trim(),
       vendorName: form.vendorName.trim(),
       ...(form.vendorTrackingId.trim() ? { vendorTrackingId: form.vendorTrackingId.trim() } : {}),
+      receiverName: form.receiverName.trim(),
+      receiverEmail: form.receiverEmail.trim(),
+      receiverPhone: form.receiverPhone.trim(),
       currentStep: 1,
     };
   }
@@ -179,6 +200,7 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
     weightKg: Number(form.weightKg),
     ...(form.packageCategory ? { packageCategory: form.packageCategory } : {}),
     declaredValue: Number(form.declaredValue),
+    ...(form.invoiceUrl ? { invoiceUrl: form.invoiceUrl } : {}),
     description: form.description.trim(),
     fragile: form.fragile,
     currentStep: 3,
@@ -227,6 +249,10 @@ export default function ShipImportScreen() {
     enabled: Boolean(id) && step === REVIEW_STEP,
   });
 
+  // Foreign-currency (USD import) prices can't be paid from the Naira wallet.
+  const breakdownCurrency = breakdownQuery.data?.currency;
+  const cardOnly = breakdownCurrency != null && breakdownCurrency !== 'NGN';
+
   const saveStep = useMutation({
     mutationFn: (update: ShipmentUpdate) => updateShipment(id as string, update),
     onSuccess: (updated) => setPrice(updated.priceEstimate),
@@ -257,7 +283,7 @@ export default function ShipImportScreen() {
 
   const handlePay = () => {
     setPayError(null);
-    if (paymentMethod === 'balance') {
+    if (!cardOnly && paymentMethod === 'balance') {
       payBalance.mutate();
     } else {
       initPaystack.mutate();
@@ -320,6 +346,7 @@ export default function ShipImportScreen() {
       patchForm({
         ...partial,
         receiverName: form.receiverName || user?.fullName || '',
+        receiverEmail: form.receiverEmail || user?.email || '',
         receiverPhone: form.receiverPhone || user?.phoneNumber || '',
       });
     } else {
@@ -427,6 +454,22 @@ export default function ShipImportScreen() {
                 placeholder="Enter value of item"
                 keyboardType="number-pad"
               />
+              <View className="flex-row gap-2 rounded-2xl bg-brand-gold-tint p-4">
+                <Text className="text-base">ℹ️</Text>
+                <Text className="flex-1 text-sm text-brand-navy">
+                  Upload an invoice/proof of purchase for this item. Required for items valued at $500
+                  and above.
+                </Text>
+              </View>
+              {Number(form.declaredValue) >= INVOICE_REQUIRED_USD ? (
+                <InvoiceUpload
+                  label="Upload invoice/proof"
+                  required
+                  error={errors.invoiceUrl}
+                  value={form.invoiceUrl}
+                  onChange={(url) => patchForm({ invoiceUrl: url })}
+                />
+              ) : null}
               <TextField
                 label="Item description"
                 required
@@ -461,11 +504,12 @@ export default function ShipImportScreen() {
               <PaymentOptions
                 price={price}
                 balanceKobo={user?.balanceKobo ?? 0}
-                method={paymentMethod}
+                method={cardOnly ? 'paystack' : paymentMethod}
                 onMethodChange={setPaymentMethod}
                 termsAccepted={termsAccepted}
                 onTermsChange={setTermsAccepted}
                 onOpenTerms={() => router.push('/terms')}
+                cardOnly={cardOnly}
               />
             </>
           ) : null}

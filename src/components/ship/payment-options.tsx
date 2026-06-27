@@ -13,6 +13,8 @@ export type PaymentOptionsProps = {
   termsAccepted: boolean;
   onTermsChange: (accepted: boolean) => void;
   onOpenTerms: () => void;
+  /** Foreign-currency shipments (e.g. USD imports) can only be paid by card. */
+  cardOnly?: boolean;
 };
 
 export function PaymentOptions({
@@ -23,6 +25,7 @@ export function PaymentOptions({
   termsAccepted,
   onTermsChange,
   onOpenTerms,
+  cardOnly = false,
 }: PaymentOptionsProps) {
   const balance = balanceKobo / 100;
   const insufficient = price != null && balance < price;
@@ -36,24 +39,30 @@ export function PaymentOptions({
     <View className="gap-3">
       <Text className="text-base font-semibold text-brand-navy">Payment method</Text>
 
-      <Pressable
-        disabled={insufficient}
-        onPress={() => select('balance')}
-        className={`flex-row items-center justify-between rounded-2xl border p-4 ${
-          method === 'balance' && !insufficient
-            ? 'border-brand-blue bg-brand-blue-tint'
-            : 'border-gray-200 bg-white'
-        } ${insufficient ? 'opacity-60' : 'active:opacity-80'}`}
-      >
-        <View>
-          <Text className="text-base font-semibold text-gray-900">Wallet balance</Text>
-          <Text className={`text-sm ${insufficient ? 'text-red-500' : 'text-gray-500'}`}>
-            {formatNaira(balance)}
-            {insufficient ? ' · insufficient' : ' available'}
-          </Text>
-        </View>
-        <RadioDot selected={method === 'balance' && !insufficient} />
-      </Pressable>
+      {cardOnly ? (
+        <Text className="text-sm text-gray-500">
+          International orders are paid by card. Your card is charged the Naira amount shown.
+        </Text>
+      ) : (
+        <Pressable
+          disabled={insufficient}
+          onPress={() => select('balance')}
+          className={`flex-row items-center justify-between rounded-2xl border p-4 ${
+            method === 'balance' && !insufficient
+              ? 'border-brand-blue bg-brand-blue-tint'
+              : 'border-gray-200 bg-white'
+          } ${insufficient ? 'opacity-60' : 'active:opacity-80'}`}
+        >
+          <View>
+            <Text className="text-base font-semibold text-gray-900">Wallet balance</Text>
+            <Text className={`text-sm ${insufficient ? 'text-red-500' : 'text-gray-500'}`}>
+              {formatNaira(balance)}
+              {insufficient ? ' · insufficient' : ' available'}
+            </Text>
+          </View>
+          <RadioDot selected={method === 'balance' && !insufficient} />
+        </Pressable>
+      )}
 
       <Pressable
         onPress={() => select('paystack')}

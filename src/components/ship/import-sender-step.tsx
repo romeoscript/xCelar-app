@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { tapFeedback } from '@/lib/haptics';
 import { getQuoteCountries, type RateCountry } from '@/lib/shipment-api';
@@ -16,6 +17,9 @@ export type ImportSenderValues = {
   senderAddress: string;
   vendorName: string;
   vendorTrackingId: string;
+  receiverName: string;
+  receiverEmail: string;
+  receiverPhone: string;
 };
 
 export type ImportSenderStepProps = {
@@ -73,6 +77,34 @@ export function ImportSenderStep({ values, onChange, errors }: ImportSenderStepP
           <Text className="text-sm text-red-500">{errors.senderIsSelf}</Text>
         ) : null}
       </View>
+
+      <TextField
+        label="Name"
+        required
+        error={errors.receiverName}
+        value={values.receiverName}
+        onChangeText={(value) => onChange({ receiverName: value })}
+        placeholder="e.g Jane Doe"
+        autoCapitalize="words"
+      />
+      <TextField
+        label="Email address"
+        required
+        error={errors.receiverEmail}
+        value={values.receiverEmail}
+        onChangeText={(value) => onChange({ receiverEmail: value })}
+        placeholder="e.g john.doe@gmail.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+      />
+      <PhoneInput
+        label="Phone number"
+        required
+        error={errors.receiverPhone}
+        value={values.receiverPhone}
+        onChange={(value) => onChange({ receiverPhone: value })}
+      />
 
       <CountryField
         label="Country"

@@ -21,6 +21,9 @@ export type Shipment = {
   senderAddress: string | null;
   senderLat: number | null;
   senderLng: number | null;
+  ordererName: string | null;
+  ordererEmail: string | null;
+  ordererPhone: string | null;
   pickupZone: string | null;
   pickupDate: string | null;
   receiverName: string | null;
