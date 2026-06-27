@@ -4,6 +4,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { TextField } from '@/components/ui/text-field';
 import { tapFeedback } from '@/lib/haptics';
 import { AddressField } from './address-field';
+import { SavedAddresses } from './saved-addresses';
 import { ZoneField } from './zone-field';
 
 export type SenderValues = {
@@ -47,6 +48,26 @@ export function SenderStep({ values, onChange, defaultName, defaultPhone }: Send
 
       {hasChosenSender ? (
         <View className="gap-4">
+          <SavedAddresses
+            draft={{
+              contactName: values.senderName,
+              contactPhone: values.senderPhone,
+              address: values.senderAddress,
+              lat: values.senderLat,
+              lng: values.senderLng,
+              zone: values.pickupZone,
+            }}
+            onSelect={(entry) =>
+              onChange({
+                senderName: entry.contactName,
+                senderPhone: entry.contactPhone,
+                senderAddress: entry.address,
+                senderLat: entry.lat,
+                senderLng: entry.lng,
+                pickupZone: entry.zone ?? '',
+              })
+            }
+          />
           <TextField
             label="Sender's name"
             value={values.senderName}
