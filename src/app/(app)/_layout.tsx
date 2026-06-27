@@ -1,7 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { BiometricGate } from '@/components/biometric-gate';
-import { HomeIcon, LockerIcon, PackageIcon, UserIcon } from '@/components/icons';
+import { HomeIcon, PackageIcon, StorefrontIcon, UserIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 
@@ -35,10 +35,10 @@ export default function AppTabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="lockers"
+          name="marketplace"
           options={{
-            title: 'Lockers',
-            tabBarIcon: ({ color }) => <LockerIcon size={24} color={color} />,
+            title: 'Market',
+            tabBarIcon: ({ color }) => <StorefrontIcon size={24} color={color} />,
           }}
         />
         <Tabs.Screen

@@ -464,6 +464,94 @@ export function MailIcon({ size = 24, color = '#000000' }: IconProps) {
   );
 }
 
+/** Filled seal with a check — verified vendor badge. `color` fills the seal. */
+export function VerifiedBadgeIcon({ size = 18, color = '#208AEF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={10} fill={color} />
+      <Path d="M7.5 12.5l3 3 6-6.5" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Outline heart — favourite (off). */
+export function HeartIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 20s-6.7-4.3-9.2-8.7A5 5 0 0 1 12 6.3a5 5 0 0 1 9.2 5C18.7 15.7 12 20 12 20Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Filled heart — favourite (on). */
+export function HeartFilledIcon({ size = 24, color = '#EF4444' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 20s-6.7-4.3-9.2-8.7A5 5 0 0 1 12 6.3a5 5 0 0 1 9.2 5C18.7 15.7 12 20 12 20Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
+/** Filled star — ratings. */
+export function StarIcon({ size = 16, color = '#F8B81B' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3.5l2.6 5.3 5.9.9-4.25 4.15 1 5.85L12 17.9l-5.25 2.7 1-5.85L3.5 9.7l5.9-.9L12 3.5Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
+/** Storefront — the marketplace tab. */
+export function StorefrontIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3 6.5 4.2 4.3A1 1 0 0 1 5.1 4h13.8a1 1 0 0 1 .9.5L21 6.5a2.5 2.5 0 0 1-4.5 1.8 2.5 2.5 0 0 1-4.5 0 2.5 2.5 0 0 1-4.5 0A2.5 2.5 0 0 1 3 6.5Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="M9 20v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Plus — increment quantity. */
+export function PlusIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Minus — decrement quantity. */
+export function MinusIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 /** Converging arrows — pickup ⇄ drop-off route. */
 export function RouteSwapIcon({ size = 24, color = '#000000' }: IconProps) {
   return (
