@@ -464,6 +464,18 @@ export function MailIcon({ size = 24, color = '#000000' }: IconProps) {
   );
 }
 
+/** Converging arrows — pickup ⇄ drop-off route. */
+export function RouteSwapIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 9h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M14 6l3 3-3 3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M21 15H7" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M10 12l-3 3 3 3" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 /** Outlined speech bubble — contact us. */
 export function MessageIcon({ size = 24, color = '#000000' }: IconProps) {
   return (

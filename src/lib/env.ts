@@ -10,4 +10,7 @@ export const env = {
   // External customer-care widget (Crisp/Intercom/tawk.to/WhatsApp). Swap the
   // URL here or via EXPO_PUBLIC_SUPPORT_URL when the real one is ready.
   supportUrl: process.env.EXPO_PUBLIC_SUPPORT_URL ?? 'https://wa.me/2348000000000',
+  // Address autocomplete provider (Photon/OSM by default — keyless, returns
+  // coordinates). Swap for a Google/Mapbox endpoint via EXPO_PUBLIC_PLACES_API_URL.
+  placesApiUrl: process.env.EXPO_PUBLIC_PLACES_API_URL ?? 'https://photon.komoot.io/api',
 };

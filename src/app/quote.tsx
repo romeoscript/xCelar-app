@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddressField, type AddressValue } from '@/components/ship/address-field';
-import { CostBreakdown } from '@/components/ship/cost-breakdown';
+import { QuoteResult } from '@/components/ship/quote-result';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
@@ -23,7 +23,6 @@ import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
 import { useCountUp } from '@/hooks/use-count-up';
 import { getApiErrorMessage } from '@/lib/api-error';
-import { formatMoney } from '@/lib/format';
 import {
   createDraft,
   getQuote,
@@ -73,6 +72,7 @@ export default function QuoteScreen() {
     value: item.code,
     label: item.name,
   }));
+  const countryName = countryOptions.find((option) => option.value === country)?.label ?? null;
 
   const quoteInput: QuoteInput = isIntl
     ? { mode, weightKg, country: country ?? undefined }
@@ -99,8 +99,7 @@ export default function QuoteScreen() {
   });
 
   const breakdown = quoteQuery.data ?? null;
-  const animatedMinor = useCountUp(breakdown ? Math.round(breakdown.total * 100) : 0);
-  const currency = breakdown?.currency ?? (mode === 'IMPORT' ? 'USD' : 'NGN');
+  const animatedAmount = useCountUp(breakdown ? Math.round(breakdown.total * 100) : 0) / 100;
 
   const booking = useMutation({
     mutationFn: async () => {
@@ -126,26 +125,24 @@ export default function QuoteScreen() {
     onSuccess: (id) => router.replace({ pathname: '/ship-local', params: { id } }),
   });
 
+  const pickupLabel = labelFor('pickup', mode, pickup.address, countryName);
+  const dropoffLabel = labelFor('dropoff', mode, delivery.address, countryName);
+  const emptyHint =
+    mode === 'LOCAL'
+      ? 'Add a weight to see your estimate'
+      : 'Pick a country and weight to see your estimate';
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar style="dark" />
       <ScreenHeader title="Get a quote" />
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }} keyboardShouldPersistTaps="handled">
+          <Text className="text-sm text-gray-500">
+            Get a free estimate for local, export, or import delivery.
+          </Text>
+
           <SegmentedToggle options={MODE_OPTIONS} value={mode} onChange={changeMode} />
-
-          <QuoteHero
-            breakdown={breakdown}
-            animatedAmount={animatedMinor / 100}
-            currency={currency}
-            isFetching={quoteQuery.isFetching}
-            mode={mode}
-            hasRoute={hasRoute}
-          />
-
-          {quoteQuery.isError ? (
-            <Text className="text-sm text-red-500">{getApiErrorMessage(quoteQuery.error)}</Text>
-          ) : null}
 
           <View className="gap-5">
             {mode === 'LOCAL' ? (
@@ -174,12 +171,28 @@ export default function QuoteScreen() {
             {mode === 'LOCAL' ? <FragileToggle value={fragile} onChange={setFragile} /> : null}
           </View>
 
-          {breakdown ? <CostBreakdown breakdown={breakdown} /> : null}
+          {quoteQuery.isError ? (
+            <Text className="text-sm text-red-500">{getApiErrorMessage(quoteQuery.error)}</Text>
+          ) : breakdown ? (
+            <QuoteResult
+              pickupLabel={pickupLabel}
+              dropoffLabel={dropoffLabel}
+              amount={animatedAmount}
+              breakdown={breakdown}
+            />
+          ) : quoteQuery.isFetching ? (
+            <View className="flex-row items-center justify-center gap-2 py-3">
+              <ActivityIndicator color={Brand.blue} />
+              <Text className="text-sm text-gray-500">Calculating estimate…</Text>
+            </View>
+          ) : (
+            <Text className="py-3 text-center text-sm text-gray-400">{emptyHint}</Text>
+          )}
 
           {mode === 'LOCAL' ? (
             <View className="gap-2">
               <Button
-                label="Book this delivery"
+                label="Create shipment"
                 loading={booking.isPending}
                 disabled={!hasWeight}
                 onPress={() => booking.mutate()}
@@ -199,63 +212,21 @@ export default function QuoteScreen() {
   );
 }
 
-function QuoteHero({
-  breakdown,
-  animatedAmount,
-  currency,
-  isFetching,
-  mode,
-  hasRoute,
-}: {
-  breakdown: { minDays: number; maxDays: number; distanceKm: number } | null;
-  animatedAmount: number;
-  currency: string;
-  isFetching: boolean;
-  mode: QuoteMode;
-  hasRoute: boolean;
-}) {
-  const emptyHint =
-    mode === 'LOCAL'
-      ? 'Enter a package weight to see your price'
-      : 'Pick a country and weight to see your price';
-
-  return (
-    <View className="rounded-3xl bg-brand-navy p-6">
-      <View className="h-5 flex-row items-center justify-between">
-        <Text className="text-xs uppercase tracking-wider text-white/50">Estimated total</Text>
-        {isFetching ? <ActivityIndicator color={Brand.gold} size="small" /> : null}
-      </View>
-
-      {breakdown ? (
-        <Text className="mt-2 text-5xl font-extrabold text-brand-gold">
-          {formatMoney(animatedAmount, currency)}
-        </Text>
-      ) : (
-        <Text className="mt-2 text-4xl font-extrabold text-white/30">
-          {currency === 'USD' ? '$' : '₦'} —
-        </Text>
-      )}
-
-      {breakdown ? (
-        <View className="mt-4 flex-row flex-wrap gap-2">
-          <HeroChip label={`Delivery in ${breakdown.minDays}–${breakdown.maxDays} days`} />
-          {mode === 'LOCAL' && hasRoute ? (
-            <HeroChip label={`About ${breakdown.distanceKm} km`} />
-          ) : null}
-        </View>
-      ) : (
-        <Text className="mt-3 text-sm text-white/60">{emptyHint}</Text>
-      )}
-    </View>
-  );
-}
-
-function HeroChip({ label }: { label: string }) {
-  return (
-    <View className="rounded-full bg-white/10 px-3 py-1.5">
-      <Text className="text-xs font-semibold text-white">{label}</Text>
-    </View>
-  );
+function labelFor(
+  end: 'pickup' | 'dropoff',
+  mode: QuoteMode,
+  address: string,
+  countryName: string | null,
+): string {
+  if (mode === 'LOCAL') {
+    return address.trim() || (end === 'pickup' ? 'Pickup' : 'Drop-off');
+  }
+  const here = 'Nigeria';
+  const abroad = countryName ?? 'Select country';
+  if (mode === 'EXPORT') {
+    return end === 'pickup' ? here : abroad;
+  }
+  return end === 'pickup' ? abroad : here;
 }
 
 function FragileToggle({ value, onChange }: { value: boolean; onChange: (next: boolean) => void }) {
