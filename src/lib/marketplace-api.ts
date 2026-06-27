@@ -6,6 +6,7 @@ export type Product = {
   description: string | null;
   priceKobo: number;
   imageUrl: string | null;
+  imageUrls: string[];
   section: string | null;
 };
 
@@ -17,9 +18,13 @@ export type Vendor = {
   logoUrl: string | null;
   coverImageUrl: string | null;
   isVerified: boolean;
+  isFeatured: boolean;
   rating: number | null;
   etaLabel: string | null;
   isOpen: boolean;
+  minOrderKobo: number | null;
+  freeDeliveryThresholdKobo: number | null;
+  offersPickup: boolean;
   address: string;
   zone: string | null;
 };
@@ -42,6 +47,7 @@ export type Order = {
   subtotalKobo: number;
   deliveryFeeKobo: number;
   totalKobo: number;
+  isPickup: boolean;
   receiverName: string;
   receiverPhone: string;
   deliveryAddress: string;
@@ -55,6 +61,7 @@ export type Order = {
 export type CreateOrderInput = {
   vendorId: string;
   items: { productId: string; quantity: number }[];
+  isPickup?: boolean;
   receiverName: string;
   receiverPhone: string;
   deliveryAddress: string;

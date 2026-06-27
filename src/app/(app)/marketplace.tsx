@@ -29,21 +29,29 @@ const CATEGORY_IMAGE: Record<string, string> = {
   Pharmacy: categoryImage('1587854692152-cbe660dbde88'),
 };
 
+type SortBy = 'recommended' | 'rating';
+
 export default function MarketplaceScreen() {
   const router = useRouter();
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('recommended');
+  const [openNow, setOpenNow] = useState(false);
 
   const vendorsQuery = useQuery({ queryKey: ['vendors'], queryFn: () => getVendors() });
   const vendors = vendorsQuery.data ?? [];
   const categories = Array.from(new Set(vendors.map((vendor) => vendor.category)));
+  const featured = vendors.filter((vendor) => vendor.isFeatured);
 
   const term = search.trim().toLowerCase();
-  const shown = vendors.filter(
-    (vendor) =>
-      (category === null || vendor.category === category) &&
-      (term === '' || vendor.name.toLowerCase().includes(term)),
-  );
+  const shown = vendors
+    .filter(
+      (vendor) =>
+        (category === null || vendor.category === category) &&
+        (term === '' || vendor.name.toLowerCase().includes(term)) &&
+        (!openNow || vendor.isOpen),
+    )
+    .sort((a, b) => (sortBy === 'rating' ? (b.rating ?? 0) - (a.rating ?? 0) : 0));
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -92,9 +100,35 @@ export default function MarketplaceScreen() {
 
             <PromoCarousel />
 
-            <Text className="px-6 pt-1 text-lg font-bold text-brand-navy">
-              {category ?? 'All partners'}
-            </Text>
+            {featured.length > 0 ? (
+              <View className="gap-3">
+                <Text className="px-6 text-lg font-bold text-brand-navy">Popular brands</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}
+                >
+                  {featured.map((vendor) => (
+                    <PopularCard
+                      key={vendor.id}
+                      vendor={vendor}
+                      onPress={() => router.push(`/vendor/${vendor.id}`)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            <View className="flex-row items-center gap-2 px-6">
+              <FilterChip
+                label="Top rated"
+                active={sortBy === 'rating'}
+                onPress={() => setSortBy((current) => (current === 'rating' ? 'recommended' : 'rating'))}
+              />
+              <FilterChip label="Open now" active={openNow} onPress={() => setOpenNow((value) => !value)} />
+            </View>
+
+            <Text className="px-6 text-lg font-bold text-brand-navy">{category ?? 'All partners'}</Text>
           </View>
         }
         ListEmptyComponent={
@@ -102,7 +136,7 @@ export default function MarketplaceScreen() {
             <View className="mx-6 items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
               <StorefrontIcon size={32} color={Brand.muted} />
               <Text className="font-semibold text-gray-700">No partners found</Text>
-              <Text className="text-center text-sm text-gray-500">Try a different search or category.</Text>
+              <Text className="text-center text-sm text-gray-500">Try a different search or filter.</Text>
             </View>
           )
         }
@@ -127,9 +161,7 @@ function CategoryCircle({
 }) {
   return (
     <Pressable onPress={onPress} className="items-center gap-1.5 active:opacity-70" style={{ width: 68 }}>
-      <View
-        className={`h-16 w-16 overflow-hidden rounded-full ${active ? 'border-2 border-brand-blue' : ''}`}
-      >
+      <View className={`h-16 w-16 overflow-hidden rounded-full ${active ? 'border-2 border-brand-blue' : ''}`}>
         <Image source={{ uri: image }} className="h-full w-full" resizeMode="cover" />
       </View>
       <Text
@@ -138,6 +170,57 @@ function CategoryCircle({
       >
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      className={`rounded-full border px-4 py-2 active:opacity-70 ${
+        active ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
+      }`}
+    >
+      <Text className={`text-sm font-medium ${active ? 'text-brand-blue' : 'text-gray-600'}`}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function PopularCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} className="w-44 active:opacity-90">
+      <View className="h-28 overflow-hidden rounded-2xl bg-brand-surface">
+        {vendor.coverImageUrl ? (
+          <Image source={{ uri: vendor.coverImageUrl }} className="h-full w-full" resizeMode="cover" />
+        ) : (
+          <View className="h-full w-full items-center justify-center">
+            <StorefrontIcon size={26} color={Brand.muted} />
+          </View>
+        )}
+        {!vendor.isOpen ? (
+          <View className="absolute inset-0 items-center justify-center bg-black/55">
+            <Text className="text-sm font-bold text-white">Closed</Text>
+          </View>
+        ) : null}
+      </View>
+      <View className="mt-1.5 flex-row items-center gap-1">
+        <Text className="flex-1 text-sm font-bold text-brand-navy" numberOfLines={1}>
+          {vendor.name}
+        </Text>
+        {vendor.isVerified ? <VerifiedBadgeIcon size={14} color={Brand.blue} /> : null}
+      </View>
+      {vendor.rating != null ? (
+        <View className="flex-row items-center gap-1">
+          <StarIcon size={12} color={Brand.gold} />
+          <Text className="text-xs text-gray-500">
+            {vendor.rating.toFixed(1)} · {vendor.category}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

@@ -10,6 +10,7 @@ import { AddressField, type AddressValue } from '@/components/ship/address-field
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { TextField } from '@/components/ui/text-field';
 import { cartSubtotalKobo, useCartStore } from '@/lib/cart-store';
 import { getApiErrorMessage } from '@/lib/api-error';
@@ -33,6 +34,7 @@ export default function CartScreen() {
   const [receiverPhone, setReceiverPhone] = useState(user?.phoneNumber ?? '');
   const [address, setAddress] = useState<AddressValue>(EMPTY_ADDRESS);
   const [zone, setZone] = useState('');
+  const [isPickup, setIsPickup] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const placeOrder = useMutation({
@@ -40,13 +42,14 @@ export default function CartScreen() {
       createOrder({
         vendorId: vendor?.id ?? '',
         items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+        isPickup,
         receiverName: receiverName.trim(),
         receiverPhone,
-        deliveryAddress: address.address.trim(),
-        ...(address.lat != null && address.lng != null
+        deliveryAddress: isPickup ? `Pickup at ${vendor?.name ?? 'store'}` : address.address.trim(),
+        ...(!isPickup && address.lat != null && address.lng != null
           ? { deliveryLat: address.lat, deliveryLng: address.lng }
           : {}),
-        ...(zone ? { deliveryZone: zone } : {}),
+        ...(!isPickup && zone ? { deliveryZone: zone } : {}),
       }),
     onSuccess: (order) => {
       clear();
@@ -56,6 +59,11 @@ export default function CartScreen() {
   });
 
   const handlePlaceOrder = () => {
+    const minOrder = vendor?.minOrderKobo ?? 0;
+    if (cartSubtotalKobo(lines) < minOrder) {
+      setError(`Minimum order for this vendor is ${formatNaira(minOrder / 100)}.`);
+      return;
+    }
     if (!receiverName.trim()) {
       setError("Enter the recipient's name.");
       return;
@@ -64,7 +72,7 @@ export default function CartScreen() {
       setError('Enter a valid phone number.');
       return;
     }
-    if (!address.address.trim()) {
+    if (!isPickup && !address.address.trim()) {
       setError('Add a delivery address.');
       return;
     }
@@ -89,6 +97,14 @@ export default function CartScreen() {
   }
 
   const subtotal = cartSubtotalKobo(lines);
+  const belowMinimum = subtotal < (vendor.minOrderKobo ?? 0);
+  const freeThreshold = vendor.freeDeliveryThresholdKobo;
+  const freeDeliveryHint =
+    freeThreshold == null
+      ? null
+      : subtotal >= freeThreshold
+        ? '🎉 You’ve unlocked free delivery!'
+        : `Add ${formatNaira((freeThreshold - subtotal) / 100)} more for free delivery.`;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -126,7 +142,21 @@ export default function CartScreen() {
           </View>
 
           <View className="gap-4">
-            <Text className="text-base font-bold text-brand-navy">Delivery details</Text>
+            <Text className="text-base font-bold text-brand-navy">
+              {isPickup ? 'Pickup details' : 'Delivery details'}
+            </Text>
+
+            {vendor.offersPickup ? (
+              <SegmentedToggle
+                options={[
+                  { label: 'Delivery', value: 'delivery' },
+                  { label: 'Pickup', value: 'pickup' },
+                ]}
+                value={isPickup ? 'pickup' : 'delivery'}
+                onChange={(value) => setIsPickup(value === 'pickup')}
+              />
+            ) : null}
+
             <TextField
               label="Recipient's name"
               value={receiverName}
@@ -134,17 +164,21 @@ export default function CartScreen() {
               placeholder="Full name"
               autoCapitalize="words"
             />
-            <PhoneInput
-              label="Recipient's phone"
-              value={receiverPhone}
-              onChange={setReceiverPhone}
-            />
-            <AddressField
-              label="Delivery address"
-              value={address}
-              onChange={setAddress}
-              onZoneHint={(area, region) => setZone(area ?? region ?? '')}
-            />
+            <PhoneInput label="Recipient's phone" value={receiverPhone} onChange={setReceiverPhone} />
+
+            {isPickup ? (
+              <View className="rounded-2xl border border-gray-100 bg-brand-surface p-4">
+                <Text className="text-sm font-medium text-gray-900">Pick up from</Text>
+                <Text className="mt-0.5 text-sm text-gray-500">{vendor.address}</Text>
+              </View>
+            ) : (
+              <AddressField
+                label="Delivery address"
+                value={address}
+                onChange={setAddress}
+                onZoneHint={(area, region) => setZone(area ?? region ?? '')}
+              />
+            )}
           </View>
 
           <View className="rounded-2xl bg-brand-surface p-4">
@@ -153,15 +187,24 @@ export default function CartScreen() {
               <Text className="text-sm font-semibold text-gray-900">{formatNaira(subtotal / 100)}</Text>
             </View>
             <Text className="mt-1 text-xs text-gray-400">
-              Delivery fee is calculated from the vendor to your address on the next step.
+              {isPickup
+                ? 'No delivery fee for pickup.'
+                : freeDeliveryHint ?? 'Delivery fee is calculated at checkout.'}
             </Text>
           </View>
 
-          {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
+          {belowMinimum ? (
+            <Text className="text-sm text-red-500">
+              Minimum order for this vendor is {formatNaira((vendor.minOrderKobo ?? 0) / 100)}.
+            </Text>
+          ) : error ? (
+            <Text className="text-sm text-red-500">{error}</Text>
+          ) : null}
 
           <Button
             label="Place order"
             loading={placeOrder.isPending}
+            disabled={belowMinimum}
             onPress={handlePlaceOrder}
           />
         </ScrollView>

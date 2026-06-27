@@ -1,8 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Pressable, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -20,6 +31,7 @@ import { tapFeedback } from '@/lib/haptics';
 import { getVendor, type Product, type Vendor } from '@/lib/marketplace-api';
 
 const HEADER_HEIGHT = 280;
+const CARD_WIDTH = Dimensions.get('window').width - 48;
 
 export default function VendorScreen() {
   const router = useRouter();
@@ -163,6 +175,52 @@ export default function VendorScreen() {
   );
 }
 
+function ProductImageCarousel({ images }: { images: string[] }) {
+  const [index, setIndex] = useState(0);
+
+  if (images.length === 0) {
+    return (
+      <View className="h-44 w-full items-center justify-center bg-brand-surface">
+        <StorefrontIcon size={28} color={Brand.muted} />
+      </View>
+    );
+  }
+
+  const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setIndex(Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH));
+  };
+
+  return (
+    <View>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onScrollEnd}
+      >
+        {images.map((uri) => (
+          <Image
+            key={uri}
+            source={{ uri }}
+            style={{ width: CARD_WIDTH, height: 176 }}
+            resizeMode="cover"
+          />
+        ))}
+      </ScrollView>
+      {images.length > 1 ? (
+        <View className="absolute bottom-2 left-0 right-0 flex-row justify-center gap-1.5">
+          {images.map((uri, position) => (
+            <View
+              key={uri}
+              className={`h-1.5 rounded-full ${position === index ? 'w-4 bg-white' : 'w-1.5 bg-white/60'}`}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function ProductRow({ vendor, product }: { vendor: Vendor; product: Product }) {
   const lines = useCartStore((state) => state.lines);
   const cartVendor = useCartStore((state) => state.vendor);
@@ -174,43 +232,39 @@ function ProductRow({ vendor, product }: { vendor: Vendor; product: Product }) {
     : 0;
 
   return (
-    <View className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3">
-      {product.imageUrl ? (
-        <Image
-          source={{ uri: product.imageUrl }}
-          className="h-16 w-16 rounded-xl bg-brand-surface"
-          resizeMode="cover"
-        />
-      ) : null}
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-gray-900">{product.name}</Text>
+    <View className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
+      <ProductImageCarousel images={product.imageUrls} />
+      <View className="gap-1 p-4">
+        <Text className="text-base font-bold text-brand-navy">{product.name}</Text>
         {product.description ? (
           <Text className="text-sm text-gray-500" numberOfLines={2}>
             {product.description}
           </Text>
         ) : null}
-        <Text className="mt-1 text-sm font-bold text-brand-navy">
-          {formatNaira(product.priceKobo / 100)}
-        </Text>
-      </View>
-
-      {quantity > 0 ? (
-        <View className="flex-row items-center gap-3">
-          <Stepper icon={MinusIcon} onPress={() => setQuantity(product.id, quantity - 1)} />
-          <Text className="w-5 text-center text-base font-bold text-brand-navy">{quantity}</Text>
-          <Stepper icon={PlusIcon} onPress={() => add(vendor, product)} />
+        <View className="mt-1 flex-row items-center justify-between">
+          <Text className="text-base font-extrabold text-brand-navy">
+            {formatNaira(product.priceKobo / 100)}
+          </Text>
+          {quantity > 0 ? (
+            <View className="flex-row items-center gap-3">
+              <Stepper icon={MinusIcon} onPress={() => setQuantity(product.id, quantity - 1)} />
+              <Text className="w-5 text-center text-base font-bold text-brand-navy">{quantity}</Text>
+              <Stepper icon={PlusIcon} onPress={() => add(vendor, product)} />
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                add(vendor, product);
+              }}
+              className="flex-row items-center gap-1 rounded-full bg-brand-blue px-4 py-2 active:opacity-80"
+            >
+              <PlusIcon size={16} color="#ffffff" />
+              <Text className="text-sm font-bold text-white">Add</Text>
+            </Pressable>
+          )}
         </View>
-      ) : (
-        <Pressable
-          onPress={() => {
-            tapFeedback();
-            add(vendor, product);
-          }}
-          className="rounded-full bg-brand-blue-tint px-4 py-2 active:opacity-70"
-        >
-          <Text className="text-sm font-bold text-brand-blue">Add</Text>
-        </Pressable>
-      )}
+      </View>
     </View>
   );
 }
