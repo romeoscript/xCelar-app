@@ -51,6 +51,16 @@ export default function WelcomeScreen() {
         <Button label="Get started" variant="primary" onPress={handleGetStarted} />
         <Button label="Sign in" variant="secondary" onPress={handleSignIn} />
 
+        <Pressable
+          onPress={() => router.push('/rider')}
+          hitSlop={8}
+          className="items-center py-1 active:opacity-70"
+        >
+          <Text className="text-sm font-semibold text-white">
+            Deliver with Xcelar <Text className="text-brand-blue-light">→</Text>
+          </Text>
+        </Pressable>
+
         <ChatButton />
       </View>
     </SafeAreaView>

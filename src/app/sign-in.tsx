@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -19,6 +19,7 @@ type IdentifierMethod = 'email' | 'phone';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { next } = useLocalSearchParams<{ next?: string }>();
   const startSession = useAuthStore((state) => state.startSession);
 
   const [method, setMethod] = useState<IdentifierMethod>('email');
@@ -30,7 +31,7 @@ export default function SignInScreen() {
     mutationFn: (input: LoginInput) => login(input),
     onSuccess: async (session) => {
       await startSession(session);
-      router.replace('/home');
+      router.replace(next === 'rider' ? '/rider' : '/home');
     },
   });
 

@@ -279,6 +279,18 @@ export default function HomeScreen() {
           <QuickActions onSelect={handleQuickAction} />
         </View>
 
+        <Pressable
+          onPress={() => router.push('/rider')}
+          className="mx-6 mt-8 flex-row items-center gap-3 rounded-3xl bg-brand-night p-5 active:opacity-90"
+        >
+          <Text className="text-3xl">🛵</Text>
+          <View className="flex-1">
+            <Text className="text-base font-bold text-white">Deliver with Xcelar</Text>
+            <Text className="mt-0.5 text-sm text-white/70">Earn on your schedule — become a rider</Text>
+          </View>
+          <ChevronRightIcon size={20} color="#ffffff" />
+        </Pressable>
+
         {bannersQuery.data && bannersQuery.data.length > 0 ? (
           <View className="mt-8 gap-3">
             <Text className="px-6 text-lg font-bold text-brand-navy">Promotions</Text>

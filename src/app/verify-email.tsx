@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
@@ -16,8 +16,10 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const { next } = useLocalSearchParams<{ next?: string }>();
   const email = useAuthStore((state) => state.user?.email);
   const updateUser = useAuthStore((state) => state.updateUser);
+  const destination = next === 'rider' ? '/rider' : '/home';
 
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function VerifyEmailScreen() {
     onSuccess: (user) => {
       updateUser(user);
       toast('Email verified 🎉');
-      router.replace('/home');
+      router.replace(destination);
     },
     onError: (failure) => {
       setError(getApiErrorMessage(failure));
@@ -128,7 +130,7 @@ export default function VerifyEmailScreen() {
           </Pressable>
         </View>
 
-        <Pressable className="items-center" onPress={() => router.replace('/home')} hitSlop={8}>
+        <Pressable className="items-center" onPress={() => router.replace(destination)} hitSlop={8}>
           <Text className="text-sm text-gray-400">I’ll do this later</Text>
         </Pressable>
       </View>

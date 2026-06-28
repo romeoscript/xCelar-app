@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -19,6 +19,7 @@ type IdentifierMethod = 'email' | 'phone';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { next } = useLocalSearchParams<{ next?: string }>();
   const startSession = useAuthStore((state) => state.startSession);
 
   const [fullName, setFullName] = useState('');
@@ -33,10 +34,10 @@ export default function SignUpScreen() {
       await startSession(session);
       // Email signups must verify with the code we just emailed them.
       if (session.user.email && !session.user.emailVerified) {
-        router.replace('/verify-email');
+        router.replace(next ? { pathname: '/verify-email', params: { next } } : '/verify-email');
         return;
       }
-      router.replace('/home');
+      router.replace(next === 'rider' ? '/rider' : '/home');
     },
   });
 
