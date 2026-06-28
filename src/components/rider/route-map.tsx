@@ -86,12 +86,17 @@ export function RouteMap({
     pickupLat != null && pickupLng != null && dropoffLat != null && dropoffLng != null;
 
   useEffect(() => {
-    if (focusTarget) {
-      webRef.current?.injectJavaScript(
-        `if(window.rmap){window.rmap.setView([${focusTarget.lat},${focusTarget.lng}],16);} true;`,
-      );
+    if (!focusTarget) {
+      return;
     }
-  }, [focusTarget]);
+    // "Navigate" frames the leg from the rider (Me) to the chosen stop, so it
+    // reads from where you are — not jumping straight to the destination.
+    const js =
+      meLat != null && meLng != null
+        ? `if(window.rmap){window.rmap.fitBounds(L.latLngBounds([[${meLat},${meLng}],[${focusTarget.lat},${focusTarget.lng}]]).pad(0.35));}true;`
+        : `if(window.rmap){window.rmap.setView([${focusTarget.lat},${focusTarget.lng}],15);}true;`;
+    webRef.current?.injectJavaScript(js);
+  }, [focusTarget, meLat, meLng]);
   const containerStyle = fill ? undefined : { height };
   const containerClass = fill
     ? 'flex-1 overflow-hidden bg-brand-surface'
