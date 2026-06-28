@@ -1,6 +1,7 @@
 import { api } from './api';
 
 export type VehicleType = 'BACKPACK' | 'BIKE' | 'CAR' | 'TRUCK';
+export type VehicleOwnership = 'PERSONAL' | 'COMPANY';
 export type RiderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type RiderDocumentType =
   | 'DRIVER_PHOTO'
@@ -13,6 +14,7 @@ export type RiderDocumentType =
 export type RiderProfile = {
   id: string;
   vehicleType: VehicleType;
+  vehicleOwnership: VehicleOwnership | null;
   city: string;
   status: RiderStatus;
   rejectionReason: string | null;
@@ -43,7 +45,11 @@ export type RiderDelivery = {
   proofUrl: string | null;
 };
 
-export async function applyAsRider(input: { vehicleType: VehicleType; city: string }): Promise<RiderProfile> {
+export async function applyAsRider(input: {
+  vehicleType: VehicleType;
+  vehicleOwnership: VehicleOwnership;
+  city: string;
+}): Promise<RiderProfile> {
   const { data } = await api.post<{ profile: RiderProfile }>('/rider/apply', input);
   return data.profile;
 }

@@ -43,8 +43,8 @@ export default function RiderDocumentsScreen() {
         title="Upload your documents"
         subtitle="Clear photos get you verified faster. You can submit and add the rest later."
         onBack={() => router.back()}
-        step={2}
-        totalSteps={2}
+        step={4}
+        totalSteps={4}
       />
 
       <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
