@@ -33,7 +33,8 @@ export default function RiderDocumentsScreen() {
   const insets = useSafeAreaInsets();
   const profileQuery = useQuery({ queryKey: ['rider-profile'], queryFn: getMyRiderProfile });
   const urlByType = new Map(profileQuery.data?.documents.map((doc) => [doc.type, doc.url]) ?? []);
-  const uploadedCount = profileQuery.data?.documents.length ?? 0;
+  const uploadedCount = DOCUMENT_ORDER.filter((type) => urlByType.has(type)).length;
+  const allUploaded = uploadedCount === DOCUMENT_ORDER.length;
 
   return (
     <View className="flex-1 bg-white">
@@ -41,13 +42,15 @@ export default function RiderDocumentsScreen() {
       <RiderHeader
         eyebrow="Almost there"
         title="Upload your documents"
-        subtitle="Clear photos get you verified faster. You can submit and add the rest later."
+        subtitle="Add a clear photo of all documents to submit for review."
         step={4}
         totalSteps={4}
       />
 
       <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
-        <Text className="text-sm font-semibold text-gray-500">
+        <Text
+          className={`text-sm font-semibold ${allUploaded ? 'text-green-600' : 'text-gray-500'}`}
+        >
           {uploadedCount} of {DOCUMENT_ORDER.length} uploaded
         </Text>
         {DOCUMENT_ORDER.map((type) => (
@@ -56,7 +59,16 @@ export default function RiderDocumentsScreen() {
       </ScrollView>
 
       <View style={{ paddingBottom: insets.bottom + 12 }} className="border-t border-gray-100 px-6 pt-3">
-        <Button label="Submit for review" onPress={() => router.replace('/rider/pending')} />
+        {!allUploaded ? (
+          <Text className="mb-2 text-center text-xs text-gray-400">
+            Upload all {DOCUMENT_ORDER.length} documents to continue.
+          </Text>
+        ) : null}
+        <Button
+          label="Submit for review"
+          disabled={!allUploaded}
+          onPress={() => router.replace('/rider/pending')}
+        />
       </View>
     </View>
   );
