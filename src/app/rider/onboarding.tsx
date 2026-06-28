@@ -2,12 +2,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentProps, useState } from 'react';
+import { type ComponentProps, type ComponentType, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon } from '@/components/icons';
 import { RiderHeader } from '@/components/rider/rider-header';
+import { BikeGlyph, CarGlyph, VanGlyph, type VehicleIconProps } from '@/components/rider/vehicle-icons';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
@@ -21,11 +22,10 @@ import {
 
 type MciName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-const VEHICLES: { value: VehicleType; icon: MciName; hint: string }[] = [
-  { value: 'BACKPACK', icon: 'bag-personal', hint: 'On foot' },
-  { value: 'BIKE', icon: 'motorbike', hint: 'Fastest' },
-  { value: 'CAR', icon: 'car', hint: 'Bigger loads' },
-  { value: 'TRUCK', icon: 'truck', hint: 'Heavy items' },
+const VEHICLES: { value: VehicleType; glyph: ComponentType<VehicleIconProps>; hint: string }[] = [
+  { value: 'BIKE', glyph: BikeGlyph, hint: 'Fastest' },
+  { value: 'CAR', glyph: CarGlyph, hint: 'Bigger loads' },
+  { value: 'TRUCK', glyph: VanGlyph, hint: 'Heavy items' },
 ];
 
 const OWNERSHIP: { value: VehicleOwnership; icon: MciName; title: string; subtitle: string }[] = [
@@ -70,12 +70,8 @@ export default function RiderOnboardingScreen() {
   });
 
   const goBack = () => {
-    if (step > 1) {
-      setError(null);
-      setStep(step - 1);
-      return;
-    }
-    router.back();
+    setError(null);
+    setStep(step - 1);
   };
 
   const goNext = () => {
@@ -106,7 +102,7 @@ export default function RiderOnboardingScreen() {
         eyebrow="Become a rider"
         title={STEP_COPY[step - 1].title}
         subtitle={STEP_COPY[step - 1].subtitle}
-        onBack={goBack}
+        onBack={step > 1 ? goBack : undefined}
         step={step}
         totalSteps={4}
       />
@@ -116,6 +112,7 @@ export default function RiderOnboardingScreen() {
           <View className="flex-row flex-wrap justify-between gap-y-3">
             {VEHICLES.map((vehicle) => {
               const active = vehicleType === vehicle.value;
+              const Glyph = vehicle.glyph;
               return (
                 <Pressable
                   key={vehicle.value}
@@ -124,12 +121,8 @@ export default function RiderOnboardingScreen() {
                     active ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
                   }`}
                 >
-                  <View className="flex-row items-start justify-between">
-                    <MaterialCommunityIcons
-                      name={vehicle.icon}
-                      size={40}
-                      color={active ? Brand.blue : Brand.navy}
-                    />
+                  <View className="h-14 flex-row items-center justify-between">
+                    <Glyph color={active ? Brand.blue : Brand.navy} />
                     {active ? <CheckCircleIcon size={20} color={Brand.blue} /> : null}
                   </View>
                   <View>

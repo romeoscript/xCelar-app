@@ -105,7 +105,7 @@ export const VEHICLE_LABELS: Record<VehicleType, string> = {
   BACKPACK: 'Backpack',
   BIKE: 'Bike',
   CAR: 'Car',
-  TRUCK: 'Truck',
+  TRUCK: 'Van',
 };
 
 export const DOCUMENT_LABELS: Record<RiderDocumentType, string> = {

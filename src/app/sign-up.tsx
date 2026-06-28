@@ -57,7 +57,7 @@ export default function SignUpScreen() {
   });
 
   const handleSubmit = () => {
-    const base = { fullName: fullName.trim(), password };
+    const base = { fullName: fullName.trim(), password, asRider: accountType === 'rider' };
     const input: RegisterInput =
       method === 'email' ? { ...base, email: email.trim() } : { ...base, phoneNumber: phone };
     signUp.mutate(input);

@@ -31,7 +31,8 @@ export default function SignInScreen() {
     mutationFn: (input: LoginInput) => login(input),
     onSuccess: async (session) => {
       await startSession(session);
-      router.replace(next === 'rider' ? '/rider' : '/home');
+      const toRider = session.user.role === 'COURIER' || next === 'rider';
+      router.replace(toRider ? '/rider' : '/home');
     },
   });
 

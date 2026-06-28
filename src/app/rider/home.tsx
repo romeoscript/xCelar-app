@@ -73,10 +73,10 @@ export default function RiderHomeScreen() {
               <Text className="text-sm font-semibold text-white">Deliveries</Text>
             </Pressable>
             <Pressable
-              onPress={() => router.push('/rider/documents')}
+              onPress={() => router.push('/rider/account')}
               className="rounded-full bg-white/10 px-4 py-2 active:opacity-70"
             >
-              <Text className="text-sm font-semibold text-white">Profile</Text>
+              <Text className="text-sm font-semibold text-white">Account</Text>
             </Pressable>
           </View>
         </View>

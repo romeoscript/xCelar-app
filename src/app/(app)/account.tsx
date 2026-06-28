@@ -156,7 +156,9 @@ export default function AccountScreen() {
           <View className="items-center gap-1.5">
             <Text className="text-xl font-bold text-brand-navy">{user?.fullName}</Text>
             <View className="rounded-full bg-brand-blue-tint px-3 py-1">
-              <Text className="text-xs font-semibold text-brand-blue">Individual account</Text>
+              <Text className="text-xs font-semibold text-brand-blue">
+                {user?.role === 'COURIER' ? 'Courier account' : 'Individual account'}
+              </Text>
             </View>
           </View>
         </View>

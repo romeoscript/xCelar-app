@@ -32,6 +32,8 @@ export type RegisterInput = {
   password: string;
   email?: string;
   phoneNumber?: string;
+  /** Sign up directly as a courier (role COURIER) rather than a customer. */
+  asRider?: boolean;
 };
 
 export type LoginInput = {

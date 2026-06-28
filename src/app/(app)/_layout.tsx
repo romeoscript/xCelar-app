@@ -7,9 +7,15 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function AppTabsLayout() {
   const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.user?.role);
 
   if (status !== 'authenticated') {
     return <Redirect href="/" />;
+  }
+
+  // Couriers live in the rider experience, not the customer app.
+  if (role === 'COURIER') {
+    return <Redirect href="/rider" />;
   }
 
   return (

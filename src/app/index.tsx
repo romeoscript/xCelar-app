@@ -16,12 +16,13 @@ const worldMap = require('@/assets/images/world-map.png');
 export default function WelcomeScreen() {
   const router = useRouter();
   const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.user?.role);
 
   const handleGetStarted = () => router.push('/sign-up');
   const handleSignIn = () => router.push('/sign-in');
 
   if (status === 'authenticated') {
-    return <Redirect href="/home" />;
+    return <Redirect href={role === 'COURIER' ? '/rider' : '/home'} />;
   }
 
   return (

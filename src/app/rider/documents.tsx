@@ -42,7 +42,6 @@ export default function RiderDocumentsScreen() {
         eyebrow="Almost there"
         title="Upload your documents"
         subtitle="Clear photos get you verified faster. You can submit and add the rest later."
-        onBack={() => router.back()}
         step={4}
         totalSteps={4}
       />

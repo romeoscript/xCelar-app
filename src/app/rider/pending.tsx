@@ -72,7 +72,7 @@ export default function RiderPendingScreen() {
             onPress={() => profileQuery.refetch()}
           />
         )}
-        <Button label="Back to app" variant="secondary" onPress={() => router.replace('/(app)/home')} />
+        <Button label="Account" variant="secondary" onPress={() => router.push('/rider/account')} />
       </View>
     </SafeAreaView>
   );
