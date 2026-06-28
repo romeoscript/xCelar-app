@@ -5,8 +5,8 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RouteLine } from '@/components/rider/route-line';
+import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { QueryError } from '@/components/ui/query-error';
-import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { getMyDeliveries } from '@/lib/rider-api';
@@ -34,14 +34,14 @@ export default function RiderDeliveriesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar style="dark" />
-      <ScreenHeader title="My deliveries" />
+      <Text className="px-6 pb-2 pt-2 text-xl font-extrabold text-brand-navy">Bookings</Text>
       {deliveriesQuery.isError ? (
         <QueryError onRetry={() => deliveriesQuery.refetch()} />
       ) : (
         <FlatList
           data={deliveriesQuery.data ?? []}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 24, gap: 12 }}
+          contentContainerStyle={{ padding: 24, paddingBottom: 110, gap: 12 }}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push(`/rider/delivery/${item.id}`)}
@@ -86,6 +86,7 @@ export default function RiderDeliveriesScreen() {
           }
         />
       )}
+      <RiderTabBar />
     </SafeAreaView>
   );
 }

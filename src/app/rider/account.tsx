@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsRow } from '@/components/account/settings-row';
 import { SettingsSection } from '@/components/account/settings-section';
 import { DocumentIcon, IdCardIcon, LockIcon, LogoutIcon, TrashIcon } from '@/components/icons';
-import { ScreenHeader } from '@/components/ui/screen-header';
+import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { logout } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { getMyRiderProfile, type RiderStatus } from '@/lib/rider-api';
@@ -48,8 +48,8 @@ export default function RiderAccountScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar style="dark" />
-      <ScreenHeader title="Account" />
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 24 }}>
+      <Text className="px-6 pb-2 pt-2 text-xl font-extrabold text-brand-navy">Account</Text>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 110, gap: 24 }}>
         <View className="items-center gap-3">
           <View className="h-20 w-20 items-center justify-center rounded-full bg-brand-night">
             <Text className="text-2xl font-bold text-white">{initials(user?.fullName ?? '?')}</Text>
@@ -89,6 +89,7 @@ export default function RiderAccountScreen() {
           />
         </SettingsSection>
       </ScrollView>
+      <RiderTabBar />
     </SafeAreaView>
   );
 }

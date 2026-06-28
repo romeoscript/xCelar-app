@@ -7,6 +7,8 @@ export type RouteMapProps = {
   dropoffLat: number | null;
   dropoffLng: number | null;
   height?: number;
+  /** Fill the parent (flex-1) instead of using a fixed height + rounded corners. */
+  fill?: boolean;
 };
 
 /** Builds a self-contained Leaflet/OSM page that draws the pickup→drop-off
@@ -47,20 +49,25 @@ export function RouteMap({
   dropoffLat,
   dropoffLng,
   height = 220,
+  fill = false,
 }: RouteMapProps) {
   const hasCoords =
     pickupLat != null && pickupLng != null && dropoffLat != null && dropoffLng != null;
+  const containerStyle = fill ? undefined : { height };
+  const containerClass = fill
+    ? 'flex-1 overflow-hidden bg-brand-surface'
+    : 'overflow-hidden rounded-2xl bg-brand-surface';
 
   if (!hasCoords) {
     return (
-      <View style={{ height }} className="items-center justify-center rounded-2xl bg-brand-surface">
+      <View style={containerStyle} className={`${containerClass} items-center justify-center`}>
         <Text className="text-sm text-gray-400">Route map unavailable</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ height }} className="overflow-hidden rounded-2xl bg-brand-surface">
+    <View style={containerStyle} className={containerClass}>
       <WebView
         originWhitelist={['*']}
         source={{ html: buildHtml(pickupLat, pickupLng, dropoffLat, dropoffLng) }}

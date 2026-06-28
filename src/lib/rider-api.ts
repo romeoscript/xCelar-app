@@ -43,6 +43,7 @@ export type RiderDelivery = {
   pickedUpAt: string | null;
   deliveredAt: string | null;
   proofUrl: string | null;
+  paymentMethod: string | null;
 };
 
 export async function applyAsRider(input: {
@@ -76,6 +77,11 @@ export async function getAvailableDeliveries(lat: number, lng: number): Promise<
 
 export async function acceptDelivery(id: string): Promise<RiderDelivery> {
   const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/accept`);
+  return data;
+}
+
+export async function getAvailableDelivery(id: string): Promise<RiderDelivery> {
+  const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}/preview`);
   return data;
 }
 
