@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TruckIcon } from '@/components/icons';
+import { PackageIcon, TruckIcon, UserIcon } from '@/components/icons';
 import { RouteLine } from '@/components/rider/route-line';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
@@ -26,7 +26,9 @@ export default function RiderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const firstName = useAuthStore((state) => state.user?.fullName?.split(' ')[0] ?? 'there');
+  const fullName = useAuthStore((state) => state.user?.fullName ?? '');
+  // Use the first word, and strip a domain if the name is actually an email.
+  const firstName = (fullName.trim().split(/\s+/)[0] || 'there').split('@')[0];
 
   const locationQuery = useQuery({
     queryKey: ['rider-location'],
@@ -55,28 +57,32 @@ export default function RiderHomeScreen() {
       <StatusBar style="light" />
 
       <View className="rounded-b-3xl bg-brand-night px-6 pb-6" style={{ paddingTop: insets.top + 12 }}>
-        <View className="flex-row items-center justify-between">
-          <View>
+        <View className="flex-row items-center gap-3">
+          <View className="flex-1">
             <View className="flex-row items-center gap-1.5">
               <View className="h-2 w-2 rounded-full bg-green-400" />
               <Text className="text-xs font-semibold uppercase tracking-wider text-white/60">
                 Online
               </Text>
             </View>
-            <Text className="mt-1 text-2xl font-extrabold text-white">Hi {firstName}</Text>
+            <Text className="mt-1 text-2xl font-extrabold text-white" numberOfLines={1}>
+              Hi {firstName}
+            </Text>
           </View>
           <View className="flex-row gap-2">
             <Pressable
               onPress={() => router.push('/rider/deliveries')}
-              className="rounded-full bg-white/10 px-4 py-2 active:opacity-70"
+              hitSlop={6}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/10 active:opacity-70"
             >
-              <Text className="text-sm font-semibold text-white">Deliveries</Text>
+              <PackageIcon size={20} color="#ffffff" />
             </Pressable>
             <Pressable
               onPress={() => router.push('/rider/account')}
-              className="rounded-full bg-white/10 px-4 py-2 active:opacity-70"
+              hitSlop={6}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/10 active:opacity-70"
             >
-              <Text className="text-sm font-semibold text-white">Account</Text>
+              <UserIcon size={20} color="#ffffff" />
             </Pressable>
           </View>
         </View>
