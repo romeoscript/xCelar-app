@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TruckIcon } from '@/components/icons';
 import { RouteLine } from '@/components/rider/route-line';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
@@ -114,8 +115,10 @@ export default function RiderHomeScreen() {
                 <ActivityIndicator color={Brand.blue} />
               </View>
             ) : (
-              <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-14">
-                <Text className="text-4xl">🛵</Text>
+              <View className="items-center gap-3 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-14">
+                <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white">
+                  <TruckIcon size={28} color={Brand.muted} />
+                </View>
                 <Text className="font-semibold text-gray-700">No deliveries nearby</Text>
                 <Text className="text-center text-sm text-gray-500">Pull down to check again.</Text>
               </View>

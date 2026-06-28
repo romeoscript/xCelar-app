@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ChevronLeftIcon } from '@/components/icons';
+import { ChevronLeftIcon, CrosshairIcon, PinIcon, TruckIcon, WalletIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
@@ -73,8 +73,10 @@ function RiderLanding({
       </View>
 
       <View className="flex-1 justify-center px-6">
-        <Text className="text-6xl">🛵</Text>
-        <Text className="mt-4 text-[34px] font-extrabold leading-[40px] text-white">
+        <View className="h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
+          <TruckIcon size={32} color="#ffffff" />
+        </View>
+        <Text className="mt-5 text-[34px] font-extrabold leading-[40px] text-white">
           Deliver with Xcelar
         </Text>
         <Text className="mt-3 text-base leading-6 text-white/70">
@@ -82,9 +84,17 @@ function RiderLanding({
         </Text>
 
         <View className="mt-8 gap-4">
-          <Perk emoji="📍" title="Deliveries near you" body="See paid jobs around your location." />
-          <Perk emoji="🧭" title="One-tap navigation" body="Route map plus handoff to your Maps app." />
-          <Perk emoji="💸" title="Paid per drop-off" body="Clear earnings on every completed delivery." />
+          <Perk icon={PinIcon} title="Deliveries near you" body="See paid jobs around your location." />
+          <Perk
+            icon={CrosshairIcon}
+            title="One-tap navigation"
+            body="Route map plus handoff to your Maps app."
+          />
+          <Perk
+            icon={WalletIcon}
+            title="Paid per drop-off"
+            body="Clear earnings on every completed delivery."
+          />
         </View>
       </View>
 
@@ -96,11 +106,19 @@ function RiderLanding({
   );
 }
 
-function Perk({ emoji, title, body }: { emoji: string; title: string; body: string }) {
+function Perk({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: typeof TruckIcon;
+  title: string;
+  body: string;
+}) {
   return (
     <View className="flex-row items-center gap-3">
       <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-        <Text className="text-xl">{emoji}</Text>
+        <Icon size={20} color="#ffffff" />
       </View>
       <View className="flex-1">
         <Text className="text-base font-bold text-white">{title}</Text>

@@ -5,7 +5,13 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CheckCircleIcon } from '@/components/icons';
+import {
+  BackpackIcon,
+  BikeIcon,
+  CarIcon,
+  CheckCircleIcon,
+  TruckIcon,
+} from '@/components/icons';
 import { RiderHeader } from '@/components/rider/rider-header';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
@@ -13,11 +19,11 @@ import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { applyAsRider, VEHICLE_LABELS, type VehicleType } from '@/lib/rider-api';
 
-const VEHICLES: { value: VehicleType; emoji: string; hint: string }[] = [
-  { value: 'BACKPACK', emoji: '🎒', hint: 'On foot' },
-  { value: 'BIKE', emoji: '🏍️', hint: 'Fastest' },
-  { value: 'CAR', emoji: '🚗', hint: 'Bigger loads' },
-  { value: 'TRUCK', emoji: '🚚', hint: 'Heavy items' },
+const VEHICLES: { value: VehicleType; icon: typeof TruckIcon; hint: string }[] = [
+  { value: 'BACKPACK', icon: BackpackIcon, hint: 'On foot' },
+  { value: 'BIKE', icon: BikeIcon, hint: 'Fastest' },
+  { value: 'CAR', icon: CarIcon, hint: 'Bigger loads' },
+  { value: 'TRUCK', icon: TruckIcon, hint: 'Heavy items' },
 ];
 
 export default function RiderOnboardingScreen() {
@@ -66,16 +72,23 @@ export default function RiderOnboardingScreen() {
         <View className="flex-row flex-wrap justify-between gap-y-3">
           {VEHICLES.map((vehicle) => {
             const active = vehicleType === vehicle.value;
+            const Icon = vehicle.icon;
             return (
               <Pressable
                 key={vehicle.value}
                 onPress={() => setVehicleType(vehicle.value)}
-                className={`h-28 w-[48%] justify-between rounded-2xl border p-4 active:opacity-80 ${
+                className={`h-28 w-[48%] justify-between rounded-2xl border-2 p-4 active:opacity-80 ${
                   active ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
                 }`}
               >
                 <View className="flex-row items-start justify-between">
-                  <Text className="text-3xl">{vehicle.emoji}</Text>
+                  <View
+                    className={`h-10 w-10 items-center justify-center rounded-xl ${
+                      active ? 'bg-brand-blue' : 'bg-brand-surface'
+                    }`}
+                  >
+                    <Icon size={22} color={active ? '#ffffff' : Brand.navy} />
+                  </View>
                   {active ? <CheckCircleIcon size={20} color={Brand.blue} /> : null}
                 </View>
                 <View>

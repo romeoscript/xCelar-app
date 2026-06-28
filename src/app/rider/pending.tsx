@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { InfoIcon, ShieldIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { getMyRiderProfile } from '@/lib/rider-api';
@@ -31,7 +32,11 @@ export default function RiderPendingScreen() {
       <StatusBar style="dark" />
       <View className="flex-1 items-center justify-center gap-6 px-8">
         <View className="h-24 w-24 items-center justify-center rounded-full bg-brand-night">
-          <Text className="text-4xl">{rejected ? '⚠️' : '⏳'}</Text>
+          {rejected ? (
+            <InfoIcon size={36} color="#ffffff" />
+          ) : (
+            <ShieldIcon size={36} color="#ffffff" />
+          )}
         </View>
 
         <View className="items-center gap-2">

@@ -213,6 +213,64 @@ export function PinIcon({ size = 22, color = '#000000' }: IconProps) {
   );
 }
 
+/** Backpack — the on-foot delivery vehicle. */
+export function BackpackIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 10a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="M9 5V4.5a3 3 0 0 1 6 0V5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M9 12h6v4H9z" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Motorbike — the fastest delivery vehicle. */
+export function BikeIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={5.5} cy={17} r={3.5} stroke={color} strokeWidth={2} />
+      <Circle cx={18.5} cy={17} r={3.5} stroke={color} strokeWidth={2} />
+      <Path
+        d="M5.5 17l4-7h4.5l2 4H18"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M9 10h4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Car — for bigger loads. */
+export function CarIcon({ size = 24, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 14l1.5-5A2 2 0 0 1 7.4 7.5h9.2a2 2 0 0 1 1.9 1.5L20 14"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3 14h18v3a1 1 0 0 1-1 1h-1.5M5.5 18H4a1 1 0 0 1-1-1v-3"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={7.5} cy={17.5} r={1.8} stroke={color} strokeWidth={2} />
+      <Circle cx={16.5} cy={17.5} r={1.8} stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
 /** Delivery truck — local, door-to-door road shipping. */
 export function TruckIcon({ size = 24, color = '#000000' }: IconProps) {
   return (
