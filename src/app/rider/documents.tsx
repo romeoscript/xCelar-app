@@ -3,12 +3,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CheckCircleIcon, CloudUploadIcon } from '@/components/icons';
+import { CameraIcon } from '@/components/icons';
+import { RiderHeader } from '@/components/rider/rider-header';
 import { Button } from '@/components/ui/button';
-import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { tapFeedback } from '@/lib/haptics';
 import {
@@ -30,33 +30,44 @@ const DOCUMENT_ORDER: RiderDocumentType[] = [
 
 export default function RiderDocumentsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const profileQuery = useQuery({ queryKey: ['rider-profile'], queryFn: getMyRiderProfile });
-  const uploaded = new Set(profileQuery.data?.documents.map((doc) => doc.type) ?? []);
+  const urlByType = new Map(profileQuery.data?.documents.map((doc) => [doc.type, doc.url]) ?? []);
+  const uploadedCount = profileQuery.data?.documents.length ?? 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar style="dark" />
-      <ScreenHeader title="Your documents" />
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-        <Text className="text-sm text-gray-500">
-          Upload clear photos. Your account is reviewed once submitted — you’ll be notified when
-          you’re approved.
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
+      <RiderHeader
+        eyebrow="Almost there"
+        title="Upload your documents"
+        subtitle="Clear photos get you verified faster. You can submit and add the rest later."
+        onBack={() => router.back()}
+        step={2}
+        totalSteps={2}
+      />
+
+      <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
+        <Text className="text-sm font-semibold text-gray-500">
+          {uploadedCount} of {DOCUMENT_ORDER.length} uploaded
         </Text>
-
         {DOCUMENT_ORDER.map((type) => (
-          <DocumentRow key={type} type={type} done={uploaded.has(type)} />
+          <DocumentRow key={type} type={type} url={urlByType.get(type) ?? null} />
         ))}
-
-        <Button label="Submit for review" onPress={() => router.replace('/rider/pending')} />
       </ScrollView>
-    </SafeAreaView>
+
+      <View style={{ paddingBottom: insets.bottom + 12 }} className="border-t border-gray-100 px-6 pt-3">
+        <Button label="Submit for review" onPress={() => router.replace('/rider/pending')} />
+      </View>
+    </View>
   );
 }
 
-function DocumentRow({ type, done }: { type: RiderDocumentType; done: boolean }) {
+function DocumentRow({ type, url }: { type: RiderDocumentType; url: string | null }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const uploaded = Boolean(url);
 
   const pick = async () => {
     if (busy) {
@@ -92,25 +103,26 @@ function DocumentRow({ type, done }: { type: RiderDocumentType; done: boolean })
   return (
     <Pressable
       onPress={pick}
-      className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 active:opacity-80"
+      className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 active:opacity-80"
     >
-      <View
-        className={`h-10 w-10 items-center justify-center rounded-full ${
-          done ? 'bg-brand-blue-tint' : 'bg-brand-surface'
-        }`}
-      >
+      <View className="h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-brand-surface">
         {busy ? (
           <ActivityIndicator color={Brand.blue} />
-        ) : done ? (
-          <CheckCircleIcon size={22} color={Brand.blue} />
+        ) : uploaded ? (
+          <Image source={{ uri: url as string }} className="h-14 w-14" resizeMode="cover" />
         ) : (
-          <CloudUploadIcon size={20} color={Brand.muted} />
+          <CameraIcon size={22} color={Brand.muted} />
         )}
       </View>
       <View className="flex-1">
         <Text className="text-base font-semibold text-brand-navy">{DOCUMENT_LABELS[type]}</Text>
         <Text className="text-xs text-gray-500">
-          {error ?? (done ? 'Uploaded — tap to replace' : 'Tap to upload a photo')}
+          {error ?? (uploaded ? 'Tap to replace' : 'Tap to take or pick a photo')}
+        </Text>
+      </View>
+      <View className={`rounded-full px-3 py-1 ${uploaded ? 'bg-green-100' : 'bg-brand-surface'}`}>
+        <Text className={`text-xs font-semibold ${uploaded ? 'text-green-700' : 'text-gray-500'}`}>
+          {uploaded ? 'Done' : 'Required'}
         </Text>
       </View>
     </Pressable>

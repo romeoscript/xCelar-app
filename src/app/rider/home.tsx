@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RouteLine } from '@/components/rider/route-line';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
@@ -12,8 +13,17 @@ import { formatNaira } from '@/lib/format';
 import { getCurrentLocation } from '@/lib/location';
 import { acceptDelivery, getAvailableDeliveries, type RiderDelivery } from '@/lib/rider-api';
 
+const cardShadow = {
+  shadowColor: '#0E1330',
+  shadowOpacity: 0.06,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 2,
+};
+
 export default function RiderHomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const firstName = useAuthStore((state) => state.user?.fullName?.split(' ')[0] ?? 'there');
 
@@ -39,81 +49,81 @@ export default function RiderHomeScreen() {
     },
   });
 
-  const header = (
-    <View className="gap-4 px-6 pb-2 pt-2">
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text className="text-sm text-gray-500">Welcome back</Text>
-          <Text className="text-2xl font-extrabold text-brand-navy">{firstName}</Text>
-        </View>
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => router.push('/rider/deliveries')}
-            className="rounded-full bg-brand-surface px-4 py-2 active:opacity-70"
-          >
-            <Text className="text-sm font-semibold text-brand-navy">My deliveries</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/rider/documents')}
-            className="rounded-full bg-brand-surface px-4 py-2 active:opacity-70"
-          >
-            <Text className="text-sm font-semibold text-brand-navy">Profile</Text>
-          </Pressable>
+  return (
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
+
+      <View className="rounded-b-3xl bg-brand-night px-6 pb-6" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center justify-between">
+          <View>
+            <View className="flex-row items-center gap-1.5">
+              <View className="h-2 w-2 rounded-full bg-green-400" />
+              <Text className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                Online
+              </Text>
+            </View>
+            <Text className="mt-1 text-2xl font-extrabold text-white">Hi {firstName}</Text>
+          </View>
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => router.push('/rider/deliveries')}
+              className="rounded-full bg-white/10 px-4 py-2 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-white">Deliveries</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/rider/documents')}
+              className="rounded-full bg-white/10 px-4 py-2 active:opacity-70"
+            >
+              <Text className="text-sm font-semibold text-white">Profile</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-      <Text className="text-lg font-bold text-brand-navy">Available nearby</Text>
-    </View>
-  );
 
-  if (locationQuery.isError) {
-    return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-        <StatusBar style="dark" />
+      {locationQuery.isError ? (
         <QueryError
-          message="We need your location to find deliveries near you."
+          message="Turn on location to find deliveries near you."
           onRetry={() => locationQuery.refetch()}
         />
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar style="dark" />
-      <FlatList
-        data={availableQuery.data ?? []}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={header}
-        contentContainerStyle={{ paddingBottom: 32 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={availableQuery.isFetching}
-            onRefresh={() => availableQuery.refetch()}
-            tintColor={Brand.blue}
-          />
-        }
-        renderItem={({ item }) => (
-          <DeliveryCard
-            delivery={item}
-            accepting={accept.isPending && accept.variables === item.id}
-            onAccept={() => accept.mutate(item.id)}
-          />
-        )}
-        ListEmptyComponent={
-          !location || availableQuery.isLoading ? (
-            <View className="items-center py-16">
-              <ActivityIndicator color={Brand.blue} />
-            </View>
-          ) : (
-            <View className="mx-6 items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
-              <Text className="text-3xl">🛵</Text>
-              <Text className="font-semibold text-gray-700">No deliveries nearby</Text>
-              <Text className="text-center text-sm text-gray-500">Pull to refresh to check again.</Text>
-            </View>
-          )
-        }
-      />
-    </SafeAreaView>
+      ) : (
+        <FlatList
+          data={availableQuery.data ?? []}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 24, paddingTop: 20, paddingBottom: 32 }}
+          ListHeaderComponent={
+            <Text className="mb-4 text-lg font-bold text-brand-navy">Available nearby</Text>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={availableQuery.isFetching}
+              onRefresh={() => availableQuery.refetch()}
+              tintColor={Brand.blue}
+            />
+          }
+          renderItem={({ item }) => (
+            <DeliveryCard
+              delivery={item}
+              accepting={accept.isPending && accept.variables === item.id}
+              onAccept={() => accept.mutate(item.id)}
+            />
+          )}
+          ListEmptyComponent={
+            !location || availableQuery.isLoading ? (
+              <View className="items-center py-16">
+                <ActivityIndicator color={Brand.blue} />
+              </View>
+            ) : (
+              <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-14">
+                <Text className="text-4xl">🛵</Text>
+                <Text className="font-semibold text-gray-700">No deliveries nearby</Text>
+                <Text className="text-center text-sm text-gray-500">Pull down to check again.</Text>
+              </View>
+            )
+          }
+        />
+      )}
+    </View>
   );
 }
 
@@ -127,20 +137,21 @@ function DeliveryCard({
   onAccept: () => void;
 }) {
   return (
-    <View className="mx-6 mb-4 gap-3 rounded-2xl border border-gray-100 bg-white p-4">
+    <View className="mb-4 gap-4 rounded-3xl bg-white p-5" style={cardShadow}>
       <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-brand-blue">
-          {delivery.packageCategory ?? 'Delivery'}
-        </Text>
-        <Text className="text-base font-extrabold text-brand-navy">
-          {delivery.feeNaira != null ? formatNaira(delivery.feeNaira) : '—'}
-        </Text>
+        <View className="rounded-full bg-brand-blue-tint px-3 py-1">
+          <Text className="text-xs font-semibold text-brand-blue">
+            {delivery.packageCategory ?? 'Delivery'}
+          </Text>
+        </View>
+        <View className="rounded-full bg-brand-gold-tint px-3 py-1">
+          <Text className="text-sm font-extrabold text-brand-navy">
+            {delivery.feeNaira != null ? formatNaira(delivery.feeNaira) : '—'}
+          </Text>
+        </View>
       </View>
 
-      <View className="gap-2">
-        <Address dotClass="bg-green-500" label="Pickup" value={delivery.pickup.address} />
-        <Address dotClass="bg-red-500" label="Drop-off" value={delivery.dropoff.address} />
-      </View>
+      <RouteLine compact pickup={delivery.pickup.address} dropoff={delivery.dropoff.address} />
 
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-gray-500">
@@ -149,20 +160,6 @@ function DeliveryCard({
         <View className="w-32">
           <Button label="Accept" loading={accepting} onPress={onAccept} />
         </View>
-      </View>
-    </View>
-  );
-}
-
-function Address({ dotClass, label, value }: { dotClass: string; label: string; value: string | null }) {
-  return (
-    <View className="flex-row items-start gap-2">
-      <View className={`mt-1.5 h-2 w-2 rounded-full ${dotClass}`} />
-      <View className="flex-1">
-        <Text className="text-xs text-gray-400">{label}</Text>
-        <Text className="text-sm text-gray-700" numberOfLines={1}>
-          {value ?? '—'}
-        </Text>
       </View>
     </View>
   );

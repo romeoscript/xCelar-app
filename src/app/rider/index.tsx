@@ -78,9 +78,14 @@ function RiderLanding({
           Deliver with Xcelar
         </Text>
         <Text className="mt-3 text-base leading-6 text-white/70">
-          Earn on your own schedule. Accept deliveries near you, navigate with one tap, and get paid
-          per drop-off.
+          Turn your bike or car into earnings, on your own schedule.
         </Text>
+
+        <View className="mt-8 gap-4">
+          <Perk emoji="📍" title="Deliveries near you" body="See paid jobs around your location." />
+          <Perk emoji="🧭" title="One-tap navigation" body="Route map plus handoff to your Maps app." />
+          <Perk emoji="💸" title="Paid per drop-off" body="Clear earnings on every completed delivery." />
+        </View>
       </View>
 
       <View className="gap-3 px-6 pb-4">
@@ -88,5 +93,19 @@ function RiderLanding({
         <Button label="I already have an account" variant="secondary" onPress={onSignIn} />
       </View>
     </SafeAreaView>
+  );
+}
+
+function Perk({ emoji, title, body }: { emoji: string; title: string; body: string }) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+        <Text className="text-xl">{emoji}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-base font-bold text-white">{title}</Text>
+        <Text className="text-sm text-white/60">{body}</Text>
+      </View>
+    </View>
   );
 }

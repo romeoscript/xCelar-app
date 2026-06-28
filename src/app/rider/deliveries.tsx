@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { RouteLine } from '@/components/rider/route-line';
 import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
@@ -16,6 +17,15 @@ export const DELIVERY_STATUS_LABELS: Record<string, string> = {
   DELIVERED: 'Delivered',
   CANCELLED: 'Cancelled',
 };
+
+export const DELIVERY_STATUS_STYLES: Record<string, { pill: string; text: string }> = {
+  CONFIRMED: { pill: 'bg-brand-blue-tint', text: 'text-brand-blue' },
+  IN_TRANSIT: { pill: 'bg-brand-gold-tint', text: 'text-brand-navy' },
+  DELIVERED: { pill: 'bg-green-100', text: 'text-green-700' },
+  CANCELLED: { pill: 'bg-red-100', text: 'text-red-700' },
+};
+
+const DEFAULT_STATUS_STYLE = { pill: 'bg-brand-surface', text: 'text-gray-600' };
 
 export default function RiderDeliveriesScreen() {
   const router = useRouter();
@@ -35,21 +45,29 @@ export default function RiderDeliveriesScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push(`/rider/delivery/${item.id}`)}
-              className="gap-2 rounded-2xl border border-gray-100 bg-white p-4 active:opacity-80"
+              className="gap-3 rounded-2xl border border-gray-100 bg-white p-4 active:opacity-80"
             >
               <View className="flex-row items-center justify-between">
-                <View className="rounded-full bg-brand-blue-tint px-3 py-1">
-                  <Text className="text-xs font-semibold text-brand-blue">
+                <View
+                  className={`rounded-full px-3 py-1 ${
+                    (DELIVERY_STATUS_STYLES[item.status] ?? DEFAULT_STATUS_STYLE).pill
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      (DELIVERY_STATUS_STYLES[item.status] ?? DEFAULT_STATUS_STYLE).text
+                    }`}
+                  >
                     {DELIVERY_STATUS_LABELS[item.status] ?? item.status}
                   </Text>
                 </View>
-                <Text className="text-base font-bold text-brand-navy">
-                  {item.feeNaira != null ? formatNaira(item.feeNaira) : '—'}
-                </Text>
+                <View className="rounded-full bg-brand-gold-tint px-3 py-1">
+                  <Text className="text-sm font-extrabold text-brand-navy">
+                    {item.feeNaira != null ? formatNaira(item.feeNaira) : '—'}
+                  </Text>
+                </View>
               </View>
-              <Text className="text-sm text-gray-700" numberOfLines={1}>
-                {item.pickup.address ?? '—'} → {item.dropoff.address ?? '—'}
-              </Text>
+              <RouteLine compact pickup={item.pickup.address} dropoff={item.dropoff.address} />
             </Pressable>
           )}
           ListEmptyComponent={

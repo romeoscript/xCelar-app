@@ -52,12 +52,12 @@ export default function WelcomeScreen() {
         <Button label="Sign in" variant="secondary" onPress={handleSignIn} />
 
         <Pressable
-          onPress={() => router.push('/rider')}
+          onPress={() => router.push({ pathname: '/sign-up', params: { next: 'rider' } })}
           hitSlop={8}
           className="items-center py-1 active:opacity-70"
         >
           <Text className="text-sm font-semibold text-white">
-            Deliver with Xcelar <Text className="text-brand-blue-light">→</Text>
+            Sign up as a rider <Text className="text-brand-blue-light">→</Text>
           </Text>
         </Pressable>
 

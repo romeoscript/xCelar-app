@@ -22,7 +22,42 @@ import {
   type DeliveryParty,
 } from '@/lib/rider-api';
 import { uploadFile } from '@/lib/uploads';
-import { DELIVERY_STATUS_LABELS } from '../deliveries';
+import { DELIVERY_STATUS_LABELS, DELIVERY_STATUS_STYLES } from '../deliveries';
+
+const STEPPER = ['Accepted', 'Picked up', 'Delivered'];
+
+function reachedStep(status: string): number {
+  if (status === 'DELIVERED') {
+    return 2;
+  }
+  if (status === 'IN_TRANSIT') {
+    return 1;
+  }
+  return 0;
+}
+
+function StatusStepper({ status }: { status: string }) {
+  const reached = reachedStep(status);
+  return (
+    <View className="flex-row items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-4">
+      {STEPPER.map((label, index) => {
+        const done = index <= reached;
+        return (
+          <View key={label} className="flex-1 items-center gap-1.5">
+            <View
+              className={`h-3 w-3 rounded-full ${done ? 'bg-brand-blue' : 'bg-gray-200'}`}
+            />
+            <Text
+              className={`text-xs font-medium ${done ? 'text-brand-navy' : 'text-gray-400'}`}
+            >
+              {label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function openDirections(party: DeliveryParty) {
   if (party.lat == null || party.lng == null) {
@@ -140,15 +175,27 @@ export default function RiderDeliveryScreen() {
           dropoffLng={delivery.dropoff.lng}
         />
 
+        <StatusStepper status={delivery.status} />
+
         <View className="flex-row items-center justify-between">
-          <View className="rounded-full bg-brand-blue-tint px-3 py-1">
-            <Text className="text-xs font-semibold text-brand-blue">
+          <View
+            className={`rounded-full px-3 py-1 ${
+              (DELIVERY_STATUS_STYLES[delivery.status] ?? { pill: 'bg-brand-surface' }).pill
+            }`}
+          >
+            <Text
+              className={`text-xs font-semibold ${
+                (DELIVERY_STATUS_STYLES[delivery.status] ?? { text: 'text-gray-600' }).text
+              }`}
+            >
               {DELIVERY_STATUS_LABELS[delivery.status] ?? delivery.status}
             </Text>
           </View>
-          <Text className="text-lg font-extrabold text-brand-navy">
-            {delivery.feeNaira != null ? formatNaira(delivery.feeNaira) : '—'}
-          </Text>
+          <View className="rounded-full bg-brand-gold-tint px-3 py-1">
+            <Text className="text-base font-extrabold text-brand-navy">
+              {delivery.feeNaira != null ? formatNaira(delivery.feeNaira) : '—'}
+            </Text>
+          </View>
         </View>
 
         <PartyCard dotClass="bg-green-500" label="Pickup" party={delivery.pickup} />
