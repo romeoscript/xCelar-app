@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import { env } from '@/lib/env';
+
 export type RouteMapProps = {
   pickupLat: number | null;
   pickupLng: number | null;
@@ -69,6 +71,21 @@ function buildHtml(pickup: Point, dropoff: Point, me: Point | null, interactive:
 </script></body></html>`;
 }
 
+/** Real Google Maps with the route, via the (free) Directions Embed API. Routes
+ *  Me → Pick Up → Drop Off when the rider's location is known. */
+function buildGoogleHtml(pickup: Point, dropoff: Point, me: Point | null, key: string): string {
+  const origin = me ?? pickup;
+  const waypoints = me ? `&waypoints=${pickup.lat},${pickup.lng}` : '';
+  const url =
+    `https://www.google.com/maps/embed/v1/directions?key=${key}` +
+    `&origin=${origin.lat},${origin.lng}&destination=${dropoff.lat},${dropoff.lng}` +
+    `${waypoints}&mode=driving`;
+  return `<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>html,body{height:100%;margin:0;background:#eef1f5}iframe{border:0;width:100%;height:100%}</style>
+</head><body><iframe src="${url}" allowfullscreen loading="lazy"></iframe></body></html>`;
+}
+
 export function RouteMap({
   pickupLat,
   pickupLng,
@@ -111,12 +128,11 @@ export function RouteMap({
   }
 
   const me = meLat != null && meLng != null ? { lat: meLat, lng: meLng } : null;
-  const html = buildHtml(
-    { lat: pickupLat, lng: pickupLng },
-    { lat: dropoffLat, lng: dropoffLng },
-    me,
-    interactive,
-  );
+  const pickup = { lat: pickupLat, lng: pickupLng };
+  const dropoff = { lat: dropoffLat, lng: dropoffLng };
+  const html = env.googleMapsKey
+    ? buildGoogleHtml(pickup, dropoff, me, env.googleMapsKey)
+    : buildHtml(pickup, dropoff, me, interactive);
 
   return (
     <View style={containerStyle} className={containerClass}>

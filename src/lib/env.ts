@@ -13,4 +13,7 @@ export const env = {
   // Address autocomplete provider (Photon/OSM by default — keyless, returns
   // coordinates). Swap for a Google/Mapbox endpoint via EXPO_PUBLIC_PLACES_API_URL.
   placesApiUrl: process.env.EXPO_PUBLIC_PLACES_API_URL ?? 'https://photon.komoot.io/api',
+  // Google Maps Embed API key. When set, rider maps render the real Google map
+  // with the route; otherwise they fall back to the keyless Leaflet/Carto map.
+  googleMapsKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '',
 };
