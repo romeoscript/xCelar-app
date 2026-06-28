@@ -14,11 +14,9 @@ import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
-import { formatNaira } from '@/lib/format';
 import { getCurrentLocation } from '@/lib/location';
 import { acceptDelivery, getAvailableDelivery } from '@/lib/rider-api';
 
-const PAYMENT_LABEL: Record<string, string> = { BALANCE: 'Wallet', PAYSTACK: 'Card' };
 const MAP_SHEET_HEIGHT = Math.round(Dimensions.get('window').height * 0.8);
 
 function initials(name: string | null): string {
@@ -104,18 +102,6 @@ export default function RequestDetailsScreen() {
         </View>
 
         <Detail label="Recipient contact number" value={request.dropoff.phone ?? '—'} />
-
-        <View className="flex-row gap-4">
-          <Detail
-            label="Payment"
-            value={request.paymentMethod ? PAYMENT_LABEL[request.paymentMethod] ?? request.paymentMethod : '—'}
-          />
-          <Detail
-            label="Fee"
-            value={request.feeNaira != null ? formatNaira(request.feeNaira) : '—'}
-            emphasize
-          />
-        </View>
 
         <Pressable onPress={() => setShowMap(true)} className="items-center py-1 active:opacity-70">
           <Text className="text-base font-semibold text-brand-blue underline">View map route</Text>

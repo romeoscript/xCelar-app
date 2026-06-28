@@ -8,7 +8,6 @@ import { RouteLine } from '@/components/rider/route-line';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
-import { formatNaira } from '@/lib/format';
 import { getMyDeliveries } from '@/lib/rider-api';
 
 export const DELIVERY_STATUS_LABELS: Record<string, string> = {
@@ -47,7 +46,7 @@ export default function RiderDeliveriesScreen() {
               onPress={() => router.push(`/rider/delivery/${item.id}`)}
               className="gap-3 rounded-2xl border border-gray-100 bg-white p-4 active:opacity-80"
             >
-              <View className="flex-row items-center justify-between">
+              <View className="flex-row">
                 <View
                   className={`rounded-full px-3 py-1 ${
                     (DELIVERY_STATUS_STYLES[item.status] ?? DEFAULT_STATUS_STYLE).pill
@@ -59,11 +58,6 @@ export default function RiderDeliveriesScreen() {
                     }`}
                   >
                     {DELIVERY_STATUS_LABELS[item.status] ?? item.status}
-                  </Text>
-                </View>
-                <View className="rounded-full bg-brand-gold-tint px-3 py-1">
-                  <Text className="text-sm font-extrabold text-brand-navy">
-                    {item.feeNaira != null ? formatNaira(item.feeNaira) : '—'}
                   </Text>
                 </View>
               </View>
