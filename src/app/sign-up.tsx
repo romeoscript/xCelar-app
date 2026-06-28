@@ -31,6 +31,11 @@ export default function SignUpScreen() {
     mutationFn: (input: RegisterInput) => register(input),
     onSuccess: async (session) => {
       await startSession(session);
+      // Email signups must verify with the code we just emailed them.
+      if (session.user.email && !session.user.emailVerified) {
+        router.replace('/verify-email');
+        return;
+      }
       router.replace('/home');
     },
   });

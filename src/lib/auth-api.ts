@@ -8,6 +8,7 @@ export type Gender = 'male' | 'female' | 'prefer_not_to_say';
 export type User = {
   id: string;
   email: string | null;
+  emailVerified: boolean;
   phoneNumber: string | null;
   fullName: string;
   avatarUrl: string | null;
@@ -47,6 +48,17 @@ export async function register(input: RegisterInput): Promise<AuthSession> {
 export async function login(input: LoginInput): Promise<AuthSession> {
   const { data } = await api.post<AuthSession>('/auth/login', input);
   return data;
+}
+
+/** Verify the email with the 6-digit OTP; returns the updated (verified) user. */
+export async function verifyEmail(code: string): Promise<User> {
+  const { data } = await api.post<{ user: User }>('/auth/verify-email', { code });
+  return data.user;
+}
+
+/** Re-send the email verification code. */
+export async function resendOtp(): Promise<void> {
+  await api.post('/auth/resend-otp');
 }
 
 export async function getMe(): Promise<User> {
