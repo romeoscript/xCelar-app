@@ -18,6 +18,7 @@ import {
   LogoutIcon,
   MessageIcon,
   PinIcon,
+  RouteSwapIcon,
   ShieldIcon,
   TrashIcon,
   WalletIcon,
@@ -195,6 +196,14 @@ export default function AccountScreen() {
             icon={PinIcon}
             label="Saved addresses"
             onPress={() => router.push('/saved-addresses')}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Earn with Xcelar">
+          <SettingsRow
+            icon={RouteSwapIcon}
+            label="Become a rider"
+            onPress={() => router.push('/rider')}
           />
         </SettingsSection>
 

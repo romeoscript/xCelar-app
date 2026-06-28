@@ -7,7 +7,7 @@ export type LocalFile = {
   mimeType?: string;
 };
 
-export type UploadFolder = 'invoices' | 'avatars' | 'banners';
+export type UploadFolder = 'invoices' | 'avatars' | 'banners' | 'rider-docs' | 'proofs';
 
 type PresignResponse = { uploadUrl: string; key: string };
 
