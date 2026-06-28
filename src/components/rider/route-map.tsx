@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -14,6 +15,8 @@ export type RouteMapProps = {
   fill?: boolean;
   /** Allow panning/zooming. Off for previews embedded in scroll views. */
   interactive?: boolean;
+  /** Recenter the map on this point when it changes (in-app "navigate"). */
+  focusTarget?: { lat: number; lng: number } | null;
 };
 
 type Point = { lat: number; lng: number };
@@ -45,6 +48,7 @@ function buildHtml(pickup: Point, dropoff: Point, me: Point | null, interactive:
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   var map=L.map('map',${options});
+  window.rmap=map;
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',{maxZoom:20,subdomains:'abcd'}).addTo(map);
   function callout(text,bg,col){return L.divIcon({className:'',iconSize:[0,0],iconAnchor:[0,0],html:'<div style="transform:translate(-50%,-100%)"><div class="cal"><div class="pill" style="background:'+bg+';color:'+col+'">'+text+'</div><div class="tip" style="border-top-color:'+bg+'"></div></div></div>'});}
   function meIcon(){return L.divIcon({className:'',iconSize:[0,0],iconAnchor:[0,0],html:'<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center"><div class="pill" style="background:#F8B81B;color:#23205C;margin-bottom:7px">Me</div><div class="dot"></div></div>'});}
@@ -75,9 +79,19 @@ export function RouteMap({
   height = 220,
   fill = false,
   interactive = false,
+  focusTarget = null,
 }: RouteMapProps) {
+  const webRef = useRef<WebView>(null);
   const hasCoords =
     pickupLat != null && pickupLng != null && dropoffLat != null && dropoffLng != null;
+
+  useEffect(() => {
+    if (focusTarget) {
+      webRef.current?.injectJavaScript(
+        `if(window.rmap){window.rmap.setView([${focusTarget.lat},${focusTarget.lng}],16);} true;`,
+      );
+    }
+  }, [focusTarget]);
   const containerStyle = fill ? undefined : { height };
   const containerClass = fill
     ? 'flex-1 overflow-hidden bg-brand-surface'
@@ -102,6 +116,7 @@ export function RouteMap({
   return (
     <View style={containerStyle} className={containerClass}>
       <WebView
+        ref={webRef}
         originWhitelist={['*']}
         source={{ html }}
         scrollEnabled={false}

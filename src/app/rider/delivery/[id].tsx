@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
-import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getCurrentLocation } from '@/lib/location';
 import {
@@ -23,12 +22,6 @@ import {
   type RiderDelivery,
 } from '@/lib/rider-api';
 import { uploadFile } from '@/lib/uploads';
-
-function openDirections(party: DeliveryParty) {
-  if (party.lat != null && party.lng != null) {
-    void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${party.lat},${party.lng}`);
-  }
-}
 
 function callNumber(phone: string | null) {
   if (phone) {
@@ -44,6 +37,7 @@ export default function RiderDeliveryScreen() {
 
   const [arrived, setArrived] = useState(false);
   const [atDropoff, setAtDropoff] = useState(false);
+  const [focusTarget, setFocusTarget] = useState<{ lat: number; lng: number } | null>(null);
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
@@ -108,6 +102,12 @@ export default function RiderDeliveryScreen() {
     }
   };
 
+  const navigateTo = (party: DeliveryParty) => {
+    if (party.lat != null && party.lng != null) {
+      setFocusTarget({ lat: party.lat, lng: party.lng });
+    }
+  };
+
   if (!id) {
     return <Redirect href="/rider/home" />;
   }
@@ -142,6 +142,7 @@ export default function RiderDeliveryScreen() {
         dropoffLng={delivery.dropoff.lng}
         meLat={locationQuery.data?.latitude}
         meLng={locationQuery.data?.longitude}
+        focusTarget={focusTarget}
         fill
         interactive
       />
@@ -174,6 +175,7 @@ export default function RiderDeliveryScreen() {
           onTakeProof={takeProof}
           onComplete={() => complete.mutate()}
           onDone={() => router.replace('/rider/deliveries')}
+          onNavigate={navigateTo}
         />
         {error ? <Text className="text-center text-sm text-red-500">{error}</Text> : null}
       </View>
@@ -196,11 +198,11 @@ type ActionCardProps = {
   onTakeProof: () => void;
   onComplete: () => void;
   onDone: () => void;
+  onNavigate: (party: DeliveryParty) => void;
 };
 
 function ActionCard(props: ActionCardProps) {
   const { delivery } = props;
-  const fee = delivery.feeNaira != null ? formatNaira(delivery.feeNaira) : '—';
 
   if (delivery.status === 'DELIVERED') {
     return (
@@ -221,16 +223,16 @@ function ActionCard(props: ActionCardProps) {
     if (!props.arrived) {
       return (
         <View className="gap-3">
-          <Eyebrow text="You're en route to pickup" fee={fee} />
-          <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} />
+          <Eyebrow text="You're en route to pickup" />
+          <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} onNavigate={props.onNavigate} />
           <Button label="Arrive at pickup" onPress={props.onArrive} />
         </View>
       );
     }
     return (
       <View className="gap-3">
-        <Eyebrow text="At pickup" fee={fee} />
-        <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} />
+        <Eyebrow text="At pickup" />
+        <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} onNavigate={props.onNavigate} />
         <Button label="Start delivery" loading={props.pickupPending} onPress={props.onStartDelivery} />
       </View>
     );
@@ -240,15 +242,15 @@ function ActionCard(props: ActionCardProps) {
   if (!props.atDropoff) {
     return (
       <View className="gap-3">
-        <Eyebrow text="En route to drop-off" fee={fee} />
-        <Stop dotClass="bg-red-500" name={delivery.dropoff.name} address={delivery.dropoff.address} party={delivery.dropoff} />
+        <Eyebrow text="En route to drop-off" />
+        <Stop dotClass="bg-red-500" name={delivery.dropoff.name} address={delivery.dropoff.address} party={delivery.dropoff} onNavigate={props.onNavigate} />
         <Button label="Start drop-off" onPress={props.onStartDropoff} />
       </View>
     );
   }
   return (
     <View className="gap-3">
-      <Eyebrow text="Proof of delivery" fee={fee} />
+      <Eyebrow text="Proof of delivery" />
       {props.proofUri ? (
         <Image source={{ uri: props.proofUri }} className="h-28 w-full rounded-xl" resizeMode="cover" />
       ) : null}
@@ -263,15 +265,8 @@ function ActionCard(props: ActionCardProps) {
   );
 }
 
-function Eyebrow({ text, fee }: { text: string; fee: string }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text className="text-base font-bold text-brand-navy">{text}</Text>
-      <View className="rounded-full bg-brand-gold-tint px-3 py-1">
-        <Text className="text-sm font-extrabold text-brand-navy">{fee}</Text>
-      </View>
-    </View>
-  );
+function Eyebrow({ text }: { text: string }) {
+  return <Text className="text-base font-bold text-brand-navy">{text}</Text>;
 }
 
 function Stop({
@@ -279,11 +274,13 @@ function Stop({
   name,
   address,
   party,
+  onNavigate,
 }: {
   dotClass: string;
   name: string | null;
   address: string | null;
   party: DeliveryParty;
+  onNavigate: (party: DeliveryParty) => void;
 }) {
   return (
     <View className="gap-2 rounded-2xl bg-brand-surface p-3">
@@ -304,7 +301,7 @@ function Stop({
           <Text className="text-sm font-semibold text-brand-navy">Call</Text>
         </Pressable>
         <Pressable
-          onPress={() => openDirections(party)}
+          onPress={() => onNavigate(party)}
           className="flex-1 items-center rounded-full bg-brand-blue py-2.5 active:opacity-80"
         >
           <Text className="text-sm font-semibold text-white">Navigate</Text>
