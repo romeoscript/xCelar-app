@@ -1,23 +1,34 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CheckCircleIcon } from '@/components/icons';
+import { RouteMap } from '@/components/rider/route-map';
+import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { formatNaira } from '@/lib/format';
-import { getDelivery, type DeliveryParty } from '@/lib/rider-api';
+import { tapFeedback } from '@/lib/haptics';
+import {
+  completeDelivery,
+  getDelivery,
+  pickupDelivery,
+  type DeliveryParty,
+} from '@/lib/rider-api';
+import { uploadFile } from '@/lib/uploads';
 import { DELIVERY_STATUS_LABELS } from '../deliveries';
 
 function openDirections(party: DeliveryParty) {
   if (party.lat == null || party.lng == null) {
     return;
   }
-  void Linking.openURL(
-    `https://www.google.com/maps/dir/?api=1&destination=${party.lat},${party.lng}`,
-  );
+  void Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${party.lat},${party.lng}`);
 }
 
 function callNumber(phone: string | null) {
@@ -28,11 +39,68 @@ function callNumber(phone: string | null) {
 
 export default function RiderDeliveryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
+
+  const [arrivedPickup, setArrivedPickup] = useState(false);
+  const [atDropoff, setAtDropoff] = useState(false);
+  const [proofKey, setProofKey] = useState<string | null>(null);
+  const [proofUri, setProofUri] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const deliveryQuery = useQuery({
     queryKey: ['rider-delivery', id],
     queryFn: () => getDelivery(id as string),
     enabled: Boolean(id),
   });
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['rider-delivery', id] });
+    queryClient.invalidateQueries({ queryKey: ['rider-deliveries'] });
+  };
+
+  const pickup = useMutation({
+    mutationFn: () => pickupDelivery(id as string),
+    onSuccess: () => {
+      setArrivedPickup(false);
+      refresh();
+    },
+    onError: (failure) => setError(getApiErrorMessage(failure)),
+  });
+
+  const complete = useMutation({
+    mutationFn: () => completeDelivery(id as string, proofKey ?? undefined),
+    onSuccess: () => {
+      setAtDropoff(false);
+      refresh();
+    },
+    onError: (failure) => setError(getApiErrorMessage(failure)),
+  });
+
+  const takeProof = async () => {
+    tapFeedback();
+    setError(null);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setError('Allow camera access to capture proof of delivery.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.6 });
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+    const asset = result.assets[0];
+    setUploadingProof(true);
+    try {
+      const key = await uploadFile({ uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' }, 'proofs');
+      setProofKey(key);
+      setProofUri(asset.uri);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Upload failed.');
+    } finally {
+      setUploadingProof(false);
+    }
+  };
 
   if (!id) {
     return <Redirect href="/rider/home" />;
@@ -58,11 +126,20 @@ export default function RiderDeliveryScreen() {
     );
   }
 
+  const delivered = delivery.status === 'DELIVERED';
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar style="dark" />
       <ScreenHeader title="Delivery" />
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 32, gap: 16 }}>
+        <RouteMap
+          pickupLat={delivery.pickup.lat}
+          pickupLng={delivery.pickup.lng}
+          dropoffLat={delivery.dropoff.lat}
+          dropoffLng={delivery.dropoff.lng}
+        />
+
         <View className="flex-row items-center justify-between">
           <View className="rounded-full bg-brand-blue-tint px-3 py-1">
             <Text className="text-xs font-semibold text-brand-blue">
@@ -85,15 +162,59 @@ export default function RiderDeliveryScreen() {
           {delivery.description ? (
             <Text className="text-sm text-gray-500">{delivery.description}</Text>
           ) : null}
-          {delivery.trackingCode ? (
-            <Text className="mt-1 text-xs text-gray-400">Tracking: {delivery.trackingCode}</Text>
-          ) : null}
         </View>
 
-        <Text className="text-center text-xs text-gray-400">
-          In-app route map and delivery steps are coming next.
-        </Text>
+        {delivered ? (
+          <View className="items-center gap-3 rounded-2xl bg-brand-blue-tint p-6">
+            <CheckCircleIcon size={36} color={Brand.blue} />
+            <Text className="text-lg font-extrabold text-brand-navy">Delivery complete</Text>
+            {delivery.proofUrl ? (
+              <Image
+                source={{ uri: delivery.proofUrl }}
+                className="h-40 w-full rounded-xl"
+                resizeMode="cover"
+              />
+            ) : null}
+          </View>
+        ) : null}
+
+        {error ? <Text className="text-sm text-red-500">{error}</Text> : null}
       </ScrollView>
+
+      {delivered ? null : (
+        <View className="border-t border-gray-100 bg-white px-6 pb-8 pt-3">
+          {delivery.status === 'CONFIRMED' ? (
+            arrivedPickup ? (
+              <Button label="Confirm pickup" loading={pickup.isPending} onPress={() => pickup.mutate()} />
+            ) : (
+              <Button label="Arrive at pickup" onPress={() => setArrivedPickup(true)} />
+            )
+          ) : null}
+
+          {delivery.status === 'IN_TRANSIT' ? (
+            atDropoff ? (
+              <View className="gap-3">
+                {proofUri ? (
+                  <Image source={{ uri: proofUri }} className="h-32 w-full rounded-xl" resizeMode="cover" />
+                ) : null}
+                <Button
+                  label={proofKey ? 'Retake proof photo' : 'Take proof photo'}
+                  variant="secondary"
+                  loading={uploadingProof}
+                  onPress={takeProof}
+                />
+                <Button
+                  label="Complete delivery"
+                  loading={complete.isPending}
+                  onPress={() => complete.mutate()}
+                />
+              </View>
+            ) : (
+              <Button label="Start drop-off" onPress={() => setAtDropoff(true)} />
+            )
+          ) : null}
+        </View>
+      )}
     </SafeAreaView>
   );
 }

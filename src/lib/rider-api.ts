@@ -40,6 +40,7 @@ export type RiderDelivery = {
   acceptedAt: string | null;
   pickedUpAt: string | null;
   deliveredAt: string | null;
+  proofUrl: string | null;
 };
 
 export async function applyAsRider(input: { vehicleType: VehicleType; city: string }): Promise<RiderProfile> {
@@ -69,6 +70,18 @@ export async function getAvailableDeliveries(lat: number, lng: number): Promise<
 
 export async function acceptDelivery(id: string): Promise<RiderDelivery> {
   const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/accept`);
+  return data;
+}
+
+export async function pickupDelivery(id: string): Promise<RiderDelivery> {
+  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/pickup`);
+  return data;
+}
+
+export async function completeDelivery(id: string, proofImageKey?: string): Promise<RiderDelivery> {
+  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/complete`, {
+    ...(proofImageKey ? { proofImageKey } : {}),
+  });
   return data;
 }
 
