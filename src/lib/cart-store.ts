@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { create } from 'zustand';
 
 import { type Product, type Vendor } from './marketplace-api';
@@ -53,6 +54,27 @@ export const useCartStore = create<CartState>((set) => ({
 
   clear: () => set({ vendor: null, lines: [] }),
 }));
+
+/**
+ * Run a cart-adding action, but first confirm if the cart holds another
+ * vendor's items (adding would clear them). Calls `perform` immediately when
+ * there's no conflict.
+ */
+export function addToCartWithConfirm(vendor: Vendor, perform: () => void): void {
+  const { vendor: current, lines } = useCartStore.getState();
+  if (current && current.id !== vendor.id && lines.length > 0) {
+    Alert.alert(
+      'Start a new cart?',
+      `Your cart has items from ${current.name}. Adding this will clear it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear & add', style: 'destructive', onPress: perform },
+      ],
+    );
+    return;
+  }
+  perform();
+}
 
 /** Total item count in the cart. */
 export function cartCount(lines: CartLine[]): number {

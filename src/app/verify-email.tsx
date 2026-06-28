@@ -46,12 +46,15 @@ export default function VerifyEmailScreen() {
     onError: (failure) => setError(getApiErrorMessage(failure)),
   });
 
-  // Auto-submit once all digits are in.
+  // Auto-submit once all digits are in. Depend on stable primitives (not the
+  // mutation object, which is recreated every render) so this fires only when
+  // the code changes — not on every cooldown-timer tick.
+  const { mutate: verifyMutate, isPending: verifyPending } = verify;
   useEffect(() => {
-    if (code.length === CODE_LENGTH && !verify.isPending) {
-      verify.mutate(code);
+    if (code.length === CODE_LENGTH && !verifyPending) {
+      verifyMutate(code);
     }
-  }, [code, verify]);
+  }, [code, verifyPending, verifyMutate]);
 
   useEffect(() => {
     if (cooldown <= 0) {

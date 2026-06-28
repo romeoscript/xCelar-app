@@ -14,6 +14,7 @@ import {
   VerifiedBadgeIcon,
 } from '@/components/icons';
 import { PromoCarousel } from '@/components/marketplace/promo-carousel';
+import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { useFavoritesStore } from '@/lib/favorites-store';
 import { tapFeedback } from '@/lib/haptics';
@@ -132,7 +133,15 @@ export default function MarketplaceScreen() {
           </View>
         }
         ListEmptyComponent={
-          vendorsQuery.isLoading ? null : (
+          vendorsQuery.isLoading ? null : vendorsQuery.isError ? (
+            <View className="mx-6 items-center gap-3 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
+              <StorefrontIcon size={32} color={Brand.muted} />
+              <Text className="font-semibold text-gray-700">Couldn’t load partners</Text>
+              <View className="w-40">
+                <Button label="Try again" variant="secondary" onPress={() => vendorsQuery.refetch()} />
+              </View>
+            </View>
+          ) : (
             <View className="mx-6 items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
               <StorefrontIcon size={32} color={Brand.muted} />
               <Text className="font-semibold text-gray-700">No partners found</Text>

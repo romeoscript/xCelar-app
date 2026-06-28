@@ -8,8 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeftIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { ProductImageCarousel } from '@/components/marketplace/product-image-carousel';
 import { Button } from '@/components/ui/button';
+import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
-import { useCartStore } from '@/lib/cart-store';
+import { addToCartWithConfirm, useCartStore } from '@/lib/cart-store';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getProduct } from '@/lib/marketplace-api';
@@ -33,6 +34,23 @@ export default function ProductScreen() {
     return <Redirect href="/marketplace" />;
   }
 
+  if (productQuery.isError) {
+    return (
+      <View className="flex-1 bg-white">
+        <StatusBar style="dark" />
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={{ top: insets.top + 8 }}
+          className="absolute left-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-brand-surface active:opacity-80"
+        >
+          <ChevronLeftIcon size={22} color={Brand.navy} />
+        </Pressable>
+        <QueryError message="Couldn’t load this product." onRetry={() => productQuery.refetch()} />
+      </View>
+    );
+  }
+
   const data = productQuery.data;
   if (productQuery.isLoading || !data) {
     return (
@@ -47,11 +65,13 @@ export default function ProductScreen() {
 
   const addToCart = () => {
     tapFeedback();
-    for (let count = 0; count < quantity; count += 1) {
-      add(vendor, product);
-    }
-    toast(`Added ${quantity} to cart`);
-    router.back();
+    addToCartWithConfirm(vendor, () => {
+      for (let count = 0; count < quantity; count += 1) {
+        add(vendor, product);
+      }
+      toast(`Added ${quantity} to cart`);
+      router.back();
+    });
   };
 
   return (

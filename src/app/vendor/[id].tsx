@@ -15,8 +15,9 @@ import {
   VerifiedBadgeIcon,
 } from '@/components/icons';
 import { ProductImageCarousel } from '@/components/marketplace/product-image-carousel';
+import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
-import { cartCount, cartSubtotalKobo, useCartStore } from '@/lib/cart-store';
+import { addToCartWithConfirm, cartCount, cartSubtotalKobo, useCartStore } from '@/lib/cart-store';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getVendor, type Product, type Vendor } from '@/lib/marketplace-api';
@@ -45,6 +46,23 @@ export default function VendorScreen() {
 
   const vendor = vendorQuery.data;
   const showCartBar = cartVendor?.id === id && lines.length > 0;
+
+  if (vendorQuery.isError) {
+    return (
+      <View className="flex-1 bg-white">
+        <StatusBar style="dark" />
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={{ top: insets.top + 8 }}
+          className="absolute left-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-brand-surface active:opacity-80"
+        >
+          <ChevronLeftIcon size={22} color={Brand.navy} />
+        </Pressable>
+        <QueryError message="Couldn’t load this vendor." onRetry={() => vendorQuery.refetch()} />
+      </View>
+    );
+  }
 
   if (vendorQuery.isLoading || !vendor) {
     return (
@@ -221,7 +239,7 @@ function ProductRow({ vendor, product }: { vendor: Vendor; product: Product }) {
             <Pressable
               onPress={() => {
                 tapFeedback();
-                add(vendor, product);
+                addToCartWithConfirm(vendor, () => add(vendor, product));
               }}
               className="flex-row items-center gap-1 rounded-full bg-brand-blue px-4 py-2 active:opacity-80"
             >

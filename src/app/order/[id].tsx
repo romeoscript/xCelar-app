@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@/components/icons';
 import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
 import { PaystackCheckout } from '@/components/paystack-checkout';
 import { Button } from '@/components/ui/button';
+import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
@@ -56,6 +57,7 @@ export default function OrderScreen() {
       // Balance refreshes on next load.
     }
     await orderQuery.refetch();
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['shipments'] });
     toast('Order placed 🎉');
   };
@@ -94,6 +96,16 @@ export default function OrderScreen() {
 
   if (!id) {
     return <Redirect href="/marketplace" />;
+  }
+
+  if (orderQuery.isError) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <StatusBar style="dark" />
+        <ScreenHeader title="Order" />
+        <QueryError message="Couldn’t load this order." onRetry={() => orderQuery.refetch()} />
+      </SafeAreaView>
+    );
   }
 
   const order = orderQuery.data;
