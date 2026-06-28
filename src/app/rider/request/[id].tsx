@@ -2,20 +2,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RouteLine } from '@/components/rider/route-line';
+import { RouteMap } from '@/components/rider/route-map';
 import { BikeGlyph } from '@/components/rider/vehicle-icons';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { formatNaira } from '@/lib/format';
+import { getCurrentLocation } from '@/lib/location';
 import { acceptDelivery, getAvailableDelivery } from '@/lib/rider-api';
 
 const PAYMENT_LABEL: Record<string, string> = { BALANCE: 'Wallet', PAYSTACK: 'Card' };
+const MAP_SHEET_HEIGHT = Math.round(Dimensions.get('window').height * 0.8);
 
 function initials(name: string | null): string {
   const parts = (name ?? '').trim().split(/\s+/);
@@ -27,11 +31,17 @@ export default function RequestDetailsScreen() {
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(false);
 
   const requestQuery = useQuery({
     queryKey: ['rider-request', id],
     queryFn: () => getAvailableDelivery(id as string),
     enabled: Boolean(id),
+  });
+  const locationQuery = useQuery({
+    queryKey: ['rider-location'],
+    queryFn: getCurrentLocation,
+    staleTime: 60_000,
   });
 
   const accept = useMutation({
@@ -107,7 +117,7 @@ export default function RequestDetailsScreen() {
           />
         </View>
 
-        <Pressable onPress={() => router.push(`/rider/route/${id}`)} className="items-center py-1 active:opacity-70">
+        <Pressable onPress={() => setShowMap(true)} className="items-center py-1 active:opacity-70">
           <Text className="text-base font-semibold text-brand-blue underline">View map route</Text>
         </Pressable>
 
@@ -122,6 +132,29 @@ export default function RequestDetailsScreen() {
           <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />
         </View>
       </View>
+
+      <BottomSheet visible={showMap} onClose={() => setShowMap(false)}>
+        <View style={{ height: MAP_SHEET_HEIGHT }} className="-mx-6 overflow-hidden rounded-t-2xl">
+          <RouteMap
+            pickupLat={request.pickup.lat}
+            pickupLng={request.pickup.lng}
+            dropoffLat={request.dropoff.lat}
+            dropoffLng={request.dropoff.lng}
+            meLat={locationQuery.data?.latitude}
+            meLng={locationQuery.data?.longitude}
+            fill
+            interactive
+          />
+          <View className="absolute inset-x-0 bottom-0 flex-row gap-3 bg-white px-6 pb-2 pt-3">
+            <View className="flex-1">
+              <Button label="Reject" variant="secondary" onPress={() => setShowMap(false)} />
+            </View>
+            <View className="flex-1">
+              <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />
+            </View>
+          </View>
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }

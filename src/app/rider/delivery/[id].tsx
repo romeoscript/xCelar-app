@@ -15,6 +15,7 @@ import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
+import { getCurrentLocation } from '@/lib/location';
 import {
   completeDelivery,
   getDelivery,
@@ -87,6 +88,11 @@ export default function RiderDeliveryScreen() {
     queryKey: ['rider-delivery', id],
     queryFn: () => getDelivery(id as string),
     enabled: Boolean(id),
+  });
+  const locationQuery = useQuery({
+    queryKey: ['rider-location'],
+    queryFn: getCurrentLocation,
+    staleTime: 60_000,
   });
 
   const refresh = () => {
@@ -173,6 +179,8 @@ export default function RiderDeliveryScreen() {
           pickupLng={delivery.pickup.lng}
           dropoffLat={delivery.dropoff.lat}
           dropoffLng={delivery.dropoff.lng}
+          meLat={locationQuery.data?.latitude}
+          meLng={locationQuery.data?.longitude}
         />
 
         <StatusStepper status={delivery.status} />
