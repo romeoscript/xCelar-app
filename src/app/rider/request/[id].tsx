@@ -16,7 +16,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { getCurrentLocation } from '@/lib/location';
-import { acceptDelivery, getAvailableDelivery } from '@/lib/rider-api';
+import { acceptDelivery, getAvailableDelivery, rejectDelivery } from '@/lib/rider-api';
 
 const MAP_SHEET_HEIGHT = Math.round(Dimensions.get('window').height * 0.8);
 
@@ -52,6 +52,15 @@ export default function RequestDetailsScreen() {
       router.replace(`/rider/delivery/${delivery.id}`);
     },
     onError: (failure) => setError(getApiErrorMessage(failure)),
+  });
+
+  // Passing on the job persists so it won't resurface, then returns to the feed.
+  const reject = useMutation({
+    mutationFn: () => rejectDelivery(id as string),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['rider-available'] });
+      router.back();
+    },
   });
 
   if (!id) {
@@ -114,7 +123,12 @@ export default function RequestDetailsScreen() {
 
       <View className="flex-row gap-3 border-t border-gray-100 px-6 pb-2 pt-3">
         <View className="flex-1">
-          <Button label="Reject" variant="secondary" onPress={() => router.back()} />
+          <Button
+            label="Reject"
+            variant="secondary"
+            loading={reject.isPending}
+            onPress={() => reject.mutate()}
+          />
         </View>
         <View className="flex-1">
           <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />
@@ -136,7 +150,12 @@ export default function RequestDetailsScreen() {
           />
           <View className="absolute inset-x-0 bottom-0 flex-row gap-3 bg-white px-6 pb-2 pt-3">
             <View className="flex-1">
-              <Button label="Reject" variant="secondary" onPress={() => setShowMap(false)} />
+              <Button
+                label="Reject"
+                variant="secondary"
+                loading={reject.isPending}
+                onPress={() => reject.mutate()}
+              />
             </View>
             <View className="flex-1">
               <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />

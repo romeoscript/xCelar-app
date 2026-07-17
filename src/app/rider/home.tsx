@@ -26,6 +26,7 @@ import { getCurrentLocation } from '@/lib/location';
 import {
   getAvailableDeliveries,
   getMyRiderProfile,
+  rejectDelivery,
   setAvailability,
   type RiderDelivery,
 } from '@/lib/rider-api';
@@ -62,6 +63,18 @@ export default function RiderHomeScreen() {
   const toggleOnline = () => {
     tapFeedback();
     availabilityMutation.mutate(!isOnline);
+  };
+
+  // Persist the rejection so the job stays gone after a refresh/restart. The
+  // local `rejected` list removes it from view instantly; the server call keeps
+  // it out of the feed for good.
+  const rejectMutation = useMutation({
+    mutationFn: (deliveryId: string) => rejectDelivery(deliveryId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['rider-available'] }),
+  });
+  const handleReject = (deliveryId: string) => {
+    setRejected((ids) => [...ids, deliveryId]);
+    rejectMutation.mutate(deliveryId);
   };
 
   // Only fetch a location (and prompt for the permission) once on shift.
@@ -158,7 +171,7 @@ export default function RiderHomeScreen() {
           <RequestCard
             delivery={item}
             onView={() => router.push(`/rider/request/${item.id}`)}
-            onReject={() => setRejected((ids) => [...ids, item.id])}
+            onReject={() => handleReject(item.id)}
           />
         )}
         refreshControl={

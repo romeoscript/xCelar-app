@@ -87,6 +87,11 @@ export async function acceptDelivery(id: string): Promise<RiderDelivery> {
   return data;
 }
 
+/** Pass on an available delivery so it stops appearing in this rider's feed. */
+export async function rejectDelivery(id: string): Promise<void> {
+  await api.post(`/rider/deliveries/${id}/reject`);
+}
+
 export async function getAvailableDelivery(id: string): Promise<RiderDelivery> {
   const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}/preview`);
   return data;
