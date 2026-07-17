@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand } from '@/constants/theme';
 import { type VehicleType } from '@/lib/rider-api';
+import { fetchRoute, type Route } from '@/lib/routing';
 
 export type RouteMapProps = {
   pickupLat: number | null;
@@ -37,14 +38,6 @@ export type RouteMapProps = {
 
 type TravelMode = 'drive' | 'bike' | 'walk';
 type MciName = ComponentProps<typeof MaterialCommunityIcons>['name'];
-
-/** Free OSRM instances by FOSSGIS, one per travel profile. The literal
- *  "/driving/" path segment is part of the API and does not pick the profile. */
-const ModeProfiles: Record<TravelMode, string> = {
-  drive: 'routed-car',
-  bike: 'routed-bike',
-  walk: 'routed-foot',
-};
 
 /** How each vehicle routes. Motorbikes use car routing — they ride on roads,
  *  not cycle paths — so only on-foot couriers get the walking profile. */
@@ -73,51 +66,6 @@ const MapColors = {
 /** Extra room when fill mode is on, so the route clears the bottom action card. */
 const FillPadding: EdgePadding = { top: 100, right: 60, bottom: 260, left: 60 };
 const PreviewPadding: EdgePadding = { top: 40, right: 40, bottom: 40, left: 40 };
-
-type OsrmRoute = {
-  coordinates: LatLng[];
-  distanceMeters: number;
-  durationSeconds: number;
-};
-
-type OsrmResponse = {
-  routes?: {
-    distance?: number;
-    duration?: number;
-    geometry?: { coordinates?: [number, number][] };
-  }[];
-};
-
-/** Route between two points for the given travel mode. Throws (so the caller
- *  falls back to a straight line) when the free routing service is unavailable
- *  or slow — it has no uptime guarantee, so an 8s cap keeps the map responsive. */
-async function fetchRoute(from: LatLng, to: LatLng, mode: TravelMode): Promise<OsrmRoute> {
-  const path = `${from.longitude},${from.latitude};${to.longitude},${to.latitude}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-  try {
-    const response = await fetch(
-      `https://routing.openstreetmap.de/${ModeProfiles[mode]}/route/v1/driving/${path}?overview=full&geometries=geojson`,
-      { signal: controller.signal },
-    );
-    if (!response.ok) {
-      throw new Error(`Route lookup failed (${response.status})`);
-    }
-    const json = (await response.json()) as OsrmResponse;
-    const route = json.routes?.[0];
-    const coordinates = route?.geometry?.coordinates;
-    if (!coordinates) {
-      throw new Error('Route lookup returned no route');
-    }
-    return {
-      coordinates: coordinates.map(([lng, lat]) => ({ latitude: lat, longitude: lng })),
-      distanceMeters: route.distance ?? 0,
-      durationSeconds: route.duration ?? 0,
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
 
 /** ~11 m resolution — stops GPS jitter from refetching routes on every tick. */
 function coordKey(point: LatLng): string {
@@ -150,7 +98,7 @@ function openTurnByTurn(target: LatLng, mode: TravelMode) {
   Linking.openURL(url).catch(() => Linking.openURL(`geo:0,0?q=${query}`));
 }
 
-function formatLeg(leg: OsrmRoute): string {
+function formatLeg(leg: Route): string {
   const km = (leg.distanceMeters / 1000).toFixed(1);
   const minutes = Math.max(1, Math.round(leg.durationSeconds / 60));
   return `${km} km · ${minutes} min`;
@@ -210,7 +158,7 @@ export function RouteMap({
   // The job itself: Pick Up → Drop Off. Fixed for the life of the screen.
   const deliveryLeg = useQuery({
     queryKey: ['osrm', mode, 'delivery', pickup && coordKey(pickup), dropoff && coordKey(dropoff)],
-    queryFn: () => fetchRoute(pickup as LatLng, dropoff as LatLng, mode),
+    queryFn: () => fetchRoute([pickup as LatLng, dropoff as LatLng], mode),
     enabled: hasCoords,
     staleTime: Infinity,
     retry: 1,
@@ -219,7 +167,7 @@ export function RouteMap({
   // Getting there: Me → Pick Up. Tracks the rider as they move.
   const approachLeg = useQuery({
     queryKey: ['osrm', mode, 'approach', me && coordKey(me), pickup && coordKey(pickup)],
-    queryFn: () => fetchRoute(me as LatLng, pickup as LatLng, mode),
+    queryFn: () => fetchRoute([me as LatLng, pickup as LatLng], mode),
     enabled: Boolean(me && pickup),
     staleTime: 30_000,
     retry: 1,
@@ -228,7 +176,7 @@ export function RouteMap({
   // Directions to a focused stop other than the pickup (i.e. the drop-off).
   const focusLegQuery = useQuery({
     queryKey: ['osrm', mode, 'focus', me && coordKey(me), target && coordKey(target)],
-    queryFn: () => fetchRoute(me as LatLng, target as LatLng, mode),
+    queryFn: () => fetchRoute([me as LatLng, target as LatLng], mode),
     enabled: Boolean(me && target && !focusIsPickup),
     staleTime: 30_000,
     retry: 1,
@@ -396,7 +344,7 @@ function RouteLine({
   color,
   width,
 }: {
-  leg: { data?: OsrmRoute; isError: boolean };
+  leg: { data?: Route; isError: boolean };
   fallback: LatLng[];
   color: string;
   width: number;

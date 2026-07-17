@@ -10,6 +10,7 @@ import MapView, {
 } from 'react-native-maps';
 
 import { Brand } from '@/constants/theme';
+import { fetchRoute } from '@/lib/routing';
 
 export type LiveTrackingMapProps = {
   /** The rider's live position, or null before the first report arrives. */
@@ -23,24 +24,6 @@ export type LiveTrackingMapProps = {
 
 const RouteColor = '#F97316';
 const EdgePad: EdgePadding = { top: 48, right: 48, bottom: 48, left: 48 };
-
-type OsrmResponse = { routes?: { geometry?: { coordinates?: [number, number][] } }[] };
-
-async function fetchRoute(from: LatLng, to: LatLng): Promise<LatLng[]> {
-  const path = `${from.longitude},${from.latitude};${to.longitude},${to.latitude}`;
-  const response = await fetch(
-    `https://routing.openstreetmap.de/routed-car/route/v1/driving/${path}?overview=full&geometries=geojson`,
-  );
-  if (!response.ok) {
-    throw new Error(`Route lookup failed (${response.status})`);
-  }
-  const json = (await response.json()) as OsrmResponse;
-  const coordinates = json.routes?.[0]?.geometry?.coordinates;
-  if (!coordinates) {
-    throw new Error('Route lookup returned no route');
-  }
-  return coordinates.map(([lng, lat]) => ({ latitude: lat, longitude: lng }));
-}
 
 /** ~11 m resolution — stops GPS jitter from refetching the route every tick. */
 function coordKey(point: LatLng): string {
@@ -83,7 +66,8 @@ export function LiveTrackingMap({
 
   const routeQuery = useQuery({
     queryKey: ['track-route', rider && coordKey(rider), destination && coordKey(destination)],
-    queryFn: () => fetchRoute(rider as LatLng, destination as LatLng),
+    queryFn: () =>
+      fetchRoute([rider as LatLng, destination as LatLng], 'drive').then((r) => r.coordinates),
     enabled: Boolean(rider && destination),
     staleTime: 30_000,
     retry: 1,
