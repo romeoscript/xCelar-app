@@ -10,11 +10,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CostBreakdown } from '@/components/ship/cost-breakdown';
 import { ChevronLeftIcon } from '@/components/icons';
 import { PaidPill, StatusBadge } from '@/components/shipments/badges';
+import { LiveTrackingMap } from '@/components/shipments/live-tracking-map';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
-import { getShipment, getShipmentBreakdown, type Shipment } from '@/lib/shipment-api';
+import {
+  getShipment,
+  getShipmentBreakdown,
+  getShipmentTracking,
+  type Shipment,
+  type ShipmentStatus,
+  type ShipmentTracking,
+} from '@/lib/shipment-api';
 import { DELIVERY_STAGES } from '@/lib/shipment-status';
 
 export default function ShipmentDetailScreen() {
@@ -32,6 +40,17 @@ export default function ShipmentDetailScreen() {
     queryKey: ['shipment-breakdown', id],
     queryFn: () => getShipmentBreakdown(id as string),
     enabled: Boolean(id),
+  });
+
+  // Live rider tracking, only while a local delivery is actually moving.
+  const trackable =
+    query.data?.type === 'LOCAL' &&
+    (query.data.status === 'CONFIRMED' || query.data.status === 'IN_TRANSIT');
+  const trackingQuery = useQuery({
+    queryKey: ['shipment-tracking', id],
+    queryFn: () => getShipmentTracking(id as string),
+    enabled: Boolean(id) && trackable,
+    refetchInterval: 10_000,
   });
 
   if (!id) {
@@ -95,6 +114,10 @@ export default function ShipmentDetailScreen() {
                 </View>
               </View>
             </LinearGradient>
+
+            {shipment.paid && trackable ? (
+              <LiveTrackingCard tracking={trackingQuery.data} status={shipment.status} />
+            ) : null}
 
             {shipment.paid ? (
               <DeliveryTimeline shipment={shipment} />
@@ -169,6 +192,49 @@ export default function ShipmentDetailScreen() {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+function timeAgo(iso: string): string {
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (seconds < 60) {
+    return `${seconds}s ago`;
+  }
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  return `${Math.round(minutes / 60)}h ago`;
+}
+
+function LiveTrackingCard({
+  tracking,
+  status,
+}: {
+  tracking?: ShipmentTracking;
+  status: ShipmentStatus;
+}) {
+  const headingTo = status === 'IN_TRANSIT' ? 'dropoff' : 'pickup';
+  return (
+    <View className="gap-3 rounded-2xl border border-gray-100 bg-white p-4">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-base font-semibold text-brand-navy">Live tracking</Text>
+        {tracking?.courier ? (
+          <Text className="text-xs text-gray-400">Updated {timeAgo(tracking.courier.updatedAt)}</Text>
+        ) : null}
+      </View>
+      <LiveTrackingMap
+        courier={tracking?.courier ?? null}
+        pickup={tracking?.pickup ?? { lat: null, lng: null }}
+        dropoff={tracking?.dropoff ?? { lat: null, lng: null }}
+        headingTo={headingTo}
+      />
+      <Text className="text-sm text-gray-500">
+        {status === 'IN_TRANSIT'
+          ? 'Your rider has the package and is on the way to the drop-off.'
+          : 'Your rider is on the way to collect the package.'}
+      </Text>
+    </View>
   );
 }
 

@@ -1,9 +1,10 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { type Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-
 import { Button } from '@/components/ui/button';
+import { Brand } from '@/constants/theme';
 import { type PickedLocation, reverseGeocode } from '@/lib/location';
 
 // Lagos as the default starting point.
@@ -16,26 +17,6 @@ export type MapPickerProps = {
   onConfirm: (location: PickedLocation) => void;
 };
 
-function buildHtml(lat: number, lng: number): string {
-  return `<!DOCTYPE html><html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  html,body,#map{height:100%;margin:0;padding:0}
-  #pin{position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);z-index:1000;font-size:40px;pointer-events:none}
-</style></head><body>
-<div id="map"></div>
-<div id="pin">📍</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  var map = L.map('map',{zoomControl:false}).setView([${lat}, ${lng}], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  function post(){var c=map.getCenter();window.ReactNativeWebView.postMessage(JSON.stringify({lat:c.lat,lng:c.lng}));}
-  map.on('moveend', post);
-  post();
-</script></body></html>`;
-}
-
 export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerProps) {
   const center = useRef({
     lat: initial?.latitude ?? DEFAULT_CENTER.lat,
@@ -43,15 +24,8 @@ export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerPro
   });
   const [resolving, setResolving] = useState(false);
 
-  const handleMessage = (event: WebViewMessageEvent) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-        center.current = { lat: data.lat, lng: data.lng };
-      }
-    } catch {
-      // Ignore malformed messages.
-    }
+  const handleRegionChange = (region: Region) => {
+    center.current = { lat: region.latitude, lng: region.longitude };
   };
 
   const handleConfirm = async () => {
@@ -76,12 +50,27 @@ export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerPro
         </View>
 
         <View className="flex-1 overflow-hidden">
-          <WebView
-            source={{ html: buildHtml(center.current.lat, center.current.lng) }}
-            onMessage={handleMessage}
-            originWhitelist={['*']}
-            style={{ flex: 1 }}
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: center.current.lat,
+              longitude: center.current.lng,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onRegionChangeComplete={handleRegionChange}
+            showsUserLocation
+            toolbarEnabled={false}
           />
+          {/* Fixed pin over the map centre; the map moves underneath it. */}
+          <View pointerEvents="none" style={styles.pinOverlay}>
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={44}
+              color={Brand.blue}
+              style={styles.pin}
+            />
+          </View>
         </View>
 
         <View className="px-6 pb-2 pt-3">
@@ -94,3 +83,18 @@ export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerPro
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  map: {
+    flex: 1,
+  },
+  pinOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pin: {
+    // Lift the pin so its point — not its middle — sits on the map centre.
+    transform: [{ translateY: -22 }],
+  },
+});

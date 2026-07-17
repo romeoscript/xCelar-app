@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteLine } from '@/components/rider/route-line';
 import { RouteMap } from '@/components/rider/route-map';
 import { BikeGlyph } from '@/components/rider/vehicle-icons';
+import { useRiderVehicle } from '@/hooks/use-rider-vehicle';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
@@ -28,6 +29,7 @@ export default function RequestDetailsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const vehicleType = useRiderVehicle();
   const [error, setError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
 
@@ -128,6 +130,7 @@ export default function RequestDetailsScreen() {
             dropoffLng={request.dropoff.lng}
             meLat={locationQuery.data?.latitude}
             meLng={locationQuery.data?.longitude}
+            vehicleType={vehicleType}
             fill
             interactive
           />

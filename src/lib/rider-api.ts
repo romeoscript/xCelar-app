@@ -18,6 +18,7 @@ export type RiderProfile = {
   city: string;
   status: RiderStatus;
   rejectionReason: string | null;
+  isAvailable: boolean;
   documents: { type: RiderDocumentType; url: string | null }[];
 };
 
@@ -57,6 +58,12 @@ export async function applyAsRider(input: {
 
 export async function getMyRiderProfile(): Promise<RiderProfile | null> {
   const { data } = await api.get<{ profile: RiderProfile | null }>('/rider/me');
+  return data.profile;
+}
+
+/** Go on/off shift. Returns the updated profile so the cache can reflect it. */
+export async function setAvailability(available: boolean): Promise<RiderProfile> {
+  const { data } = await api.patch<{ profile: RiderProfile }>('/rider/availability', { available });
   return data.profile;
 }
 
@@ -100,6 +107,11 @@ export async function completeDelivery(id: string, proofImageKey?: string): Prom
 export async function getMyDeliveries(): Promise<RiderDelivery[]> {
   const { data } = await api.get<RiderDelivery[]>('/rider/deliveries');
   return data;
+}
+
+/** Report the rider's live position on an active delivery, for customer tracking. */
+export async function reportDeliveryLocation(id: string, lat: number, lng: number): Promise<void> {
+  await api.post(`/rider/deliveries/${id}/location`, { lat, lng });
 }
 
 export async function getDelivery(id: string): Promise<RiderDelivery> {

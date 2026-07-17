@@ -31,6 +31,21 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
 }
 
 /**
+ * Just the device coordinates — no reverse geocoding. Use for map tracking
+ * where the position refreshes often and an address lookup per tick is waste.
+ */
+export async function getCurrentPosition(): Promise<{ latitude: number; longitude: number }> {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Location permission is needed to show where you are.');
+  }
+  const position = await Location.getCurrentPositionAsync({
+    accuracy: Location.Accuracy.Balanced,
+  });
+  return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+}
+
+/**
  * Ask for permission, read the device's current position, and resolve it to an
  * address. Throws a friendly error if permission is denied.
  */

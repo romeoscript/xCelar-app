@@ -189,6 +189,19 @@ export async function getShipment(id: string): Promise<Shipment> {
   return data;
 }
 
+export type ShipmentTracking = {
+  status: ShipmentStatus;
+  /** The rider's last-reported position, or null before any has arrived. */
+  courier: { lat: number; lng: number; updatedAt: string } | null;
+  pickup: { lat: number | null; lng: number | null };
+  dropoff: { lat: number | null; lng: number | null };
+};
+
+export async function getShipmentTracking(id: string): Promise<ShipmentTracking> {
+  const { data } = await api.get<ShipmentTracking>(`/shipments/${id}/tracking`);
+  return data;
+}
+
 export async function updateShipment(id: string, update: ShipmentUpdate): Promise<Shipment> {
   const { data } = await api.patch<Shipment>(`/shipments/${id}`, update);
   return data;

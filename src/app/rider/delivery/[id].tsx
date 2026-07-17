@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon, ChevronLeftIcon } from '@/components/icons';
@@ -11,13 +11,15 @@ import { RouteMap } from '@/components/rider/route-map';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
+import { useRiderVehicle } from '@/hooks/use-rider-vehicle';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { tapFeedback } from '@/lib/haptics';
-import { getCurrentLocation } from '@/lib/location';
+import { getCurrentPosition } from '@/lib/location';
 import {
   completeDelivery,
   getDelivery,
   pickupDelivery,
+  reportDeliveryLocation,
   type DeliveryParty,
   type RiderDelivery,
 } from '@/lib/rider-api';
@@ -34,10 +36,11 @@ export default function RiderDeliveryScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const vehicleType = useRiderVehicle();
 
   const [arrived, setArrived] = useState(false);
   const [atDropoff, setAtDropoff] = useState(false);
-  const [focusTarget, setFocusTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [focus, setFocus] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
@@ -48,11 +51,29 @@ export default function RiderDeliveryScreen() {
     queryFn: () => getDelivery(id as string),
     enabled: Boolean(id),
   });
+  // Live position while on the delivery — keeps "Me" and the directions leg
+  // moving with the rider. Coords only; no reverse geocoding per tick.
   const locationQuery = useQuery({
-    queryKey: ['rider-location'],
-    queryFn: getCurrentLocation,
-    staleTime: 60_000,
+    queryKey: ['rider-position'],
+    queryFn: getCurrentPosition,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
   });
+
+  // Push each position tick to the server while the delivery is live, so the
+  // customer can watch the rider approach. Best-effort: a dropped ping only
+  // means a slightly staler dot, so failures are swallowed. Keyed on the fetch
+  // timestamp to send a heartbeat every tick (freshness), not only on movement.
+  const deliveryStatus = deliveryQuery.data?.status;
+  const isDeliveryActive = deliveryStatus === 'CONFIRMED' || deliveryStatus === 'IN_TRANSIT';
+  const position = locationQuery.data;
+  const positionUpdatedAt = locationQuery.dataUpdatedAt;
+  useEffect(() => {
+    if (!id || !isDeliveryActive || !position) {
+      return;
+    }
+    void reportDeliveryLocation(id, position.latitude, position.longitude).catch(() => {});
+  }, [id, isDeliveryActive, position, positionUpdatedAt]);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['rider-delivery', id] });
@@ -103,8 +124,19 @@ export default function RiderDeliveryScreen() {
   };
 
   const navigateTo = (party: DeliveryParty) => {
+    tapFeedback();
     if (party.lat != null && party.lng != null) {
-      setFocusTarget({ lat: party.lat, lng: party.lng });
+      const label = party === deliveryQuery.data?.pickup ? 'pickup' : 'drop-off';
+      setFocus({ lat: party.lat, lng: party.lng, label });
+      return;
+    }
+    // No coordinates for this stop — hand the address to the platform maps app
+    // instead of leaving the button dead.
+    if (party.address) {
+      const query = encodeURIComponent(party.address);
+      void Linking.openURL(
+        Platform.select({ ios: `maps:0,0?q=${query}`, default: `geo:0,0?q=${query}` }),
+      );
     }
   };
 
@@ -142,7 +174,9 @@ export default function RiderDeliveryScreen() {
         dropoffLng={delivery.dropoff.lng}
         meLat={locationQuery.data?.latitude}
         meLng={locationQuery.data?.longitude}
-        focusTarget={focusTarget}
+        focusTarget={focus}
+        focusLabel={focus?.label}
+        vehicleType={vehicleType}
         fill
         interactive
       />
