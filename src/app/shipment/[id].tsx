@@ -229,13 +229,21 @@ function LiveTrackingCard({
         dropoff={tracking?.dropoff ?? { lat: null, lng: null }}
         headingTo={headingTo}
       />
-      <Text className="text-sm text-gray-500">
-        {status === 'IN_TRANSIT'
-          ? 'Your rider has the package and is on the way to the drop-off.'
-          : 'Your rider is on the way to collect the package.'}
-      </Text>
+      <Text className="text-sm text-gray-500">{trackingStatusText(status, tracking)}</Text>
     </View>
   );
+}
+
+/** Human-readable rider status, including the "arrived" sub-states. */
+function trackingStatusText(status: ShipmentStatus, tracking?: ShipmentTracking): string {
+  if (status === 'IN_TRANSIT') {
+    return tracking?.arrivedDropoff
+      ? 'Your rider has arrived and is handing over your package.'
+      : 'Your rider has the package and is on the way to the drop-off.';
+  }
+  return tracking?.arrivedPickup
+    ? 'Your rider has arrived at the pickup point.'
+    : 'Your rider is on the way to collect the package.';
 }
 
 function DeliveryTimeline({ shipment }: { shipment: Shipment }) {

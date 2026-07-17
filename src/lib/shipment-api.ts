@@ -193,6 +193,9 @@ export type ShipmentTracking = {
   status: ShipmentStatus;
   /** The rider's last-reported position, or null before any has arrived. */
   courier: { lat: number; lng: number; updatedAt: string } | null;
+  /** Whether the rider has reported arriving at each stop. */
+  arrivedPickup: boolean;
+  arrivedDropoff: boolean;
   pickup: { lat: number | null; lng: number | null };
   dropoff: { lat: number | null; lng: number | null };
 };

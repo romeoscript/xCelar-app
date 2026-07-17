@@ -18,6 +18,7 @@ import { getCurrentPosition } from '@/lib/location';
 import {
   completeDelivery,
   getDelivery,
+  markArrived,
   pickupDelivery,
   reportDeliveryLocation,
   type DeliveryParty,
@@ -38,8 +39,6 @@ export default function RiderDeliveryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const vehicleType = useRiderVehicle();
 
-  const [arrived, setArrived] = useState(false);
-  const [atDropoff, setAtDropoff] = useState(false);
   const [focus, setFocus] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [proofUri, setProofUri] = useState<string | null>(null);
@@ -80,21 +79,23 @@ export default function RiderDeliveryScreen() {
     queryClient.invalidateQueries({ queryKey: ['rider-deliveries'] });
   };
 
+  // Arrival is a server-recorded sub-state now (visible to the customer, and
+  // restored on app restart) rather than local screen state.
+  const arrive = useMutation({
+    mutationFn: (stop: 'pickup' | 'dropoff') => markArrived(id as string, stop),
+    onSuccess: () => refresh(),
+    onError: (failure) => setError(getApiErrorMessage(failure)),
+  });
+
   const pickup = useMutation({
     mutationFn: () => pickupDelivery(id as string),
-    onSuccess: () => {
-      setArrived(false);
-      refresh();
-    },
+    onSuccess: () => refresh(),
     onError: (failure) => setError(getApiErrorMessage(failure)),
   });
 
   const complete = useMutation({
     mutationFn: () => completeDelivery(id as string, proofKey ?? undefined),
-    onSuccess: () => {
-      setAtDropoff(false);
-      refresh();
-    },
+    onSuccess: () => refresh(),
     onError: (failure) => setError(getApiErrorMessage(failure)),
   });
 
@@ -163,6 +164,9 @@ export default function RiderDeliveryScreen() {
     );
   }
 
+  const arrived = Boolean(delivery.arrivedPickupAt);
+  const atDropoff = Boolean(delivery.arrivedDropoffAt);
+
   return (
     <View className="flex-1 bg-brand-surface">
       <StatusBar style="dark" />
@@ -201,11 +205,12 @@ export default function RiderDeliveryScreen() {
           proofUri={proofUri}
           proofKey={proofKey}
           uploadingProof={uploadingProof}
+          arrivePending={arrive.isPending}
           pickupPending={pickup.isPending}
           completePending={complete.isPending}
-          onArrive={() => setArrived(true)}
+          onArrive={() => arrive.mutate('pickup')}
           onStartDelivery={() => pickup.mutate()}
-          onStartDropoff={() => setAtDropoff(true)}
+          onStartDropoff={() => arrive.mutate('dropoff')}
           onTakeProof={takeProof}
           onComplete={() => complete.mutate()}
           onDone={() => router.replace('/rider/deliveries')}
@@ -224,6 +229,7 @@ type ActionCardProps = {
   proofUri: string | null;
   proofKey: string | null;
   uploadingProof: boolean;
+  arrivePending: boolean;
   pickupPending: boolean;
   completePending: boolean;
   onArrive: () => void;
@@ -259,7 +265,7 @@ function ActionCard(props: ActionCardProps) {
         <View className="gap-3">
           <Eyebrow text="You're en route to pickup" />
           <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} onNavigate={props.onNavigate} />
-          <Button label="Arrive at pickup" onPress={props.onArrive} />
+          <Button label="Arrive at pickup" loading={props.arrivePending} onPress={props.onArrive} />
         </View>
       );
     }
@@ -278,7 +284,7 @@ function ActionCard(props: ActionCardProps) {
       <View className="gap-3">
         <Eyebrow text="En route to drop-off" />
         <Stop dotClass="bg-red-500" name={delivery.dropoff.name} address={delivery.dropoff.address} party={delivery.dropoff} onNavigate={props.onNavigate} />
-        <Button label="Start drop-off" onPress={props.onStartDropoff} />
+        <Button label="Start drop-off" loading={props.arrivePending} onPress={props.onStartDropoff} />
       </View>
     );
   }

@@ -41,6 +41,8 @@ export type RiderDelivery = {
   pickup: DeliveryParty;
   dropoff: DeliveryParty;
   acceptedAt: string | null;
+  arrivedPickupAt: string | null;
+  arrivedDropoffAt: string | null;
   pickedUpAt: string | null;
   deliveredAt: string | null;
   proofUrl: string | null;
@@ -94,6 +96,12 @@ export async function rejectDelivery(id: string): Promise<void> {
 
 export async function getAvailableDelivery(id: string): Promise<RiderDelivery> {
   const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}/preview`);
+  return data;
+}
+
+/** Report arriving at a stop (pickup while CONFIRMED, dropoff while IN_TRANSIT). */
+export async function markArrived(id: string, stop: 'pickup' | 'dropoff'): Promise<RiderDelivery> {
+  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/arrive`, { stop });
   return data;
 }
 
