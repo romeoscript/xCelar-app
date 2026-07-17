@@ -107,6 +107,15 @@ export default function RequestDetailsScreen() {
 
         <RouteLine pickup={request.pickup.address} dropoff={request.dropoff.address} />
 
+        {request.paymentMethod ? (
+          <View className="flex-row items-center gap-2 self-start rounded-full bg-green-50 px-3 py-1.5">
+            <View className="h-2 w-2 rounded-full bg-green-500" />
+            <Text className="text-xs font-semibold text-green-700">
+              Prepaid · no cash to collect
+            </Text>
+          </View>
+        ) : null}
+
         <View className="flex-row gap-4">
           <Detail label="What you are sending" value={request.packageCategory ?? '—'} />
           <Detail label="Recipient" value={request.dropoff.name ?? '—'} />

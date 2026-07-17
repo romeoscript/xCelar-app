@@ -98,7 +98,7 @@ export default function RiderDeliveryScreen() {
   });
 
   const complete = useMutation({
-    mutationFn: () => completeDelivery(id as string, proofKey ?? undefined),
+    mutationFn: () => completeDelivery(id as string, proofKey as string),
     onSuccess: () => refresh(),
     onError: (failure) => setError(getApiErrorMessage(failure)),
   });
@@ -216,6 +216,14 @@ export default function RiderDeliveryScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
         className="absolute inset-x-0 bottom-0 gap-3 rounded-t-3xl bg-white px-6 pt-4"
       >
+        {delivery.paymentMethod && delivery.status !== 'DELIVERED' ? (
+          <View className="flex-row items-center gap-2 self-start rounded-full bg-green-50 px-3 py-1.5">
+            <CheckCircleIcon size={16} color="#16A34A" />
+            <Text className="text-xs font-semibold text-green-700">
+              Prepaid · no cash to collect
+            </Text>
+          </View>
+        ) : null}
         <ActionCard
           delivery={delivery}
           arrived={arrived}
@@ -379,6 +387,9 @@ function ActionCard(props: ActionCardProps) {
   return (
     <View className="gap-3">
       <Eyebrow text="Proof of delivery" />
+      <Text className="-mt-2 text-sm text-gray-500">
+        A photo is required to complete this delivery.
+      </Text>
       {props.proofUri ? (
         <Image source={{ uri: props.proofUri }} className="h-28 w-full rounded-xl" resizeMode="cover" />
       ) : null}
@@ -388,7 +399,12 @@ function ActionCard(props: ActionCardProps) {
         loading={props.uploadingProof}
         onPress={props.onTakeProof}
       />
-      <Button label="Complete delivery" loading={props.completePending} onPress={props.onComplete} />
+      <Button
+        label="Complete delivery"
+        loading={props.completePending}
+        disabled={!props.proofKey}
+        onPress={props.onComplete}
+      />
     </View>
   );
 }

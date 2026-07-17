@@ -127,10 +127,9 @@ export async function pickupDelivery(id: string): Promise<RiderDelivery> {
   return data;
 }
 
-export async function completeDelivery(id: string, proofImageKey?: string): Promise<RiderDelivery> {
-  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/complete`, {
-    ...(proofImageKey ? { proofImageKey } : {}),
-  });
+/** Complete a delivery. A proof-of-delivery photo key is required. */
+export async function completeDelivery(id: string, proofImageKey: string): Promise<RiderDelivery> {
+  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/complete`, { proofImageKey });
   return data;
 }
 
