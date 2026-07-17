@@ -140,6 +140,7 @@ export default function WalletScreen() {
             placeholder="0"
             placeholderTextColor={Brand.muted}
             keyboardType="number-pad"
+            maxLength={7}
             className="h-14 flex-1 text-base text-gray-900"
           />
           <Text className="text-base font-semibold text-gray-500">₦</Text>

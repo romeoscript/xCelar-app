@@ -457,6 +457,7 @@ export default function ShipExportScreen() {
                 onChangeText={setField('quantity')}
                 placeholder="Enter quantity"
                 keyboardType="number-pad"
+                maxLength={5}
               />
               <TextField
                 label="Value of item (₦)"
@@ -466,6 +467,7 @@ export default function ShipExportScreen() {
                 onChangeText={setField('declaredValue')}
                 placeholder="Enter value of item"
                 keyboardType="number-pad"
+                maxLength={9}
               />
               <TextField
                 label="Item description"

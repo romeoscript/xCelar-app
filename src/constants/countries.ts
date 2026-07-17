@@ -5,14 +5,17 @@ export type Country = {
   /** International dialling code, including the leading `+`. */
   dialCode: string;
   flag: string;
+  /** Digits in the national number (excluding any trunk 0), for input capping.
+   *  Omitted where the length varies; the input then uses a generous default. */
+  nationalDigits?: number;
 };
 
 /** Curated list of dialling codes. Extend as needed. */
 export const COUNTRIES: Country[] = [
-  { name: 'Nigeria', code: 'NG', dialCode: '+234', flag: '🇳🇬' },
-  { name: 'Ghana', code: 'GH', dialCode: '+233', flag: '🇬🇭' },
-  { name: 'Kenya', code: 'KE', dialCode: '+254', flag: '🇰🇪' },
-  { name: 'South Africa', code: 'ZA', dialCode: '+27', flag: '🇿🇦' },
+  { name: 'Nigeria', code: 'NG', dialCode: '+234', flag: '🇳🇬', nationalDigits: 10 },
+  { name: 'Ghana', code: 'GH', dialCode: '+233', flag: '🇬🇭', nationalDigits: 9 },
+  { name: 'Kenya', code: 'KE', dialCode: '+254', flag: '🇰🇪', nationalDigits: 9 },
+  { name: 'South Africa', code: 'ZA', dialCode: '+27', flag: '🇿🇦', nationalDigits: 9 },
   { name: 'Cameroon', code: 'CM', dialCode: '+237', flag: '🇨🇲' },
   { name: "Côte d'Ivoire", code: 'CI', dialCode: '+225', flag: '🇨🇮' },
   { name: 'Senegal', code: 'SN', dialCode: '+221', flag: '🇸🇳' },
@@ -22,9 +25,9 @@ export const COUNTRIES: Country[] = [
   { name: 'Ethiopia', code: 'ET', dialCode: '+251', flag: '🇪🇹' },
   { name: 'Egypt', code: 'EG', dialCode: '+20', flag: '🇪🇬' },
   { name: 'Morocco', code: 'MA', dialCode: '+212', flag: '🇲🇦' },
-  { name: 'United States', code: 'US', dialCode: '+1', flag: '🇺🇸' },
-  { name: 'Canada', code: 'CA', dialCode: '+1', flag: '🇨🇦' },
-  { name: 'United Kingdom', code: 'GB', dialCode: '+44', flag: '🇬🇧' },
+  { name: 'United States', code: 'US', dialCode: '+1', flag: '🇺🇸', nationalDigits: 10 },
+  { name: 'Canada', code: 'CA', dialCode: '+1', flag: '🇨🇦', nationalDigits: 10 },
+  { name: 'United Kingdom', code: 'GB', dialCode: '+44', flag: '🇬🇧', nationalDigits: 10 },
   { name: 'Ireland', code: 'IE', dialCode: '+353', flag: '🇮🇪' },
   { name: 'Germany', code: 'DE', dialCode: '+49', flag: '🇩🇪' },
   { name: 'France', code: 'FR', dialCode: '+33', flag: '🇫🇷' },
@@ -34,7 +37,7 @@ export const COUNTRIES: Country[] = [
   { name: 'Portugal', code: 'PT', dialCode: '+351', flag: '🇵🇹' },
   { name: 'United Arab Emirates', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
   { name: 'Saudi Arabia', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
-  { name: 'India', code: 'IN', dialCode: '+91', flag: '🇮🇳' },
+  { name: 'India', code: 'IN', dialCode: '+91', flag: '🇮🇳', nationalDigits: 10 },
   { name: 'Pakistan', code: 'PK', dialCode: '+92', flag: '🇵🇰' },
   { name: 'China', code: 'CN', dialCode: '+86', flag: '🇨🇳' },
   { name: 'Brazil', code: 'BR', dialCode: '+55', flag: '🇧🇷' },
