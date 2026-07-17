@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Toast } from '@/components/ui/toast';
+import { useNotificationObserver } from '@/hooks/use-notification-observer';
 import { useAuthStore } from '@/lib/auth-store';
 import { setupNotificationHandler, syncPushToken } from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
@@ -22,6 +23,8 @@ export default function RootLayout() {
   const hydrate = useAuthStore((state) => state.hydrate);
   const hydratePreferences = usePreferencesStore((state) => state.hydrate);
   const pushEnabled = usePreferencesStore((state) => state.pushEnabled);
+
+  useNotificationObserver();
 
   useEffect(() => {
     void hydrate();

@@ -40,9 +40,11 @@ export async function getPushToken(): Promise<string | null> {
   }
 
   if (Platform.OS === 'android') {
+    // HIGH so new-job and delivery alerts arrive as heads-up with sound —
+    // they're time-critical for riders and reassuring for customers.
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
     });
   }
 
