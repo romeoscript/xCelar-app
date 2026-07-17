@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CheckCircleIcon, ChevronLeftIcon } from '@/components/icons';
 import { RouteMap } from '@/components/rider/route-map';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
@@ -21,7 +22,9 @@ import {
   markArrived,
   pickupDelivery,
   reportDeliveryLocation,
+  reportDeliveryProblem,
   type DeliveryParty,
+  type DeliveryProblemReason,
   type RiderDelivery,
 } from '@/lib/rider-api';
 import { uploadFile } from '@/lib/uploads';
@@ -43,6 +46,7 @@ export default function RiderDeliveryScreen() {
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const deliveryQuery = useQuery({
@@ -97,6 +101,20 @@ export default function RiderDeliveryScreen() {
     mutationFn: () => completeDelivery(id as string, proofKey ?? undefined),
     onSuccess: () => refresh(),
     onError: (failure) => setError(getApiErrorMessage(failure)),
+  });
+
+  const report = useMutation({
+    mutationFn: (reason: DeliveryProblemReason) => reportDeliveryProblem(id as string, reason),
+    onSuccess: () => {
+      setReportOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['rider-deliveries'] });
+      queryClient.invalidateQueries({ queryKey: ['rider-available'] });
+      router.replace('/rider/deliveries');
+    },
+    onError: (failure) => {
+      setReportOpen(false);
+      setError(getApiErrorMessage(failure));
+    },
   });
 
   const takeProof = async () => {
@@ -217,8 +235,78 @@ export default function RiderDeliveryScreen() {
           onNavigate={navigateTo}
         />
         {error ? <Text className="text-center text-sm text-red-500">{error}</Text> : null}
+        {delivery.status === 'CONFIRMED' || delivery.status === 'IN_TRANSIT' ? (
+          <Pressable
+            onPress={() => {
+              tapFeedback();
+              setReportOpen(true);
+            }}
+            hitSlop={6}
+            className="items-center pt-1 active:opacity-60"
+          >
+            <Text className="text-sm font-medium text-gray-400">Report a problem</Text>
+          </Pressable>
+        ) : null}
       </View>
+
+      <ReportSheet
+        visible={reportOpen}
+        pickedUp={delivery.status === 'IN_TRANSIT'}
+        pending={report.isPending}
+        onClose={() => setReportOpen(false)}
+        onSubmit={(reason) => report.mutate(reason)}
+      />
     </View>
+  );
+}
+
+const REPORT_REASONS: { key: DeliveryProblemReason; label: string }[] = [
+  { key: 'WRONG_ADDRESS', label: 'Address is wrong or I can’t find it' },
+  { key: 'RECIPIENT_UNAVAILABLE', label: 'Recipient isn’t available' },
+  { key: 'CANNOT_REACH', label: 'Can’t reach the recipient' },
+  { key: 'PACKAGE_ISSUE', label: 'Problem with the package' },
+  { key: 'OTHER', label: 'Something else' },
+];
+
+function ReportSheet({
+  visible,
+  pickedUp,
+  pending,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  pickedUp: boolean;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: (reason: DeliveryProblemReason) => void;
+}) {
+  return (
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text className="text-lg font-extrabold text-brand-navy">Report a problem</Text>
+      <Text className="mb-4 mt-1 text-sm text-gray-500">
+        {pickedUp
+          ? 'You’ve already collected this package, so reporting cancels the delivery. Support will follow up.'
+          : 'This releases the delivery so another rider can take it.'}
+      </Text>
+      <View className="gap-2">
+        {REPORT_REASONS.map((reason) => (
+          <Pressable
+            key={reason.key}
+            disabled={pending}
+            onPress={() => onSubmit(reason.key)}
+            className="rounded-2xl bg-brand-surface px-4 py-3.5 active:opacity-70"
+          >
+            <Text className="text-base font-medium text-brand-navy">{reason.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {pending ? (
+        <View className="items-center pt-4">
+          <ActivityIndicator color={Brand.blue} />
+        </View>
+      ) : null}
+    </BottomSheet>
   );
 }
 

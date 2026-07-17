@@ -94,6 +94,23 @@ export async function rejectDelivery(id: string): Promise<void> {
   await api.post(`/rider/deliveries/${id}/reject`);
 }
 
+export type DeliveryProblemReason =
+  | 'WRONG_ADDRESS'
+  | 'RECIPIENT_UNAVAILABLE'
+  | 'CANNOT_REACH'
+  | 'PACKAGE_ISSUE'
+  | 'OTHER';
+
+/** Flag that an accepted delivery can't proceed. Before pickup it returns to the
+ *  pool; after pickup it's cancelled for support to resolve. */
+export async function reportDeliveryProblem(
+  id: string,
+  reason: DeliveryProblemReason,
+  note?: string,
+): Promise<void> {
+  await api.post(`/rider/deliveries/${id}/report`, { reason, ...(note ? { note } : {}) });
+}
+
 export async function getAvailableDelivery(id: string): Promise<RiderDelivery> {
   const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}/preview`);
   return data;
