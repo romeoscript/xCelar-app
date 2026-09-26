@@ -12,6 +12,7 @@ import MapView, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand } from '@/constants/theme';
+import { MAP_PROVIDER } from '@/lib/maps';
 import { type VehicleType } from '@/lib/rider-api';
 import { fetchRoute, type Route } from '@/lib/routing';
 
@@ -241,6 +242,7 @@ export function RouteMap({
     >
       <MapView
         ref={mapRef}
+        provider={MAP_PROVIDER}
         style={styles.map}
         initialRegion={regionAround(stops)}
         onMapReady={() => mapRef.current?.fitToCoordinates(stops, { edgePadding, animated: false })}
