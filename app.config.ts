@@ -1,10 +1,16 @@
+import { existsSync } from 'node:fs';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 /**
- * Extends app.json with the Google Maps SDK keys, read from the environment so
- * they stay out of git. Locally they come from .env; for EAS builds set them as
- * EAS environment variables.
+ * Extends app.json with secrets that stay out of git: the Google Maps SDK keys
+ * and the Firebase config Android needs for push. Locally they come from .env
+ * and ./google-services.json; EAS builds get them from EAS environment variables.
  */
+const LOCAL_GOOGLE_SERVICES = './google-services.json';
+const googleServicesFile =
+  process.env.GOOGLE_SERVICES_JSON ??
+  (existsSync(LOCAL_GOOGLE_SERVICES) ? LOCAL_GOOGLE_SERVICES : undefined);
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...(config as ExpoConfig),
   ios: {
@@ -16,6 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     ...config.android,
+    googleServicesFile,
     config: {
       ...config.android?.config,
       googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY },
