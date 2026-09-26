@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import { type ComponentType, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
@@ -6,17 +5,16 @@ import {
   ChevronRightIcon,
   CrosshairIcon,
   type IconProps,
-  PencilIcon,
   PinIcon,
+  SearchIcon,
 } from '@/components/icons';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { FieldLabel } from '@/components/ui/field-label';
-import { TextField } from '@/components/ui/text-field';
 import { Brand } from '@/constants/theme';
-import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { tapFeedback } from '@/lib/haptics';
 import { getCurrentLocation, type PickedLocation } from '@/lib/location';
-import { searchAddresses, type AddressSuggestion } from '@/lib/places';
+import { type AddressSuggestion } from '@/lib/places';
+import { AddressSearchModal } from './address-search-modal';
 import { MapPicker } from './map-picker';
 
 export type AddressValue = {
@@ -35,7 +33,7 @@ export type AddressFieldProps = {
   onZoneHint?: (area: string | null, region: string | null) => void;
 };
 
-/** Address entry with three methods: manual, current location, or map pin. */
+/** Address entry with three methods: search (type-ahead), current location, or map pin. */
 export function AddressField({
   label,
   required,
@@ -46,47 +44,35 @@ export function AddressField({
 }: AddressFieldProps) {
   const [methodSheet, setMethodSheet] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
-  const [manualMode, setManualMode] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  // Suppress the suggestion list right after a pick, until the user types again.
-  const [suggestionsHidden, setSuggestionsHidden] = useState(false);
 
   const hasAddress = value.address.trim().length > 0;
 
-  const debouncedQuery = useDebouncedValue(value.address);
-  const suggestionsQuery = useQuery({
-    queryKey: ['address-search', debouncedQuery],
-    queryFn: () => searchAddresses(debouncedQuery),
-    enabled: manualMode && !suggestionsHidden && debouncedQuery.trim().length >= 3,
-  });
-  const suggestions = suggestionsQuery.data ?? [];
-
-  const handleManualChange = (text: string) => {
-    setSuggestionsHidden(false);
-    // Editing the text invalidates any coordinates from a previous pick.
-    onChange({ address: text, lat: null, lng: null });
-  };
-
   const selectSuggestion = (suggestion: AddressSuggestion) => {
-    tapFeedback();
-    setSuggestionsHidden(true);
+    setSearchOpen(false);
+    setLocationError(null);
     onChange({ address: suggestion.address, lat: suggestion.latitude, lng: suggestion.longitude });
     onZoneHint?.(suggestion.area, suggestion.region);
   };
 
+  // Free text has no coordinates; the zone picker still covers pricing.
+  const useTyped = (address: string) => {
+    setSearchOpen(false);
+    setLocationError(null);
+    onChange({ address, lat: null, lng: null });
+  };
+
   const applyLocation = (location: PickedLocation) => {
-    setManualMode(false);
     setLocationError(null);
     onChange({ address: location.address, lat: location.latitude, lng: location.longitude });
     onZoneHint?.(location.area, location.region);
   };
 
-  const useManual = () => {
+  const useSearch = () => {
     setMethodSheet(false);
-    setManualMode(true);
-    setSuggestionsHidden(false);
-    onChange({ ...value, lat: null, lng: null });
+    setSearchOpen(true);
   };
 
   const useCurrentLocation = async () => {
@@ -116,49 +102,6 @@ export function AddressField({
           <ActivityIndicator color={Brand.blue} />
           <Text className="text-base text-gray-500">Detecting your location…</Text>
         </View>
-      ) : manualMode ? (
-        <View className="gap-2">
-          <TextField
-            label=""
-            value={value.address}
-            onChangeText={handleManualChange}
-            placeholder="Start typing a street, area, or city"
-            autoCorrect={false}
-          />
-
-          {suggestionsQuery.isFetching ? (
-            <View className="flex-row items-center gap-2 px-1">
-              <ActivityIndicator size="small" color={Brand.muted} />
-              <Text className="text-xs text-gray-400">Searching addresses…</Text>
-            </View>
-          ) : null}
-
-          {!suggestionsHidden && suggestions.length > 0 ? (
-            <View className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-              {suggestions.map((suggestion) => (
-                <Pressable
-                  key={suggestion.id}
-                  onPress={() => selectSuggestion(suggestion)}
-                  className="flex-row items-start gap-2 border-b border-gray-50 px-3 py-2.5 active:bg-gray-50"
-                >
-                  <PinIcon size={16} color={Brand.muted} />
-                  <View className="flex-1">
-                    <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
-                      {suggestion.title}
-                    </Text>
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
-                      {suggestion.address}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-
-          <Pressable onPress={() => setMethodSheet(true)} className="active:opacity-70">
-            <Text className="text-sm font-medium text-brand-blue">Choose another method</Text>
-          </Pressable>
-        </View>
       ) : hasAddress ? (
         <View className="flex-row items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
           <PinIcon size={22} color={Brand.blue} />
@@ -186,11 +129,20 @@ export function AddressField({
         <Text className="text-xl font-bold text-brand-navy">Set address</Text>
         <Text className="mt-1 text-sm text-gray-500">How would you like to provide it?</Text>
         <View className="mt-5 gap-2">
-          <MethodRow icon={PencilIcon} title="Enter manually" hint="Type the address yourself" onPress={useManual} />
+          <MethodRow icon={SearchIcon} title="Search address" hint="Type a street, area or landmark" onPress={useSearch} />
           <MethodRow icon={CrosshairIcon} title="Use current location" hint="Detect where you are now" onPress={useCurrentLocation} />
           <MethodRow icon={PinIcon} title="Set on map" hint="Drop a pin on the map" onPress={useMap} />
         </View>
       </BottomSheet>
+
+      <AddressSearchModal
+        visible={searchOpen}
+        title={label}
+        initialQuery={value.address}
+        onClose={() => setSearchOpen(false)}
+        onSelect={selectSuggestion}
+        onUseTyped={useTyped}
+      />
 
       <MapPicker
         visible={mapOpen}
