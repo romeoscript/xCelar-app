@@ -50,6 +50,10 @@ export type Shipment = {
   paid: boolean;
   paymentMethod: string | null;
   paidAt: string | null;
+  // Optional: older API deployments don't send these.
+  acceptedAt?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };

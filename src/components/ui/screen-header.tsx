@@ -6,14 +6,16 @@ import { Brand } from '@/constants/theme';
 
 export type ScreenHeaderProps = {
   title?: string;
+  /** Horizontal inset; match it to the screen's content gutter. Defaults to 24. */
+  gutter?: number;
 };
 
 /** Back button plus an optional title — the standard top bar for stack screens. */
-export function ScreenHeader({ title }: ScreenHeaderProps) {
+export function ScreenHeader({ title, gutter = 24 }: ScreenHeaderProps) {
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center gap-3 px-6 pt-2">
+    <View className="flex-row items-center gap-3 pt-2" style={{ paddingHorizontal: gutter }}>
       <Pressable
         onPress={() => router.back()}
         hitSlop={8}
