@@ -211,6 +211,7 @@ export default function QuoteScreen() {
             }}
             placeholder="e.g. 2.5"
             keyboardType="decimal-pad"
+            maxLength={6}
           />
 
           {mode === 'LOCAL' ? (

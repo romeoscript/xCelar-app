@@ -399,6 +399,7 @@ export default function ShipLocalScreen() {
                 onChangeText={setField('weightKg')}
                 placeholder="e.g. 2.5"
                 keyboardType="decimal-pad"
+                maxLength={6}
               />
               <TextField
                 label="Declared value (₦)"
@@ -408,6 +409,7 @@ export default function ShipLocalScreen() {
                 onChangeText={setField('declaredValue')}
                 placeholder="e.g. 50000"
                 keyboardType="number-pad"
+                maxLength={9}
               />
               <TextField
                 label="Description (optional)"

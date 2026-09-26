@@ -1,17 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
-import { Image, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useCallback, useState, type ReactNode } from 'react';
+import {
+  Image,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActiveDeliveryCard } from '@/components/home/active-delivery-card';
 import { BannerCarousel } from '@/components/home/banner-carousel';
 import { QuickActions } from '@/components/home/quick-actions';
 import { ResumeDraftsSheet } from '@/components/home/resume-drafts-sheet';
 import { ShipmentCard } from '@/components/shipments/shipment-card';
-import { ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
+import { ChevronRightIcon, PackageIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { SupportWidget } from '@/components/support-widget';
 import { Brand } from '@/constants/theme';
+import { isTrackable } from '@/hooks/use-shipment-tracking';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
@@ -107,6 +120,7 @@ export default function HomeScreen() {
 
   const draft = draftQuery.data;
   const shipments = shipmentsQuery.data ?? [];
+  const activeShipment = shipments.find((shipment) => shipment.paid && isTrackable(shipment));
   const name = user?.fullName ?? 'there';
 
   const openFlow = (type: ShipmentType, id: string) =>
@@ -174,43 +188,57 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View
-          className="rounded-b-[32px] bg-brand-navy px-6 pb-10"
-          style={{ paddingTop: insets.top + 12 }}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 104 }}>
+        <LinearGradient
+          colors={[Brand.navy, Brand.indigo]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { paddingTop: insets.top + 12 }]}
         >
+          {/* Soft decorative rings for depth behind the header content. */}
+          <View className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/5" />
+          <View className="absolute -bottom-16 -left-20 h-44 w-44 rounded-full bg-white/5" />
+
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-sm text-white/60">{greeting()}</Text>
               <Text className="text-2xl font-bold text-white">{name.split(' ')[0]}</Text>
             </View>
-            <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-brand-gold">
+            <Pressable
+              onPress={() => router.push('/account')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Account"
+              className="h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-white/20 bg-brand-gold active:opacity-80"
+            >
               {user?.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} className="h-11 w-11" resizeMode="cover" />
               ) : (
                 <Text className="text-base font-bold text-brand-navy">{initials(name)}</Text>
               )}
-            </View>
+            </Pressable>
           </View>
 
-          <View className="mt-7 flex-row items-end justify-between">
+          <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-white/10 bg-white/10 p-4">
             <View>
-              <Text className="text-xs uppercase tracking-wider text-white/50">Wallet balance</Text>
+              <Text className="text-xs text-white/60">Wallet balance</Text>
               <Text className="mt-1 text-3xl font-extrabold text-white">
                 {formatNaira((user?.balanceKobo ?? 0) / 100)}
               </Text>
             </View>
             <Pressable
               onPress={() => router.push('/wallet')}
-              className="rounded-full bg-brand-gold px-4 py-2 active:opacity-90"
+              accessibilityRole="button"
+              className="flex-row items-center gap-1 rounded-full bg-brand-gold px-4 py-2.5 active:opacity-90"
             >
+              <PlusIcon size={16} color={Brand.navy} />
               <Text className="text-sm font-bold text-brand-navy">Top up</Text>
             </Pressable>
           </View>
-        </View>
+        </LinearGradient>
 
         <View
-          className="-mt-6 mx-6 flex-row items-center gap-2 rounded-2xl bg-white p-2 pl-4"
+          className="-mt-7 mx-4 flex-row items-center gap-2 rounded-2xl bg-white p-2 pl-4"
           style={cardShadow}
         >
           <SearchIcon size={20} color={Brand.muted} />
@@ -242,11 +270,24 @@ export default function HomeScreen() {
         </View>
 
         {trackError ? (
-          <Text className="mx-6 mt-2 text-sm text-red-500">{trackError}</Text>
+          <Text className="mx-4 mt-2 text-sm text-red-500">{trackError}</Text>
+        ) : null}
+
+        {activeShipment ? (
+          <Reveal delay={60}>
+            <View className="mx-4 mt-5">
+              <ActiveDeliveryCard
+                shipment={activeShipment}
+                onPress={() =>
+                  router.push({ pathname: '/track/[id]', params: { id: activeShipment.id } })
+                }
+              />
+            </View>
+          </Reveal>
         ) : null}
 
         {draft && draft.currentStep > 0 && draft.currentStep < 3 ? (
-          <View className="mx-6 mt-6 rounded-3xl bg-white p-5" style={cardShadow}>
+          <View className="mx-4 mt-5 rounded-3xl bg-white p-5" style={cardShadow}>
             <View className="flex-row items-center gap-3">
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue-tint">
                 <PackageIcon size={22} color={Brand.blue} />
@@ -275,46 +316,52 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <View className="mt-8 px-6">
-          <QuickActions onSelect={handleQuickAction} />
-        </View>
+        <Reveal delay={120}>
+          <View className="mt-7 px-4">
+            <QuickActions onSelect={handleQuickAction} />
+          </View>
+        </Reveal>
 
         {bannersQuery.data && bannersQuery.data.length > 0 ? (
-          <View className="mt-8 gap-3">
-            <Text className="px-6 text-lg font-bold text-brand-navy">Promotions</Text>
-            <BannerCarousel banners={bannersQuery.data} />
-          </View>
+          <Reveal delay={180}>
+            <View className="mt-7 gap-3">
+              <Text className="px-4 text-lg font-bold text-brand-navy">Promotions</Text>
+              <BannerCarousel banners={bannersQuery.data} />
+            </View>
+          </Reveal>
         ) : null}
 
-        <View className="mt-8 px-6">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-brand-navy">Recent shipments</Text>
+        <Reveal delay={240}>
+          <View className="mt-7 px-4">
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-lg font-bold text-brand-navy">Recent shipments</Text>
+              {shipments.length > 0 ? (
+                <Pressable onPress={() => router.push('/shipments')} hitSlop={8} className="active:opacity-70">
+                  <Text className="text-sm font-semibold text-brand-blue">See all</Text>
+                </Pressable>
+              ) : null}
+            </View>
             {shipments.length > 0 ? (
-              <Pressable onPress={() => router.push('/shipments')} hitSlop={8} className="active:opacity-70">
-                <Text className="text-sm font-semibold text-brand-blue">See all</Text>
-              </Pressable>
-            ) : null}
+              <View className="gap-2">
+                {shipments.slice(0, 3).map((shipment) => (
+                  <ShipmentCard
+                    key={shipment.id}
+                    shipment={shipment}
+                    onPress={() => router.push(`/shipment/${shipment.id}`)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-10">
+                <PackageIcon size={32} color={Brand.muted} />
+                <Text className="font-semibold text-gray-700">No shipments yet</Text>
+                <Text className="text-center text-sm text-gray-500">
+                  Book your first delivery and track it right here.
+                </Text>
+              </View>
+            )}
           </View>
-          {shipments.length > 0 ? (
-            <View className="gap-2">
-              {shipments.slice(0, 3).map((shipment) => (
-                <ShipmentCard
-                  key={shipment.id}
-                  shipment={shipment}
-                  onPress={() => router.push(`/shipment/${shipment.id}`)}
-                />
-              ))}
-            </View>
-          ) : (
-            <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-10">
-              <PackageIcon size={32} color={Brand.muted} />
-              <Text className="font-semibold text-gray-700">No shipments yet</Text>
-              <Text className="text-center text-sm text-gray-500">
-                Book your first delivery and track it right here.
-              </Text>
-            </View>
-          )}
-        </View>
+        </Reveal>
       </ScrollView>
 
       <SupportWidget />
@@ -330,6 +377,21 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+/** Staggered fade-and-rise as the screen's sections first appear. */
+function Reveal({ delay, children }: { delay: number; children: ReactNode }) {
+  return <Animated.View entering={FadeInDown.duration(420).delay(delay)}>{children}</Animated.View>;
+}
+
+const styles = StyleSheet.create({
+  header: {
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingBottom: 48,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+});
 
 const cardShadow = {
   shadowColor: '#000000',

@@ -431,6 +431,7 @@ export default function ShipImportScreen() {
                 onChangeText={setField('quantity')}
                 placeholder="Enter quantity"
                 keyboardType="number-pad"
+                maxLength={5}
               />
               <TextField
                 label="Weight (kg)"
@@ -440,6 +441,7 @@ export default function ShipImportScreen() {
                 onChangeText={setField('weightKg')}
                 placeholder="e.g. 2.5"
                 keyboardType="decimal-pad"
+                maxLength={6}
               />
               <SelectField
                 label="Item category"
@@ -456,6 +458,7 @@ export default function ShipImportScreen() {
                 onChangeText={setField('declaredValue')}
                 placeholder="Enter value of item"
                 keyboardType="number-pad"
+                maxLength={9}
               />
               <View className="flex-row gap-2 rounded-2xl bg-brand-gold-tint p-4">
                 <Text className="text-base">ℹ️</Text>

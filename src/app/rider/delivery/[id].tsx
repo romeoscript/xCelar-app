@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CheckCircleIcon, ChevronLeftIcon } from '@/components/icons';
+import { CameraIcon, ChevronLeftIcon, PhoneCallIcon } from '@/components/icons';
 import { RouteMap } from '@/components/rider/route-map';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export default function RiderDeliveryScreen() {
   const [uploadingProof, setUploadingProof] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [panelHeight, setPanelHeight] = useState<number>();
 
   const deliveryQuery = useQuery({
     queryKey: ['rider-delivery', id],
@@ -184,6 +186,8 @@ export default function RiderDeliveryScreen() {
 
   const arrived = Boolean(delivery.arrivedPickupAt);
   const atDropoff = Boolean(delivery.arrivedDropoffAt);
+  const active = delivery.status === 'CONFIRMED' || delivery.status === 'IN_TRANSIT';
+  const step = stepFor(delivery.status, arrived, atDropoff);
 
   return (
     <View className="flex-1 bg-brand-surface">
@@ -199,6 +203,7 @@ export default function RiderDeliveryScreen() {
         focusTarget={focus}
         focusLabel={focus?.label}
         vehicleType={vehicleType}
+        bottomInset={panelHeight}
         fill
         interactive
       />
@@ -206,6 +211,8 @@ export default function RiderDeliveryScreen() {
       <Pressable
         onPress={() => router.back()}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
         style={{ top: insets.top + 8 }}
         className="absolute left-4 h-10 w-10 items-center justify-center rounded-full bg-white/95 active:opacity-80"
       >
@@ -213,17 +220,24 @@ export default function RiderDeliveryScreen() {
       </Pressable>
 
       <View
-        style={{ paddingBottom: insets.bottom + 12 }}
-        className="absolute inset-x-0 bottom-0 gap-3 rounded-t-3xl bg-white px-6 pt-4"
+        onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)}
+        style={[panelShadow, { paddingBottom: insets.bottom + 12 }]}
+        className="absolute inset-x-0 bottom-0 gap-4 rounded-t-3xl bg-white px-5 pt-5"
       >
-        {delivery.paymentMethod && delivery.status !== 'DELIVERED' ? (
-          <View className="flex-row items-center gap-2 self-start rounded-full bg-green-50 px-3 py-1.5">
-            <CheckCircleIcon size={16} color="#16A34A" />
-            <Text className="text-xs font-semibold text-green-700">
-              Prepaid · no cash to collect
-            </Text>
+        {step ? (
+          <View className="gap-3">
+            <StepProgress index={step.index} />
+            <View className="flex-row items-center justify-between gap-3">
+              <Text className="flex-1 text-lg font-bold text-brand-navy">{step.title}</Text>
+              {delivery.paymentMethod ? (
+                <View className="rounded-full bg-green-50 px-2.5 py-1">
+                  <Text className="text-xs font-semibold text-green-700">Prepaid</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         ) : null}
+
         <ActionCard
           delivery={delivery}
           arrived={arrived}
@@ -242,15 +256,17 @@ export default function RiderDeliveryScreen() {
           onDone={() => router.replace('/rider/deliveries')}
           onNavigate={navigateTo}
         />
+
         {error ? <Text className="text-center text-sm text-red-500">{error}</Text> : null}
-        {delivery.status === 'CONFIRMED' || delivery.status === 'IN_TRANSIT' ? (
+
+        {active ? (
           <Pressable
             onPress={() => {
               tapFeedback();
               setReportOpen(true);
             }}
             hitSlop={6}
-            className="items-center pt-1 active:opacity-60"
+            className="items-center active:opacity-60"
           >
             <Text className="text-sm font-medium text-gray-400">Report a problem</Text>
           </Pressable>
@@ -264,6 +280,42 @@ export default function RiderDeliveryScreen() {
         onClose={() => setReportOpen(false)}
         onSubmit={(reason) => report.mutate(reason)}
       />
+    </View>
+  );
+}
+
+const STEPS = ['Heading to pickup', 'At pickup', 'Heading to drop-off', 'Proof of delivery'];
+
+function stepFor(
+  status: RiderDelivery['status'],
+  arrived: boolean,
+  atDropoff: boolean,
+): { index: number; title: string } | null {
+  let index: number;
+  if (status === 'CONFIRMED') {
+    index = arrived ? 1 : 0;
+  } else if (status === 'IN_TRANSIT') {
+    index = atDropoff ? 3 : 2;
+  } else {
+    return null;
+  }
+  return { index, title: STEPS[index] };
+}
+
+function StepProgress({ index }: { index: number }) {
+  return (
+    <View className="gap-1.5">
+      <View className="flex-row gap-1.5">
+        {STEPS.map((label, position) => (
+          <View
+            key={label}
+            className={`h-1 flex-1 rounded-full ${position <= index ? 'bg-brand-blue' : 'bg-gray-200'}`}
+          />
+        ))}
+      </View>
+      <Text className="text-xs font-medium text-gray-400">
+        Step {index + 1} of {STEPS.length}
+      </Text>
     </View>
   );
 }
@@ -342,13 +394,16 @@ function ActionCard(props: ActionCardProps) {
 
   if (delivery.status === 'DELIVERED') {
     return (
-      <View className="gap-3">
-        <View className="flex-row items-center gap-2">
-          <CheckCircleIcon size={22} color={Brand.blue} />
-          <Text className="text-lg font-extrabold text-brand-navy">Delivery complete</Text>
+      <View className="gap-4">
+        <View className="items-center gap-2 pt-1">
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-green-50">
+            <MaterialCommunityIcons name="check-circle" size={32} color="#16A34A" />
+          </View>
+          <Text className="text-lg font-bold text-brand-navy">Delivery complete</Text>
+          <Text className="text-sm text-gray-500">Nice work. The customer has been notified.</Text>
         </View>
         {delivery.proofUrl ? (
-          <Image source={{ uri: delivery.proofUrl }} className="h-28 w-full rounded-xl" resizeMode="cover" />
+          <Image source={{ uri: delivery.proofUrl }} className="h-32 w-full rounded-2xl" resizeMode="cover" />
         ) : null}
         <Button label="Done" onPress={props.onDone} />
       </View>
@@ -356,49 +411,58 @@ function ActionCard(props: ActionCardProps) {
   }
 
   if (delivery.status === 'CONFIRMED') {
-    if (!props.arrived) {
-      return (
-        <View className="gap-3">
-          <Eyebrow text="You're en route to pickup" />
-          <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} onNavigate={props.onNavigate} />
-          <Button label="Arrive at pickup" loading={props.arrivePending} onPress={props.onArrive} />
-        </View>
-      );
-    }
     return (
-      <View className="gap-3">
-        <Eyebrow text="At pickup" />
-        <Stop dotClass="bg-green-500" name={delivery.pickup.name} address={delivery.pickup.address} party={delivery.pickup} onNavigate={props.onNavigate} />
-        <Button label="Start delivery" loading={props.pickupPending} onPress={props.onStartDelivery} />
+      <View className="gap-4">
+        <StopCard kind="pickup" party={delivery.pickup} onNavigate={props.onNavigate} />
+        {props.arrived ? (
+          <Button label="Package collected · Start delivery" loading={props.pickupPending} onPress={props.onStartDelivery} />
+        ) : (
+          <Button label="I’ve arrived at pickup" loading={props.arrivePending} onPress={props.onArrive} />
+        )}
       </View>
     );
   }
 
-  // IN_TRANSIT
   if (!props.atDropoff) {
     return (
-      <View className="gap-3">
-        <Eyebrow text="En route to drop-off" />
-        <Stop dotClass="bg-red-500" name={delivery.dropoff.name} address={delivery.dropoff.address} party={delivery.dropoff} onNavigate={props.onNavigate} />
-        <Button label="Start drop-off" loading={props.arrivePending} onPress={props.onStartDropoff} />
+      <View className="gap-4">
+        <StopCard kind="dropoff" party={delivery.dropoff} onNavigate={props.onNavigate} />
+        <Button label="I’ve arrived at drop-off" loading={props.arrivePending} onPress={props.onStartDropoff} />
       </View>
     );
   }
+
   return (
-    <View className="gap-3">
-      <Eyebrow text="Proof of delivery" />
-      <Text className="-mt-2 text-sm text-gray-500">
-        A photo is required to complete this delivery.
-      </Text>
-      {props.proofUri ? (
-        <Image source={{ uri: props.proofUri }} className="h-28 w-full rounded-xl" resizeMode="cover" />
-      ) : null}
-      <Button
-        label={props.proofKey ? 'Retake proof photo' : 'Take proof photo'}
-        variant="secondary"
-        loading={props.uploadingProof}
+    <View className="gap-4">
+      <StopCard kind="dropoff" party={delivery.dropoff} onNavigate={props.onNavigate} />
+      <Pressable
         onPress={props.onTakeProof}
-      />
+        disabled={props.uploadingProof}
+        accessibilityRole="button"
+        accessibilityLabel={props.proofKey ? 'Retake proof photo' : 'Take proof photo'}
+        className="h-28 overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-brand-surface active:opacity-80"
+      >
+        {props.proofUri ? (
+          <>
+            <Image source={{ uri: props.proofUri }} className="h-full w-full" resizeMode="cover" />
+            <View className="absolute bottom-2 right-2 rounded-full bg-black/60 px-3 py-1">
+              <Text className="text-xs font-semibold text-white">Retake</Text>
+            </View>
+          </>
+        ) : (
+          <View className="flex-1 items-center justify-center gap-1.5">
+            {props.uploadingProof ? (
+              <ActivityIndicator color={Brand.blue} />
+            ) : (
+              <CameraIcon size={24} color={Brand.navy} />
+            )}
+            <Text className="text-sm font-semibold text-brand-navy">
+              {props.uploadingProof ? 'Uploading…' : 'Take proof photo'}
+            </Text>
+            <Text className="text-xs text-gray-500">Required to complete the delivery</Text>
+          </View>
+        )}
+      </Pressable>
       <Button
         label="Complete delivery"
         loading={props.completePending}
@@ -409,48 +473,88 @@ function ActionCard(props: ActionCardProps) {
   );
 }
 
-function Eyebrow({ text }: { text: string }) {
-  return <Text className="text-base font-bold text-brand-navy">{text}</Text>;
-}
-
-function Stop({
-  dotClass,
-  name,
-  address,
+function StopCard({
+  kind,
   party,
   onNavigate,
 }: {
-  dotClass: string;
-  name: string | null;
-  address: string | null;
+  kind: 'pickup' | 'dropoff';
   party: DeliveryParty;
   onNavigate: (party: DeliveryParty) => void;
 }) {
+  const isPickup = kind === 'pickup';
   return (
-    <View className="gap-2 rounded-2xl bg-brand-surface p-3">
-      <View className="flex-row items-center gap-2">
-        <View className={`h-2 w-2 rounded-full ${dotClass}`} />
-        <Text className="flex-1 text-sm font-semibold text-brand-navy" numberOfLines={1}>
-          {name ?? '—'}
+    <View className="flex-row items-center gap-3 rounded-2xl border border-gray-100 p-3">
+      <View
+        className={`h-11 w-11 items-center justify-center rounded-xl ${isPickup ? 'bg-brand-blue-tint' : 'bg-brand-indigo-tint'}`}
+      >
+        <MaterialCommunityIcons
+          name={isPickup ? 'package-variant-closed' : 'map-marker'}
+          size={22}
+          color={isPickup ? Brand.blue : Brand.indigo}
+        />
+      </View>
+      <View className="flex-1">
+        <Text className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          {isPickup ? 'Pickup' : 'Drop-off'}
+        </Text>
+        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+          {party.name ?? '—'}
+        </Text>
+        <Text className="text-sm text-gray-500" numberOfLines={2}>
+          {party.address ?? '—'}
         </Text>
       </View>
-      <Text className="text-sm text-gray-500" numberOfLines={1}>
-        {address ?? '—'}
-      </Text>
-      <View className="flex-row gap-2">
-        <Pressable
-          onPress={() => callNumber(party.phone)}
-          className="flex-1 items-center rounded-full bg-white py-2.5 active:opacity-70"
+      <View className="gap-2">
+        <CircleButton
+          label={`Call ${isPickup ? 'sender' : 'recipient'}`}
+          disabled={!party.phone}
+          onPress={() => {
+            tapFeedback();
+            callNumber(party.phone);
+          }}
         >
-          <Text className="text-sm font-semibold text-brand-navy">Call</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onNavigate(party)}
-          className="flex-1 items-center rounded-full bg-brand-blue py-2.5 active:opacity-80"
-        >
-          <Text className="text-sm font-semibold text-white">Navigate</Text>
-        </Pressable>
+          <PhoneCallIcon size={18} color={Brand.navy} />
+        </CircleButton>
+        <CircleButton label="Navigate" primary onPress={() => onNavigate(party)}>
+          <MaterialCommunityIcons name="navigation-variant" size={18} color="#ffffff" />
+        </CircleButton>
       </View>
     </View>
   );
 }
+
+function CircleButton({
+  label,
+  primary = false,
+  disabled = false,
+  onPress,
+  children,
+}: {
+  label: string;
+  primary?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className={`h-10 w-10 items-center justify-center rounded-full active:opacity-80 ${primary ? 'bg-brand-blue' : 'bg-brand-surface'} ${disabled ? 'opacity-40' : ''}`}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+const panelShadow = {
+  shadowColor: '#000000',
+  shadowOpacity: 0.1,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: -4 },
+  elevation: 12,
+} as const;

@@ -2,14 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, Dimensions, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChevronLeftIcon } from '@/components/icons';
 import { RouteLine } from '@/components/rider/route-line';
 import { RouteMap } from '@/components/rider/route-map';
 import { BikeGlyph } from '@/components/rider/vehicle-icons';
 import { useRiderVehicle } from '@/hooks/use-rider-vehicle';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -18,8 +18,6 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { getCurrentLocation } from '@/lib/location';
 import { acceptDelivery, getAvailableDelivery, rejectDelivery } from '@/lib/rider-api';
 
-const MAP_SHEET_HEIGHT = Math.round(Dimensions.get('window').height * 0.8);
-
 function initials(name: string | null): string {
   const parts = (name ?? '').trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '–';
@@ -27,6 +25,7 @@ function initials(name: string | null): string {
 
 export default function RequestDetailsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const vehicleType = useRiderVehicle();
@@ -47,6 +46,7 @@ export default function RequestDetailsScreen() {
   const accept = useMutation({
     mutationFn: () => acceptDelivery(id as string),
     onSuccess: (delivery) => {
+      setShowMap(false);
       queryClient.invalidateQueries({ queryKey: ['rider-available'] });
       queryClient.invalidateQueries({ queryKey: ['rider-deliveries'] });
       router.replace(`/rider/delivery/${delivery.id}`);
@@ -58,6 +58,7 @@ export default function RequestDetailsScreen() {
   const reject = useMutation({
     mutationFn: () => rejectDelivery(id as string),
     onSettled: () => {
+      setShowMap(false);
       queryClient.invalidateQueries({ queryKey: ['rider-available'] });
       router.back();
     },
@@ -144,8 +145,11 @@ export default function RequestDetailsScreen() {
         </View>
       </View>
 
-      <BottomSheet visible={showMap} onClose={() => setShowMap(false)}>
-        <View style={{ height: MAP_SHEET_HEIGHT }} className="-mx-6 overflow-hidden rounded-t-2xl">
+      {/* Full-screen route preview, laid out like the active-delivery map so the
+          rider can judge the job before committing to it. */}
+      <Modal visible={showMap} animationType="slide" onRequestClose={() => setShowMap(false)}>
+        <View className="flex-1 bg-brand-surface">
+          <StatusBar style="dark" />
           <RouteMap
             pickupLat={request.pickup.lat}
             pickupLng={request.pickup.lng}
@@ -157,21 +161,40 @@ export default function RequestDetailsScreen() {
             fill
             interactive
           />
-          <View className="absolute inset-x-0 bottom-0 flex-row gap-3 bg-white px-6 pb-2 pt-3">
-            <View className="flex-1">
-              <Button
-                label="Reject"
-                variant="secondary"
-                loading={reject.isPending}
-                onPress={() => reject.mutate()}
-              />
-            </View>
-            <View className="flex-1">
-              <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />
+
+          <Pressable
+            onPress={() => setShowMap(false)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close map"
+            style={{ top: insets.top + 8 }}
+            className="absolute left-4 h-10 w-10 items-center justify-center rounded-full bg-white/95 active:opacity-80"
+          >
+            <ChevronLeftIcon size={22} color={Brand.navy} />
+          </Pressable>
+
+          <View
+            style={{ paddingBottom: insets.bottom + 12 }}
+            className="absolute inset-x-0 bottom-0 gap-4 rounded-t-3xl bg-white px-6 pt-5"
+          >
+            <RouteLine pickup={request.pickup.address} dropoff={request.dropoff.address} />
+            {error ? <Text className="text-center text-sm text-red-500">{error}</Text> : null}
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Button
+                  label="Reject"
+                  variant="secondary"
+                  loading={reject.isPending}
+                  onPress={() => reject.mutate()}
+                />
+              </View>
+              <View className="flex-1">
+                <Button label="Accept" loading={accept.isPending} onPress={() => accept.mutate()} />
+              </View>
             </View>
           </View>
         </View>
-      </BottomSheet>
+      </Modal>
     </SafeAreaView>
   );
 }

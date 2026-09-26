@@ -15,13 +15,38 @@ type QuickAction = {
   Icon: (props: IconProps) => React.JSX.Element;
   label: string;
   tileClassName: string;
+  iconColor: string;
 };
 
 const ACTIONS: QuickAction[] = [
-  { key: 'ship-local', Icon: TruckIcon, label: 'Ship locally', tileClassName: 'bg-brand-blue-tint' },
-  { key: 'export', Icon: PlaneTakeoffIcon, label: 'Export', tileClassName: 'bg-brand-gold-tint' },
-  { key: 'import', Icon: ShipIcon, label: 'Import', tileClassName: 'bg-brand-indigo-tint' },
-  { key: 'quote', Icon: CalculatorIcon, label: 'Quote', tileClassName: 'bg-brand-surface' },
+  {
+    key: 'ship-local',
+    Icon: TruckIcon,
+    label: 'Ship locally',
+    tileClassName: 'bg-brand-blue-tint',
+    iconColor: Brand.blue,
+  },
+  {
+    key: 'export',
+    Icon: PlaneTakeoffIcon,
+    label: 'Export',
+    tileClassName: 'bg-brand-gold-tint',
+    iconColor: '#D97706',
+  },
+  {
+    key: 'import',
+    Icon: ShipIcon,
+    label: 'Import',
+    tileClassName: 'bg-brand-indigo-tint',
+    iconColor: Brand.indigo,
+  },
+  {
+    key: 'quote',
+    Icon: CalculatorIcon,
+    label: 'Quote',
+    tileClassName: 'bg-brand-surface',
+    iconColor: Brand.navy,
+  },
 ];
 
 export type QuickActionsProps = {
@@ -49,10 +74,10 @@ function QuickActionTile({ action, onPress }: { action: QuickAction; onPress: ()
       className="items-center gap-2 active:opacity-70"
       style={{ width: '23%' }}
     >
-      <View className={`h-16 w-16 items-center justify-center rounded-2xl ${action.tileClassName}`}>
-        <Icon size={26} color={Brand.navy} />
+      <View className={`h-14 w-14 items-center justify-center rounded-2xl ${action.tileClassName}`}>
+        <Icon size={24} color={action.iconColor} />
       </View>
-      <Text className="text-center text-xs font-medium text-gray-700">{action.label}</Text>
+      <Text className="text-center text-xs font-semibold text-gray-700">{action.label}</Text>
     </Pressable>
   );
 }

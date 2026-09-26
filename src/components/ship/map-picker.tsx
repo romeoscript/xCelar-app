@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { type PickedLocation, reverseGeocode } from '@/lib/location';
+import { MAP_PROVIDER } from '@/lib/maps';
 
 // Lagos as the default starting point.
 const DEFAULT_CENTER = { lat: 6.5244, lng: 3.3792 };
@@ -51,6 +52,7 @@ export function MapPicker({ visible, initial, onClose, onConfirm }: MapPickerPro
 
         <View className="flex-1 overflow-hidden">
           <MapView
+            provider={MAP_PROVIDER}
             style={styles.map}
             initialRegion={{
               latitude: center.current.lat,

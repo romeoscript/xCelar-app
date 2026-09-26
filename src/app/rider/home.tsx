@@ -1,4 +1,6 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -8,27 +10,36 @@ import {
   Linking,
   Pressable,
   RefreshControl,
+  StyleSheet,
   Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BellIcon, SearchIcon } from '@/components/icons';
+import { isActiveDelivery } from '@/components/rider/delivery-card';
+import { OfflineMoon, SearchingRadar } from '@/components/rider/idle-illustrations';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
+import { StatTile } from '@/components/rider/stat-tile';
 import { BikeGlyph } from '@/components/rider/vehicle-icons';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
+import { useRiderVehicle } from '@/hooks/use-rider-vehicle';
+import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { useAuthStore } from '@/lib/auth-store';
 import { getCurrentLocation } from '@/lib/location';
 import {
   getAvailableDeliveries,
+  getMyDeliveries,
   getMyRiderProfile,
   rejectDelivery,
   setAvailability,
   type RiderDelivery,
+  type VehicleType,
 } from '@/lib/rider-api';
 
 function initials(name: string): string {
@@ -46,6 +57,7 @@ export default function RiderHomeScreen() {
   const queryClient = useQueryClient();
   const fullName = useAuthStore((state) => state.user?.fullName ?? '');
   const displayName = (fullName.trim().split('@')[0] || 'Rider').trim();
+  const vehicleType = useRiderVehicle();
 
   const [whereTo, setWhereTo] = useState('');
   const [rejected, setRejected] = useState<string[]>([]);
@@ -92,6 +104,17 @@ export default function RiderHomeScreen() {
     enabled: isOnline && Boolean(location),
   });
 
+  const deliveriesQuery = useQuery({ queryKey: ['rider-deliveries'], queryFn: getMyDeliveries });
+  const myDeliveries = deliveriesQuery.data ?? [];
+  const activeDelivery = myDeliveries.find(isActiveDelivery);
+  const deliveredToday = myDeliveries.filter(
+    (delivery) =>
+      delivery.status === 'DELIVERED' &&
+      delivery.deliveredAt != null &&
+      new Date(delivery.deliveredAt).toDateString() === new Date().toDateString(),
+  );
+  const earnedToday = deliveredToday.reduce((sum, delivery) => sum + (delivery.feeNaira ?? 0), 0);
+
   const term = whereTo.trim().toLowerCase();
   const shown = (availableQuery.data ?? [])
     .filter((delivery) => !rejected.includes(delivery.id))
@@ -102,16 +125,20 @@ export default function RiderHomeScreen() {
   const refresh = () => {
     void locationQuery.refetch();
     void availableQuery.refetch();
+    void deliveriesQuery.refetch();
   };
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="light" />
 
-      <View
-        style={{ paddingTop: insets.top + 14 }}
-        className="rounded-b-3xl bg-brand-navy px-6 pb-6"
+      <LinearGradient
+        colors={[Brand.navy, Brand.indigo]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 14 }]}
       >
+        <View className="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/5" />
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <Text className="text-sm text-white/60">Welcome back</Text>
@@ -142,7 +169,7 @@ export default function RiderHomeScreen() {
           disabled={profileQuery.isLoading}
           onToggle={toggleOnline}
         />
-      </View>
+      </LinearGradient>
 
       <FlatList
         data={shown}
@@ -150,22 +177,43 @@ export default function RiderHomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
         ListHeaderComponent={
-          isOnline ? (
-            <View className="gap-5 px-6 pb-1 pt-5">
-              <View className="flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
-                <SearchIcon size={20} color={Brand.muted} />
-                <TextInput
-                  value={whereTo}
-                  onChangeText={setWhereTo}
-                  placeholder="Filter by drop-off area"
-                  placeholderTextColor={Brand.muted}
-                  className="flex-1 text-base text-gray-900"
+          <View className="gap-4 px-6 pb-1 pt-5">
+            {activeDelivery ? (
+              <ActiveDeliveryBanner
+                delivery={activeDelivery}
+                onPress={() => router.push(`/rider/delivery/${activeDelivery.id}`)}
+              />
+            ) : null}
+
+            <View className="gap-2">
+              <Text className="text-sm font-semibold text-gray-500">Today</Text>
+              <View className="flex-row gap-3">
+                <StatTile icon="cash-multiple" label="Earnings" value={formatNaira(earnedToday)} />
+                <StatTile
+                  icon="check-decagram"
+                  label="Completed"
+                  value={String(deliveredToday.length)}
                 />
               </View>
-
-              <Text className="text-lg font-bold text-brand-navy">Available requests</Text>
             </View>
-          ) : null
+
+            {isOnline && (availableQuery.data?.length ?? 0) > 0 ? (
+              <View className="gap-5 pt-1">
+                <View className="flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
+                  <SearchIcon size={20} color={Brand.muted} />
+                  <TextInput
+                    value={whereTo}
+                    onChangeText={setWhereTo}
+                    placeholder="Filter by drop-off area"
+                    placeholderTextColor={Brand.muted}
+                    className="flex-1 text-base text-gray-900"
+                  />
+                </View>
+
+                <Text className="text-lg font-bold text-brand-navy">Available requests</Text>
+              </View>
+            ) : null}
+          </View>
         }
         renderItem={({ item }) => (
           <RequestCard
@@ -176,7 +224,7 @@ export default function RiderHomeScreen() {
         )}
         refreshControl={
           <RefreshControl
-            refreshing={locationQuery.isFetching || availableQuery.isFetching}
+            refreshing={locationQuery.isFetching || availableQuery.isFetching || deliveriesQuery.isRefetching}
             onRefresh={refresh}
             tintColor={Brand.blue}
           />
@@ -191,6 +239,8 @@ export default function RiderHomeScreen() {
             requestsError={availableQuery.isError ? availableQuery.error : null}
             loading={(!location || availableQuery.isLoading) && !locationQuery.isError}
             onRetry={refresh}
+            vehicleType={vehicleType}
+            area={location?.area ?? location?.region ?? null}
           />
         }
       />
@@ -276,6 +326,8 @@ function EmptyState({
   requestsError,
   loading,
   onRetry,
+  vehicleType,
+  area,
 }: {
   profileLoading: boolean;
   offline: boolean;
@@ -285,6 +337,8 @@ function EmptyState({
   requestsError: unknown;
   loading: boolean;
   onRetry: () => void;
+  vehicleType?: VehicleType;
+  area: string | null;
 }) {
   if (profileLoading) {
     return (
@@ -295,12 +349,18 @@ function EmptyState({
   }
   if (offline) {
     return (
-      <EmptyCard
-        title="You’re offline"
-        body="Go online to start receiving delivery requests near you."
-        actionLabel={goingOnline ? 'Going online…' : 'Go online'}
-        onAction={onGoOnline}
-      />
+      <Animated.View entering={FadeIn.duration(400)}>
+        <View className="items-center px-8 pt-12">
+          <OfflineMoon />
+          <Text className="mt-6 text-xl font-bold text-brand-navy">You’re offline</Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+            Go online to start receiving delivery requests near you.
+          </Text>
+          <View className="mt-6 w-56">
+            <Button label={goingOnline ? 'Going online…' : 'Go online'} onPress={onGoOnline} />
+          </View>
+        </View>
+      </Animated.View>
     );
   }
   if (locationError) {
@@ -331,9 +391,75 @@ function EmptyState({
     );
   }
   return (
-    <EmptyCard title="No requests right now" body="Pull down to check again." />
+    <Animated.View entering={FadeIn.duration(400)}>
+      <View className="items-center px-8 pt-8">
+        <SearchingRadar vehicleType={vehicleType} />
+        <Text className="mt-4 text-xl font-bold text-brand-navy">Looking for deliveries</Text>
+        <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+          New requests near you will appear here, and we’ll notify you the moment one comes in.
+        </Text>
+        {area ? (
+          <View className="mt-5 flex-row items-center gap-1.5 rounded-full bg-brand-surface px-3.5 py-2">
+            <MaterialCommunityIcons name="map-marker-radius" size={16} color={Brand.blue} />
+            <Text className="text-sm font-medium text-brand-navy">Near {area}</Text>
+          </View>
+        ) : null}
+      </View>
+    </Animated.View>
   );
 }
+
+function ActiveDeliveryBanner({
+  delivery,
+  onPress,
+}: {
+  delivery: RiderDelivery;
+  onPress: () => void;
+}) {
+  const inTransit = delivery.status === 'IN_TRANSIT';
+  return (
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      accessibilityRole="button"
+      className="flex-row items-center gap-3 rounded-2xl bg-brand-blue p-4 active:opacity-90"
+    >
+      <View className="h-11 w-11 items-center justify-center rounded-full bg-white/20">
+        <MaterialCommunityIcons
+          name={inTransit ? 'map-marker-path' : 'package-variant-closed'}
+          size={22}
+          color="#ffffff"
+        />
+      </View>
+      <View className="flex-1">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-white/70">
+          Delivery in progress
+        </Text>
+        <Text className="text-base font-bold text-white" numberOfLines={1}>
+          {inTransit ? 'Heading to drop-off' : 'Heading to pickup'}
+        </Text>
+        <Text className="text-xs text-white/70" numberOfLines={1}>
+          {(inTransit ? delivery.dropoff.address : delivery.pickup.address) ?? delivery.trackingCode}
+        </Text>
+      </View>
+      <View className="rounded-full bg-white px-3 py-1.5">
+        <Text className="text-xs font-bold text-brand-blue">Continue</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    overflow: 'hidden',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+});
 
 function RequestCard({
   delivery,

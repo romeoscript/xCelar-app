@@ -52,6 +52,9 @@ export function PhoneInput({ label, required, value, onChange, error }: PhoneInp
           placeholderTextColor={Brand.muted}
           keyboardType="phone-pad"
           autoComplete="tel"
+          // Stop typing past the country's number length (+1 for an optional
+          // trunk 0). Falls back to a generous cap where the length varies.
+          maxLength={(country.nationalDigits ?? 14) + 1}
           className="h-14 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900"
         />
       </View>
