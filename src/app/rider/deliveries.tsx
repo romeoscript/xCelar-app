@@ -1,86 +1,157 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { type ComponentProps, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RouteLine } from '@/components/rider/route-line';
+import { DeliveryCard, isActiveDelivery } from '@/components/rider/delivery-card';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
+import { StatTile } from '@/components/rider/stat-tile';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
-import { getMyDeliveries } from '@/lib/rider-api';
+import { formatNaira } from '@/lib/format';
+import { tapFeedback } from '@/lib/haptics';
+import { getMyDeliveries, type RiderDelivery } from '@/lib/rider-api';
 
-export const DELIVERY_STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: 'Accepted',
-  IN_TRANSIT: 'Delivering',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
+type Tab = 'active' | 'completed';
+
+const TABS: { key: Tab; label: string; matches: (delivery: RiderDelivery) => boolean }[] = [
+  { key: 'active', label: 'Active', matches: isActiveDelivery },
+  { key: 'completed', label: 'Completed', matches: (delivery) => !isActiveDelivery(delivery) },
+];
+
+const EMPTY: Record<Tab, { icon: ComponentProps<typeof MaterialCommunityIcons>['name']; title: string; body: string }> = {
+  active: {
+    icon: 'moped-outline',
+    title: 'No active deliveries',
+    body: 'Jobs you accept from the home screen show up here while you’re on them.',
+  },
+  completed: {
+    icon: 'package-variant-closed-check',
+    title: 'No completed deliveries yet',
+    body: 'Finished jobs and what you earned from them will be listed here.',
+  },
 };
 
-export const DELIVERY_STATUS_STYLES: Record<string, { pill: string; text: string }> = {
-  CONFIRMED: { pill: 'bg-brand-blue-tint', text: 'text-brand-blue' },
-  IN_TRANSIT: { pill: 'bg-brand-gold-tint', text: 'text-brand-navy' },
-  DELIVERED: { pill: 'bg-green-100', text: 'text-green-700' },
-  CANCELLED: { pill: 'bg-red-100', text: 'text-red-700' },
-};
-
-const DEFAULT_STATUS_STYLE = { pill: 'bg-brand-surface', text: 'text-gray-600' };
+const GUTTER = 16;
 
 export default function RiderDeliveriesScreen() {
   const router = useRouter();
   const deliveriesQuery = useQuery({ queryKey: ['rider-deliveries'], queryFn: getMyDeliveries });
+  const [tab, setTab] = useState<Tab>('active');
+
+  const all = useMemo(() => deliveriesQuery.data ?? [], [deliveriesQuery.data]);
+  const delivered = all.filter((delivery) => delivery.status === 'DELIVERED');
+  const earned = delivered.reduce((sum, delivery) => sum + (delivery.feeNaira ?? 0), 0);
+  const counts = Object.fromEntries(
+    TABS.map((option) => [option.key, all.filter(option.matches).length]),
+  ) as Record<Tab, number>;
+  const shown = all.filter((TABS.find((option) => option.key === tab) ?? TABS[0]).matches);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar style="dark" />
-      <Text className="px-6 pb-2 pt-2 text-xl font-extrabold text-brand-navy">Bookings</Text>
-      {deliveriesQuery.isError ? (
-        <QueryError onRetry={() => deliveriesQuery.refetch()} />
+      <View className="gap-4 pt-2" style={{ paddingHorizontal: GUTTER }}>
+        <Text className="text-2xl font-bold text-brand-navy">Bookings</Text>
+
+        <View className="flex-row gap-3">
+          <StatTile icon="check-decagram" label="Completed" value={String(delivered.length)} />
+          <StatTile icon="wallet-outline" label="Total earned" value={formatNaira(earned)} />
+        </View>
+
+        <View className="flex-row rounded-xl bg-gray-100 p-1">
+          {TABS.map((option) => {
+            const selected = option.key === tab;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => {
+                  if (!selected) {
+                    tapFeedback();
+                    setTab(option.key);
+                  }
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-lg py-2 ${selected ? 'bg-white' : ''}`}
+                style={selected ? segmentShadow : undefined}
+              >
+                <Text
+                  className={`text-sm font-semibold ${selected ? 'text-brand-navy' : 'text-gray-500'}`}
+                >
+                  {option.label}
+                </Text>
+                {deliveriesQuery.data ? (
+                  <View
+                    className={`min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${selected ? 'bg-brand-blue' : 'bg-gray-200'}`}
+                  >
+                    <Text
+                      className={`text-[11px] font-bold ${selected ? 'text-white' : 'text-gray-500'}`}
+                    >
+                      {counts[option.key]}
+                    </Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {deliveriesQuery.isError && !deliveriesQuery.data ? (
+        <QueryError message="Couldn’t load your bookings." onRetry={() => deliveriesQuery.refetch()} />
+      ) : deliveriesQuery.isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={Brand.blue} />
+        </View>
       ) : (
         <FlatList
-          data={deliveriesQuery.data ?? []}
+          data={shown}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 24, paddingBottom: 110, gap: 12 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/rider/delivery/${item.id}`)}
-              className="gap-3 rounded-2xl border border-gray-100 bg-white p-4 active:opacity-80"
-            >
-              <View className="flex-row">
-                <View
-                  className={`rounded-full px-3 py-1 ${
-                    (DELIVERY_STATUS_STYLES[item.status] ?? DEFAULT_STATUS_STYLE).pill
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      (DELIVERY_STATUS_STYLES[item.status] ?? DEFAULT_STATUS_STYLE).text
-                    }`}
-                  >
-                    {DELIVERY_STATUS_LABELS[item.status] ?? item.status}
-                  </Text>
-                </View>
-              </View>
-              <RouteLine compact pickup={item.pickup.address} dropoff={item.dropoff.address} />
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            deliveriesQuery.isLoading ? (
-              <View className="items-center py-16">
-                <ActivityIndicator color={Brand.blue} />
-              </View>
-            ) : (
-              <View className="items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
-                <Text className="font-semibold text-gray-700">No deliveries yet</Text>
-                <Text className="text-center text-sm text-gray-500">
-                  Accepted deliveries will appear here.
-                </Text>
-              </View>
-            )
+          contentContainerStyle={{ padding: GUTTER, paddingBottom: 110, gap: 12 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={deliveriesQuery.isRefetching}
+              onRefresh={() => deliveriesQuery.refetch()}
+              tintColor={Brand.blue}
+            />
           }
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.duration(350).delay(Math.min(index, 6) * 50)}>
+              <DeliveryCard
+                delivery={item}
+                onPress={() => router.push(`/rider/delivery/${item.id}`)}
+              />
+            </Animated.View>
+          )}
+          ListEmptyComponent={<EmptyState tab={tab} />}
         />
       )}
       <RiderTabBar />
     </SafeAreaView>
   );
 }
+
+function EmptyState({ tab }: { tab: Tab }) {
+  const copy = EMPTY[tab];
+  return (
+    <View className="mt-10 items-center px-8">
+      <View className="h-20 w-20 items-center justify-center rounded-full bg-brand-surface">
+        <MaterialCommunityIcons name={copy.icon} size={34} color={Brand.muted} />
+      </View>
+      <Text className="mt-4 text-base font-semibold text-gray-800">{copy.title}</Text>
+      <Text className="mt-1 text-center text-sm leading-5 text-gray-500">{copy.body}</Text>
+    </View>
+  );
+}
+
+const segmentShadow = {
+  shadowColor: '#000000',
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 1 },
+  elevation: 2,
+} as const;
