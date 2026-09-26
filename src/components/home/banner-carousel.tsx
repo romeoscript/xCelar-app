@@ -76,11 +76,15 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
 function BannerCard({ banner }: { banner: Banner }) {
   return (
-    <View style={{ width: SCREEN_WIDTH }} className="px-6">
+    <View style={{ width: SCREEN_WIDTH }} className="px-4">
       <View
         style={{ backgroundColor: banner.bgColor ?? DEFAULT_BG }}
-        className="h-40 justify-between overflow-hidden rounded-3xl p-5"
+        className="h-36 justify-between overflow-hidden rounded-3xl p-5"
       >
+        {/* Soft decorative rings so an image-less banner still has depth. */}
+        <View className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/10" />
+        <View className="absolute -bottom-16 right-16 h-32 w-32 rounded-full bg-white/5" />
+
         {banner.imageUrl ? (
           <>
             <Image
@@ -100,10 +104,14 @@ function BannerCard({ banner }: { banner: Banner }) {
           <View />
         )}
 
-        <View className="gap-1">
-          <Text className="text-2xl font-extrabold text-white">{banner.title}</Text>
+        <View className="gap-1 pr-6">
+          <Text className="text-xl font-extrabold text-white" numberOfLines={2}>
+            {banner.title}
+          </Text>
           {banner.subtitle ? (
-            <Text className="text-base text-white/80">{banner.subtitle}</Text>
+            <Text className="text-sm text-white/80" numberOfLines={2}>
+              {banner.subtitle}
+            </Text>
           ) : null}
         </View>
       </View>
