@@ -35,6 +35,8 @@ export type RouteMapProps = {
   focusLabel?: string | null;
   /** The rider's vehicle — sets the routing profile and the rider marker icon. */
   vehicleType?: VehicleType;
+  /** Height of whatever overlays the bottom of a fill map, so the route is framed above it. */
+  bottomInset?: number;
 };
 
 type TravelMode = 'drive' | 'bike' | 'walk';
@@ -118,11 +120,14 @@ export function RouteMap({
   focusTarget = null,
   focusLabel = null,
   vehicleType = 'CAR',
+  bottomInset,
 }: RouteMapProps) {
   const mapRef = useRef<MapView>(null);
   const insets = useSafeAreaInsets();
   const mode = VehicleRouting[vehicleType];
-  const edgePadding = fill ? FillPadding : PreviewPadding;
+  const edgePadding = fill
+    ? { ...FillPadding, bottom: bottomInset != null ? bottomInset + 32 : FillPadding.bottom }
+    : PreviewPadding;
 
   const pickup =
     pickupLat != null && pickupLng != null
@@ -189,9 +194,9 @@ export function RouteMap({
     if (stops.length >= 2 && !focusTarget) {
       mapRef.current?.fitToCoordinates(stops, { edgePadding, animated: true });
     }
-    // Only when the number of stops changes — not on every location tick.
+    // Only when the number of stops or the overlay height changes — not on every location tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stops.length]);
+  }, [stops.length, bottomInset]);
 
   useEffect(() => {
     if (!focusTarget) {
@@ -210,7 +215,7 @@ export function RouteMap({
       600,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusTarget]);
+  }, [focusTarget, bottomInset]);
 
   const containerStyle = fill ? undefined : { height };
   const containerClass = fill
@@ -410,9 +415,9 @@ const styles = StyleSheet.create({
   },
   bannerWrap: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    left: 64,
+    right: 16,
+    alignItems: 'flex-start',
   },
   bannerCard: {
     flexDirection: 'row',
@@ -430,6 +435,7 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   chip: {
