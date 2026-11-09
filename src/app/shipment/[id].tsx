@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BikeIcon } from '@/components/icons';
 import { CostBreakdown } from '@/components/ship/cost-breakdown';
 import { PaymentPill, StatusBadge } from '@/components/shipments/badges';
+import { RateRiderCard } from '@/components/shipments/rate-rider-card';
 import { LiveTrackingMap } from '@/components/shipments/live-tracking-map';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -98,6 +99,8 @@ export default function ShipmentDetailScreen() {
                 </View>
               </View>
             )}
+
+            {shipment.canRate || shipment.rating ? <RateRiderCard shipment={shipment} /> : null}
 
             <RouteCard shipment={shipment} />
             <PackageCard shipment={shipment} />

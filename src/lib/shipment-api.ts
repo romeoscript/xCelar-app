@@ -70,6 +70,10 @@ export type Shipment = {
   codAmount?: number | null;
   /** When each hub stage was reached (detail endpoint only). */
   timeline?: { stage: DeliveryStage; at: string }[];
+  /** The customer's rating of the delivery rider (detail endpoint only). */
+  rating?: { stars: number; comment: string | null } | null;
+  /** Delivered and not rated yet (detail endpoint only). */
+  canRate?: boolean;
   acceptedAt?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
@@ -248,6 +252,12 @@ export async function payWithBalance(id: string, termsAccepted: boolean): Promis
     method: 'balance',
     termsAccepted,
   });
+  return data;
+}
+
+/** Rate the rider who delivered this shipment (once). Returns the updated detail. */
+export async function rateDelivery(id: string, input: { stars: number; comment?: string }): Promise<Shipment> {
+  const { data } = await api.post<Shipment>(`/shipments/${id}/rating`, input);
   return data;
 }
 

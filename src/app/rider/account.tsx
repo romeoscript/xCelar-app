@@ -6,17 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SettingsRow } from '@/components/account/settings-row';
 import { SettingsSection } from '@/components/account/settings-section';
-import { DocumentIcon, IdCardIcon, LockIcon, LogoutIcon, TrashIcon } from '@/components/icons';
+import { IdCardIcon, LockIcon, LogoutIcon, TrashIcon } from '@/components/icons';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { logout } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
-import { getMyRiderProfile, type RiderStatus } from '@/lib/rider-api';
-
-const STATUS_LABEL: Record<RiderStatus, string> = {
-  PENDING: 'Verification pending',
-  APPROVED: 'Verified rider',
-  REJECTED: 'Verification needed',
-};
+import { getMyRiderProfile } from '@/lib/rider-api';
 
 function initials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
@@ -28,7 +22,7 @@ export default function RiderAccountScreen() {
   const user = useAuthStore((state) => state.user);
   const endSession = useAuthStore((state) => state.endSession);
   const profileQuery = useQuery({ queryKey: ['rider-profile'], queryFn: getMyRiderProfile });
-  const status = profileQuery.data?.status;
+  const profile = profileQuery.data;
 
   const signOut = useMutation({
     mutationFn: logout,
@@ -59,7 +53,9 @@ export default function RiderAccountScreen() {
             <Text className="text-sm text-gray-500">{user?.email ?? user?.phoneNumber}</Text>
             <View className="rounded-full bg-brand-gold-tint px-3 py-1">
               <Text className="text-xs font-semibold text-brand-navy">
-                {status ? STATUS_LABEL[status] : 'Courier account'}
+                {profile
+                  ? `${profile.type === 'HEAD_RIDER' ? 'Head rider' : 'Rider'} · ${profile.riderCode}`
+                  : 'Rider account'}
               </Text>
             </View>
           </View>
@@ -67,11 +63,6 @@ export default function RiderAccountScreen() {
 
         <SettingsSection title="Account">
           <SettingsRow icon={IdCardIcon} label="My profile" onPress={() => router.push('/profile')} />
-          <SettingsRow
-            icon={DocumentIcon}
-            label="My documents"
-            onPress={() => router.push('/rider/documents')}
-          />
           <SettingsRow
             icon={LockIcon}
             label="My password"

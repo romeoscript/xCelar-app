@@ -5,12 +5,13 @@ import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 
 /**
- * Operational rider screens — reachable only by an authenticated COURIER.
- * The application flow (the `/rider` landing, onboarding, pending, documents)
- * is intentionally left open to any signed-in user, since a user's role only
- * becomes COURIER once they apply.
+ * Operational rider screens are reachable only by an authenticated COURIER.
+ * The `/rider` landing and activation stay open: riders are created by staff
+ * and activate their account here before they ever sign in.
  */
 const COURIER_ONLY = ['home', 'deliveries', 'delivery', 'account', 'notifications'];
+/** Reachable signed out: a staff-created rider sets their password here. */
+const PUBLIC = ['activate'];
 
 export default function RiderLayout() {
   const status = useAuthStore((state) => state.status);
@@ -30,7 +31,7 @@ export default function RiderLayout() {
   }
 
   // The rider entry (/rider) renders its own signed-out landing — let it through.
-  if (screen === undefined) {
+  if (screen === undefined || PUBLIC.includes(screen)) {
     return stack;
   }
 

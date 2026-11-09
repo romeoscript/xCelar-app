@@ -5,27 +5,18 @@ export type { DeliveryStage };
 
 export type VehicleType = 'BACKPACK' | 'BIKE' | 'CAR' | 'TRUCK';
 export type VehicleOwnership = 'PERSONAL' | 'COMPANY';
-export type RiderStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-export type RiderDocumentType =
-  | 'DRIVER_PHOTO'
-  | 'ID_FRONT'
-  | 'ID_BACK'
-  | 'VEHICLE_REGISTRATION'
-  | 'INSURANCE'
-  | 'ROAD_WORTHINESS';
-
 export type RiderProfile = {
   id: string;
+  /** Staff-issued rider ID, e.g. R-04418-062. */
+  riderCode: string;
+  type: 'RIDER' | 'HEAD_RIDER';
   vehicleType: VehicleType;
   vehicleOwnership: VehicleOwnership | null;
   city: string;
-  status: RiderStatus;
-  rejectionReason: string | null;
   isAvailable: boolean;
   /** Taken off dispatch by a manager: can't go online or receive deliveries. */
   isSuspended: boolean;
   suspendedReason: string | null;
-  documents: { type: RiderDocumentType; url: string | null }[];
 };
 
 /** The stretch of the journey a rider is responsible for. */
@@ -64,15 +55,6 @@ export type RiderJob = {
   proofUrl: string | null;
 };
 
-export async function applyAsRider(input: {
-  vehicleType: VehicleType;
-  vehicleOwnership: VehicleOwnership;
-  city: string;
-}): Promise<RiderProfile> {
-  const { data } = await api.post<{ profile: RiderProfile }>('/rider/apply', input);
-  return data.profile;
-}
-
 export async function getMyRiderProfile(): Promise<RiderProfile | null> {
   const { data } = await api.get<{ profile: RiderProfile | null }>('/rider/me');
   return data.profile;
@@ -81,14 +63,6 @@ export async function getMyRiderProfile(): Promise<RiderProfile | null> {
 /** Go on/off shift. Returns the updated profile so the cache can reflect it. */
 export async function setAvailability(available: boolean): Promise<RiderProfile> {
   const { data } = await api.patch<{ profile: RiderProfile }>('/rider/availability', { available });
-  return data.profile;
-}
-
-export async function uploadRiderDocument(input: {
-  type: RiderDocumentType;
-  fileKey: string;
-}): Promise<RiderProfile> {
-  const { data } = await api.post<{ profile: RiderProfile }>('/rider/documents', input);
   return data.profile;
 }
 
@@ -157,13 +131,4 @@ export const VEHICLE_LABELS: Record<VehicleType, string> = {
   BIKE: 'Bike',
   CAR: 'Car',
   TRUCK: 'Van',
-};
-
-export const DOCUMENT_LABELS: Record<RiderDocumentType, string> = {
-  DRIVER_PHOTO: 'Driver photo',
-  ID_FRONT: 'ID card (front)',
-  ID_BACK: 'ID card (back)',
-  VEHICLE_REGISTRATION: 'Vehicle registration',
-  INSURANCE: 'Insurance policy',
-  ROAD_WORTHINESS: 'Road worthiness',
 };

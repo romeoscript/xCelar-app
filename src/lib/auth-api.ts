@@ -32,8 +32,6 @@ export type RegisterInput = {
   password: string;
   email?: string;
   phoneNumber?: string;
-  /** Sign up directly as a courier (role COURIER) rather than a customer. */
-  asRider?: boolean;
 };
 
 export type LoginInput = {
@@ -44,6 +42,16 @@ export type LoginInput = {
 
 export async function register(input: RegisterInput): Promise<AuthSession> {
   const { data } = await api.post<AuthSession>('/auth/register', input);
+  return data;
+}
+
+/** A staff-created rider sets their password with the one-time code, which also signs them in. */
+export async function activateRider(input: {
+  phoneNumber: string;
+  code: string;
+  password: string;
+}): Promise<AuthSession> {
+  const { data } = await api.post<AuthSession>('/auth/rider-activate', input);
   return data;
 }
 

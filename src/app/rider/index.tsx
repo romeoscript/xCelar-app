@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,11 +11,14 @@ import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 import { getMyRiderProfile } from '@/lib/rider-api';
 
-/** Routes into the rider experience: a landing page when signed out, otherwise
- *  on to onboarding / pending / home based on the rider's application status. */
+/** Routes into the rider experience. Xcelar staff add riders, so a signed-out
+ *  visitor is offered activation or sign-in, and a signed-in account without a
+ *  rider record is told how to join rather than shown an application. */
 export default function RiderGate() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
+  const isCourier = useAuthStore((state) => state.user?.role === 'COURIER');
+  const updateUser = useAuthStore((state) => state.updateUser);
 
   const profileQuery = useQuery({
     queryKey: ['rider-profile'],
@@ -22,11 +26,21 @@ export default function RiderGate() {
     enabled: isAuthenticated,
   });
 
+  // Staff can turn an existing customer into a rider while they're signed in,
+  // leaving a stale USER role in the session. The server's rider record is the
+  // truth; without this the courier-only screens would bounce them back here.
+  const hasProfile = Boolean(profileQuery.data);
+  useEffect(() => {
+    if (hasProfile && !isCourier) {
+      updateUser({ role: 'COURIER' });
+    }
+  }, [hasProfile, isCourier, updateUser]);
+
   if (!isAuthenticated) {
     return (
       <RiderLanding
         onBack={() => router.back()}
-        onCreate={() => router.push({ pathname: '/sign-up', params: { next: 'rider' } })}
+        onActivate={() => router.push('/rider/activate')}
         onSignIn={() => router.push({ pathname: '/sign-in', params: { next: 'rider' } })}
       />
     );
@@ -40,23 +54,38 @@ export default function RiderGate() {
     );
   }
 
-  const profile = profileQuery.data;
-  if (!profile) {
-    return <Redirect href="/rider/onboarding" />;
+  if (profileQuery.data) {
+    return isCourier ? <Redirect href="/rider/home" /> : null;
   }
-  if (profile.status === 'APPROVED') {
-    return <Redirect href="/rider/home" />;
-  }
-  return <Redirect href="/rider/pending" />;
+  return <NotARider onBack={() => router.replace('/home')} />;
+}
+
+function NotARider({ onBack }: { onBack: () => void }) {
+  return (
+    <SafeAreaView className="flex-1 items-center justify-center bg-white px-8" edges={['top', 'bottom']}>
+      <StatusBar style="dark" />
+      <View className="h-16 w-16 items-center justify-center rounded-2xl bg-brand-surface">
+        <TruckIcon size={30} color={Brand.navy} />
+      </View>
+      <Text className="mt-5 text-center text-xl font-bold text-brand-navy">This isn’t a rider account</Text>
+      <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+        Xcelar adds riders directly. To ride with us, contact Xcelar. Once you’re added you’ll get an
+        activation code to set up your rider account.
+      </Text>
+      <View className="mt-6 w-56">
+        <Button label="Back to home" variant="secondary" onPress={onBack} />
+      </View>
+    </SafeAreaView>
+  );
 }
 
 function RiderLanding({
   onBack,
-  onCreate,
+  onActivate,
   onSignIn,
 }: {
   onBack: () => void;
-  onCreate: () => void;
+  onActivate: () => void;
   onSignIn: () => void;
 }) {
   return (
@@ -77,14 +106,14 @@ function RiderLanding({
           <TruckIcon size={32} color="#ffffff" />
         </View>
         <Text className="mt-5 text-[34px] font-extrabold leading-[40px] text-white">
-          Deliver with Xcelar
+          Ride with Xcelar
         </Text>
         <Text className="mt-3 text-base leading-6 text-white/70">
-          Turn your bike or car into earnings, on your own schedule.
+          Been added as a rider? Activate your account with the code Xcelar gave you.
         </Text>
 
         <View className="mt-8 gap-4">
-          <Perk icon={PinIcon} title="Deliveries near you" body="See paid jobs around your location." />
+          <Perk icon={PinIcon} title="Jobs assigned to you" body="Dispatch sends each pickup and delivery to you." />
           <Perk
             icon={CrosshairIcon}
             title="One-tap navigation"
@@ -99,7 +128,7 @@ function RiderLanding({
       </View>
 
       <View className="gap-3 px-6 pb-4">
-        <Button label="Create a rider account" variant="primary" onPress={onCreate} />
+        <Button label="Activate my rider account" variant="primary" onPress={onActivate} />
         <Button label="I already have an account" variant="secondary" onPress={onSignIn} />
       </View>
     </SafeAreaView>
