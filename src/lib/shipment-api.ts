@@ -66,6 +66,8 @@ export type Shipment = {
   // Optional: older API deployments don't send these.
   /** Set for booked local deliveries; null for EXPORT/IMPORT. */
   stage?: DeliveryStage | null;
+  /** DIRECT (one rider, same town) or HUB, for booked local deliveries. */
+  route?: 'DIRECT' | 'HUB' | null;
   /** Cash the rider collects on delivery, for pay-on-delivery bookings. */
   codAmount?: number | null;
   /** When each hub stage was reached (detail endpoint only). */

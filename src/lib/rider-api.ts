@@ -22,6 +22,9 @@ export type RiderProfile = {
 /** The stretch of the journey a rider is responsible for. */
 export type RiderLeg = 'PICKUP' | 'DELIVERY' | 'RETURN';
 
+/** DIRECT: one rider takes it sender → recipient (same town). HUB: via the hub. */
+export type DeliveryRoute = 'DIRECT' | 'HUB';
+
 export type Stop = {
   kind: 'SENDER' | 'HUB' | 'RECIPIENT';
   name: string | null;
@@ -36,6 +39,7 @@ export type RiderJob = {
   id: string;
   trackingCode: string | null;
   stage: DeliveryStage;
+  route: DeliveryRoute;
   leg: RiderLeg;
   /** True while this rider holds the parcel on this leg. */
   isActive: boolean;
@@ -47,6 +51,8 @@ export type RiderJob = {
   cashToCollectNaira: number | null;
   from: Stop;
   to: Stop;
+  /** Where a failed delivery is brought back to. */
+  hub: Stop;
   /** When the rider reached the customer on this leg. */
   arrivedAt: string | null;
   acceptedAt: string | null;

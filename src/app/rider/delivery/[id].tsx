@@ -324,7 +324,11 @@ function ActionCard(props: ActionCardProps) {
         <View className="gap-4">
           {stopCard}
           {arrived ? (
-            <Button label="Package collected" loading={props.pending} onPress={props.onCollect} />
+            <Button
+              label={job.route === 'DIRECT' ? 'Package collected · Start delivery' : 'Package collected'}
+              loading={props.pending}
+              onPress={props.onCollect}
+            />
           ) : (
             <Button label="I’ve arrived at pickup" loading={props.pending} onPress={props.onArrive} />
           )}
@@ -397,7 +401,7 @@ function ProofStep(props: ActionCardProps & { stopCard: React.ReactNode }) {
           <MaterialCommunityIcons
             name={props.cashCollected ? 'checkbox-marked' : 'checkbox-blank-outline'}
             size={24}
-            color="#b45309"
+            color={Brand.navy}
           />
           <Text className="flex-1 text-sm font-semibold text-amber-800">
             I collected {formatNaira(cashDue)} in cash
@@ -496,7 +500,7 @@ function ReportSheet({
 
 const STOP_ICONS: Record<Stop['kind'], { icon: 'package-variant-closed' | 'warehouse' | 'map-marker'; tint: string; color: string }> = {
   SENDER: { icon: 'package-variant-closed', tint: 'bg-brand-blue-tint', color: Brand.blue },
-  HUB: { icon: 'warehouse', tint: 'bg-brand-gold-tint', color: '#b45309' },
+  HUB: { icon: 'warehouse', tint: 'bg-brand-gold-tint', color: Brand.navy },
   RECIPIENT: { icon: 'map-marker', tint: 'bg-brand-indigo-tint', color: Brand.indigo },
 };
 

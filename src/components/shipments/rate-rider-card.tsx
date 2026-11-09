@@ -10,7 +10,6 @@ import { tapFeedback } from '@/lib/haptics';
 import { rateDelivery, type Shipment } from '@/lib/shipment-api';
 
 const STARS = [1, 2, 3, 4, 5] as const;
-const STAR_COLOR = '#F8B81B';
 const COMMENT_MAX_LENGTH = 500;
 
 /** Rate the rider after delivery; once rated, shows the rating given. */
@@ -78,7 +77,7 @@ function StarRow({ value, onChange }: { value: number; onChange?: (value: number
           <MaterialCommunityIcons
             name={star <= value ? 'star' : 'star-outline'}
             size={32}
-            color={star <= value ? STAR_COLOR : Brand.muted}
+            color={star <= value ? Brand.gold : Brand.muted}
           />
         );
         return onChange ? (

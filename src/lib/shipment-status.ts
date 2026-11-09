@@ -70,6 +70,14 @@ export type Journey = {
   notice: string | null;
 };
 
+/** Same-town deliveries skip the hub: one rider collects and delivers. */
+const DIRECT_JOURNEY: { stage: DeliveryStage; label: string }[] = [
+  { stage: 'AWAITING_PICKUP', label: 'Booked' },
+  { stage: 'PICKUP_ASSIGNED', label: 'Rider assigned' },
+  { stage: 'OUT_FOR_DELIVERY', label: 'Picked up, on the way' },
+  { stage: 'DELIVERED', label: 'Delivered' },
+];
+
 const HUB_JOURNEY: { stage: DeliveryStage; label: string }[] = [
   { stage: 'AWAITING_PICKUP', label: 'Booked' },
   { stage: 'PICKED_UP', label: 'Picked up' },
@@ -96,7 +104,9 @@ const STATUS_JOURNEY: { status: ShipmentStatus; label: string; at: (s: Shipment)
 /** Ordered progress for the timeline card. */
 export function journeyFor(shipment: Shipment): Journey {
   if (shipment.stage && shipment.timeline) {
-    return hubJourney(shipment.stage, shipment.timeline);
+    // A failed direct delivery is re-routed via the hub, so `route` already says HUB.
+    const steps = shipment.route === 'DIRECT' ? DIRECT_JOURNEY : HUB_JOURNEY;
+    return stageJourney(steps, shipment.stage, shipment.timeline);
   }
   const currentIndex = STATUS_JOURNEY.findIndex((step) => step.status === shipment.status);
   const finished = shipment.status === 'DELIVERED';
@@ -109,15 +119,19 @@ export function journeyFor(shipment: Shipment): Journey {
   };
 }
 
-function hubJourney(stage: DeliveryStage, timeline: { stage: DeliveryStage; at: string }[]): Journey {
+function stageJourney(
+  journey: { stage: DeliveryStage; label: string }[],
+  stage: DeliveryStage,
+  timeline: { stage: DeliveryStage; at: string }[],
+): Journey {
   // Latest time each stage was reached; a re-delivery reaches AT_HUB twice.
   const reachedAt = new Map(timeline.map((event) => [event.stage, event.at]));
-  const reached = HUB_JOURNEY.map((step) => reachedAt.has(step.stage));
+  const reached = journey.map((step) => reachedAt.has(step.stage));
   const lastReached = reached.lastIndexOf(true);
   const finished = stage === 'DELIVERED';
   return {
     notice: STAGE_NOTICES[stage] ?? null,
-    steps: HUB_JOURNEY.map((step, index) => {
+    steps: journey.map((step, index) => {
       const state = finished || index < lastReached ? 'done' : index === lastReached ? 'current' : 'todo';
       return { key: step.stage, label: step.label, at: reachedAt.get(step.stage) ?? null, state };
     }),

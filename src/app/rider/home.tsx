@@ -188,7 +188,7 @@ export default function RiderHomeScreen() {
                 onPress={() => void Linking.openSettings()}
                 className="flex-row items-center gap-3 rounded-2xl bg-amber-50 p-4 active:opacity-80"
               >
-                <MaterialCommunityIcons name="map-marker-off" size={20} color="#b45309" />
+                <MaterialCommunityIcons name="map-marker-off" size={20} color={Brand.navy} />
                 <Text className="flex-1 text-sm text-amber-800">
                   Location is off, so dispatch can’t see where you are. Tap to turn it on.
                 </Text>

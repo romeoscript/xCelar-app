@@ -37,9 +37,9 @@ export function isCompletedDelivery(job: RiderJob): boolean {
 /** Where the rider should head next, or null once their part is done. */
 export function nextStop(job: RiderJob): Stop | null {
   if (!job.isActive) return null;
-  // Collecting from the sender, or bringing a failed delivery back to the hub.
-  const headingBack = job.stage === 'PICKUP_ASSIGNED' || job.stage === 'DELIVERY_FAILED';
-  return headingBack ? job.from : job.to;
+  if (job.stage === 'PICKUP_ASSIGNED') return job.from;
+  if (job.stage === 'DELIVERY_FAILED') return job.hub;
+  return job.to;
 }
 
 const LEG_STEPS: Record<RiderLeg, string[]> = {
@@ -48,9 +48,17 @@ const LEG_STEPS: Record<RiderLeg, string[]> = {
   RETURN: ['Heading to sender', 'Proof of return'],
 };
 
-/** Progress through the rider's current leg, or null when not active. */
+/** A direct job is one rider's whole trip, shown as a single run of steps. */
+const DIRECT_STEPS = ['Heading to pickup', 'At pickup', 'Heading to drop-off', 'Proof of delivery'];
+
+/** Progress through the rider's current job, or null when not active. */
 export function legStep(job: RiderJob): { index: number; total: number; title: string } | null {
   if (!job.isActive) return null;
+  if (job.route === 'DIRECT' && job.stage !== 'DELIVERY_FAILED') {
+    const offset = job.stage === 'OUT_FOR_DELIVERY' ? 2 : 0;
+    const index = offset + (job.arrivedAt ? 1 : 0);
+    return { index, total: DIRECT_STEPS.length, title: DIRECT_STEPS[index] };
+  }
   const steps = LEG_STEPS[job.leg];
   if (job.stage === 'DELIVERY_FAILED') {
     return { index: steps.length - 1, total: steps.length, title: 'Bring it back to the hub' };
