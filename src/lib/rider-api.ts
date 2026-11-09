@@ -66,6 +66,14 @@ export async function getMyRiderProfile(): Promise<RiderProfile | null> {
   return data.profile;
 }
 
+/** Pay-on-delivery cash the rider has collected and not yet handed in at the hub. */
+export type CashInHand = { outstandingNaira: number; jobCount: number };
+
+export async function getMyCashInHand(): Promise<CashInHand> {
+  const { data } = await api.get<CashInHand>('/rider/cash');
+  return data;
+}
+
 /** Go on/off shift. Returns the updated profile so the cache can reflect it. */
 export async function setAvailability(available: boolean): Promise<RiderProfile> {
   const { data } = await api.patch<{ profile: RiderProfile }>('/rider/availability', { available });

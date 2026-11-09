@@ -85,6 +85,7 @@ export default function RiderJobScreen() {
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['rider-delivery', id] });
     void queryClient.invalidateQueries({ queryKey: ['rider-deliveries'] });
+    void queryClient.invalidateQueries({ queryKey: ['rider-cash'] });
   };
   const onFailure = (failure: unknown) => setError(getApiErrorMessage(failure));
 

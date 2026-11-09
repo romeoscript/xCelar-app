@@ -31,10 +31,12 @@ import { tapFeedback } from '@/lib/haptics';
 import { useAuthStore } from '@/lib/auth-store';
 import { getCurrentLocation } from '@/lib/location';
 import {
+  getMyCashInHand,
   getMyDeliveries,
   getMyRiderProfile,
   reportShiftLocation,
   setAvailability,
+  type CashInHand,
   type RiderJob,
   type VehicleType,
 } from '@/lib/rider-api';
@@ -114,11 +116,15 @@ export default function RiderHomeScreen() {
       job.deliveredAt != null &&
       new Date(job.deliveredAt).toDateString() === new Date().toDateString(),
   );
+  const cashQuery = useQuery({ queryKey: ['rider-cash'], queryFn: getMyCashInHand });
+  const cashInHand = cashQuery.data;
+
   const earnedToday = deliveredToday.reduce((sum, delivery) => sum + (delivery.feeNaira ?? 0), 0);
 
   const refresh = () => {
     void profileQuery.refetch();
     void deliveriesQuery.refetch();
+    void cashQuery.refetch();
     if (isOnline) void locationQuery.refetch();
   };
 
@@ -207,6 +213,8 @@ export default function RiderHomeScreen() {
               </View>
             </View>
 
+            {cashInHand && cashInHand.jobCount > 0 ? <CashToHandIn cash={cashInHand} /> : null}
+
             {assigned.length > 0 ? (
               <Text className="pt-1 text-lg font-bold text-brand-navy">
                 Assigned to you · {assigned.length}
@@ -241,6 +249,23 @@ export default function RiderHomeScreen() {
         }
       />
       <RiderTabBar />
+    </View>
+  );
+}
+
+/** Cash collected on pay-on-delivery jobs that still has to go to the hub.
+ *  It clears when staff record the handover there. */
+function CashToHandIn({ cash }: { cash: CashInHand }) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+      <MaterialCommunityIcons name="cash-fast" size={24} color={Brand.navy} />
+      <View className="flex-1">
+        <Text className="text-sm font-semibold text-amber-800">Cash to hand in</Text>
+        <Text className="text-xs text-amber-700">
+          From {cash.jobCount} pay-on-delivery {cash.jobCount === 1 ? 'job' : 'jobs'}. Hand it in at the hub.
+        </Text>
+      </View>
+      <Text className="text-lg font-extrabold text-brand-navy">{formatNaira(cash.outstandingNaira)}</Text>
     </View>
   );
 }
