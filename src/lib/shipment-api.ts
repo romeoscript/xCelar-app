@@ -10,6 +10,19 @@ export type ShipmentStatus =
   | 'DELIVERED'
   | 'CANCELLED';
 
+/** Hub lifecycle of a booked local delivery: sender → hub → recipient. */
+export type DeliveryStage =
+  | 'AWAITING_PICKUP'
+  | 'PICKUP_ASSIGNED'
+  | 'PICKED_UP'
+  | 'AT_HUB'
+  | 'REJECTED_AT_HUB'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERY_FAILED'
+  | 'DELIVERED'
+  | 'RETURNING_TO_SENDER'
+  | 'RETURNED_TO_SENDER';
+
 export type Shipment = {
   id: string;
   type: ShipmentType;
@@ -51,6 +64,12 @@ export type Shipment = {
   paymentMethod: string | null;
   paidAt: string | null;
   // Optional: older API deployments don't send these.
+  /** Set for booked local deliveries; null for EXPORT/IMPORT. */
+  stage?: DeliveryStage | null;
+  /** Cash the rider collects on delivery, for pay-on-delivery bookings. */
+  codAmount?: number | null;
+  /** When each hub stage was reached (detail endpoint only). */
+  timeline?: { stage: DeliveryStage; at: string }[];
   acceptedAt?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
@@ -195,6 +214,7 @@ export async function getShipment(id: string): Promise<Shipment> {
 
 export type ShipmentTracking = {
   status: ShipmentStatus;
+  stage?: DeliveryStage | null;
   /** The rider's last-reported position, or null before any has arrived. */
   courier: { lat: number; lng: number; updatedAt: string } | null;
   /** Whether the rider has reported arriving at each stop. */
@@ -228,6 +248,12 @@ export async function payWithBalance(id: string, termsAccepted: boolean): Promis
     method: 'balance',
     termsAccepted,
   });
+  return data;
+}
+
+/** Book a local delivery now and pay the rider in cash on delivery. */
+export async function bookCashOnDelivery(id: string, termsAccepted: boolean): Promise<Shipment> {
+  const { data } = await api.post<Shipment>(`/shipments/${id}/pay`, { method: 'cod', termsAccepted });
   return data;
 }
 

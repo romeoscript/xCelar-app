@@ -7,7 +7,7 @@ import { ChevronLeftIcon } from '@/components/icons';
 import { LiveTrackingMap } from '@/components/shipments/live-tracking-map';
 import { Brand } from '@/constants/theme';
 import { useShipmentTracking } from '@/hooks/use-shipment-tracking';
-import { timeAgo, trackingStatusText } from '@/lib/shipment-status';
+import { headingTo, timeAgo, trackingStatusText } from '@/lib/shipment-status';
 
 /** Full-screen, pan-and-zoom version of the shipment's live tracking map. */
 export default function TrackShipmentScreen() {
@@ -22,7 +22,7 @@ export default function TrackShipmentScreen() {
 
   const shipment = shipmentQuery.data;
   const tracking = trackingQuery.data;
-  const headingTo = shipment?.status === 'IN_TRANSIT' ? 'dropoff' : 'pickup';
+  const destination = shipment ? headingTo(shipment) : 'pickup';
 
   return (
     <View className="flex-1 bg-brand-surface">
@@ -37,7 +37,7 @@ export default function TrackShipmentScreen() {
           courier={tracking?.courier ?? null}
           pickup={tracking?.pickup ?? { lat: null, lng: null }}
           dropoff={tracking?.dropoff ?? { lat: null, lng: null }}
-          headingTo={headingTo}
+          headingTo={destination}
           fill
           interactive
         />
@@ -75,7 +75,7 @@ export default function TrackShipmentScreen() {
             ) : null}
           </View>
           <Text className="text-base font-semibold text-brand-navy">
-            {trackingStatusText(shipment.status, tracking)}
+            {trackingStatusText(shipment, tracking)}
           </Text>
           <Stop label="Pickup" address={shipment.senderAddress} />
           <Stop label="Drop off" address={shipment.receiverAddress} />

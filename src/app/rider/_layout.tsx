@@ -10,7 +10,7 @@ import { useAuthStore } from '@/lib/auth-store';
  * is intentionally left open to any signed-in user, since a user's role only
  * becomes COURIER once they apply.
  */
-const COURIER_ONLY = ['home', 'deliveries', 'delivery', 'request', 'account', 'notifications'];
+const COURIER_ONLY = ['home', 'deliveries', 'delivery', 'account', 'notifications'];
 
 export default function RiderLayout() {
   const status = useAuthStore((state) => state.status);

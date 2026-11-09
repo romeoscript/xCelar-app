@@ -9,7 +9,12 @@ function routeFor(data: NotificationData): Href | null {
   if (data.type === 'shipment' && data.shipmentId) {
     return { pathname: '/shipment/[id]', params: { id: data.shipmentId } };
   }
-  if (data.type === 'new-job') {
+  // A delivery dispatch assigned to (or moved off) this rider.
+  if (data.type === 'rider-delivery' && data.shipmentId) {
+    return { pathname: '/rider/delivery/[id]', params: { id: data.shipmentId } };
+  }
+  // Suspension changes, and the legacy pool alert from older server versions.
+  if (data.type === 'rider-account' || data.type === 'new-job') {
     return '/rider/home';
   }
   return null;

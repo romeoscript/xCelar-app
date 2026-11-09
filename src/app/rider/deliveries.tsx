@@ -7,27 +7,28 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } fr
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DeliveryCard, isActiveDelivery } from '@/components/rider/delivery-card';
+import { DeliveryCard } from '@/components/rider/delivery-card';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { StatTile } from '@/components/rider/stat-tile';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
-import { getMyDeliveries, type RiderDelivery } from '@/lib/rider-api';
+import { getMyDeliveries, type RiderJob } from '@/lib/rider-api';
+import { isCompletedDelivery } from '@/lib/rider-jobs';
 
 type Tab = 'active' | 'completed';
 
-const TABS: { key: Tab; label: string; matches: (delivery: RiderDelivery) => boolean }[] = [
-  { key: 'active', label: 'Active', matches: isActiveDelivery },
-  { key: 'completed', label: 'Completed', matches: (delivery) => !isActiveDelivery(delivery) },
+const TABS: { key: Tab; label: string; matches: (job: RiderJob) => boolean }[] = [
+  { key: 'active', label: 'Active', matches: (job) => job.isActive },
+  { key: 'completed', label: 'Completed', matches: (job) => !job.isActive },
 ];
 
 const EMPTY: Record<Tab, { icon: ComponentProps<typeof MaterialCommunityIcons>['name']; title: string; body: string }> = {
   active: {
     icon: 'moped-outline',
     title: 'No active deliveries',
-    body: 'Jobs you accept from the home screen show up here while you’re on them.',
+    body: 'Deliveries dispatch assigns to you show up here while you’re on them.',
   },
   completed: {
     icon: 'package-variant-closed-check',
@@ -44,7 +45,7 @@ export default function RiderDeliveriesScreen() {
   const [tab, setTab] = useState<Tab>('active');
 
   const all = useMemo(() => deliveriesQuery.data ?? [], [deliveriesQuery.data]);
-  const delivered = all.filter((delivery) => delivery.status === 'DELIVERED');
+  const delivered = all.filter(isCompletedDelivery);
   const earned = delivered.reduce((sum, delivery) => sum + (delivery.feeNaira ?? 0), 0);
   const counts = Object.fromEntries(
     TABS.map((option) => [option.key, all.filter(option.matches).length]),

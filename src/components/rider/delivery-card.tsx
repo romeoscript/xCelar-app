@@ -5,34 +5,22 @@ import { ChevronRightIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
-import { type RiderDelivery } from '@/lib/rider-api';
-
-const STATUS_META: Record<string, { label: string; pill: string; text: string }> = {
-  CONFIRMED: { label: 'Heading to pickup', pill: 'bg-brand-blue-tint', text: 'text-brand-blue' },
-  IN_TRANSIT: { label: 'Delivering', pill: 'bg-brand-gold-tint', text: 'text-amber-700' },
-  DELIVERED: { label: 'Delivered', pill: 'bg-green-50', text: 'text-green-700' },
-  CANCELLED: { label: 'Cancelled', pill: 'bg-red-50', text: 'text-red-600' },
-};
-
-const FALLBACK_META = { pill: 'bg-brand-surface', text: 'text-gray-600' };
-
-export function isActiveDelivery(delivery: Pick<RiderDelivery, 'status'>): boolean {
-  return delivery.status === 'CONFIRMED' || delivery.status === 'IN_TRANSIT';
-}
+import { type RiderJob } from '@/lib/rider-api';
+import { jobBadge } from '@/lib/rider-jobs';
 
 export function DeliveryCard({
   delivery,
   onPress,
 }: {
-  delivery: RiderDelivery;
+  delivery: RiderJob;
   onPress: () => void;
 }) {
-  const active = isActiveDelivery(delivery);
-  const meta = STATUS_META[delivery.status] ?? { ...FALLBACK_META, label: delivery.status };
+  const active = delivery.isActive;
+  const meta = jobBadge(delivery);
   const when = delivery.deliveredAt ?? delivery.acceptedAt;
   const details = [
     delivery.packageCategory,
-    delivery.distanceKm != null ? `${delivery.distanceKm} km` : null,
+    delivery.cashToCollectNaira != null ? `Collect ${formatNaira(delivery.cashToCollectNaira)}` : null,
     when ? formatWhen(when) : null,
   ].filter(Boolean);
 
@@ -71,10 +59,10 @@ export function DeliveryCard({
         </View>
         <View className="ml-3 flex-1 gap-2.5">
           <Text className="text-sm text-gray-900" numberOfLines={1}>
-            {delivery.pickup.address ?? '—'}
+            {stopLabel(delivery.from)}
           </Text>
           <Text className="text-sm text-gray-900" numberOfLines={1}>
-            {delivery.dropoff.address ?? '—'}
+            {stopLabel(delivery.to)}
           </Text>
         </View>
       </View>
@@ -94,6 +82,11 @@ export function DeliveryCard({
       </View>
     </Pressable>
   );
+}
+
+function stopLabel(stop: RiderJob['from']): string {
+  if (stop.kind === 'HUB') return stop.name ?? 'Hub';
+  return stop.address ?? '—';
 }
 
 function formatWhen(iso: string): string {

@@ -30,6 +30,7 @@ import { formatNaira } from '@/lib/format';
 import { successFeedback } from '@/lib/haptics';
 import { toast } from '@/lib/toast-store';
 import {
+  bookCashOnDelivery,
   getShipment,
   initPaystackForShipment,
   payWithBalance,
@@ -241,6 +242,12 @@ export default function ShipLocalScreen() {
     onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
   });
 
+  const bookOnDelivery = useMutation({
+    mutationFn: () => bookCashOnDelivery(id as string, termsAccepted),
+    onSuccess: finalizeBooking,
+    onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
+  });
+
   const initPaystack = useMutation({
     mutationFn: () => initPaystackForShipment(id as string, termsAccepted),
     onSuccess: (init) => setCheckout(init),
@@ -251,6 +258,8 @@ export default function ShipLocalScreen() {
     setPayError(null);
     if (paymentMethod === 'balance') {
       payBalance.mutate();
+    } else if (paymentMethod === 'cod') {
+      bookOnDelivery.mutate();
     } else {
       initPaystack.mutate();
     }
@@ -269,7 +278,8 @@ export default function ShipLocalScreen() {
     }
   };
 
-  const payPending = payBalance.isPending || initPaystack.isPending || checkout != null;
+  const payPending =
+    payBalance.isPending || bookOnDelivery.isPending || initPaystack.isPending || checkout != null;
 
   if (status !== 'authenticated') {
     return <Redirect href="/" />;
@@ -447,6 +457,7 @@ export default function ShipLocalScreen() {
                 termsAccepted={termsAccepted}
                 onTermsChange={setTermsAccepted}
                 onOpenTerms={() => router.push('/terms')}
+                allowPayOnDelivery
               />
             </>
           ) : null}
@@ -464,7 +475,7 @@ export default function ShipLocalScreen() {
           ) : (
             <>
               <Button
-                label={price != null ? `Pay ${formatNaira(price)}` : 'Pay'}
+                label={payButtonLabel(paymentMethod, price)}
                 disabled={!termsAccepted}
                 loading={payPending}
                 onPress={handlePay}
@@ -547,6 +558,11 @@ function SummaryCard({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
+function payButtonLabel(method: PaymentMethod, price: number | null): string {
+  if (method === 'cod') return 'Book · pay on delivery';
+  return price != null ? `Pay ${formatNaira(price)}` : 'Pay';
+}
+
 function BookedView({ shipment, onDone }: { shipment: Shipment; onDone: () => void }) {
   return (
     <SafeAreaView className="flex-1 bg-white px-6">
@@ -563,7 +579,9 @@ function BookedView({ shipment, onDone }: { shipment: Shipment; onDone: () => vo
           <Text className="text-xs uppercase tracking-wider text-gray-500">Tracking code</Text>
           <Text className="mt-1 text-xl font-bold text-brand-navy">{shipment.trackingCode}</Text>
           <View className="mt-4 flex-row justify-between border-t border-gray-200 pt-3">
-            <Text className="text-sm text-gray-500">Amount</Text>
+            <Text className="text-sm text-gray-500">
+              {shipment.paid ? 'Amount paid' : 'Pay the rider on delivery'}
+            </Text>
             <Text className="text-sm font-bold text-brand-navy">
               {shipment.priceEstimate != null ? formatNaira(shipment.priceEstimate) : '—'}
             </Text>

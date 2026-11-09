@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BikeIcon } from '@/components/icons';
 import { CostBreakdown } from '@/components/ship/cost-breakdown';
-import { PaidPill, StatusBadge } from '@/components/shipments/badges';
+import { PaymentPill, StatusBadge } from '@/components/shipments/badges';
 import { LiveTrackingMap } from '@/components/shipments/live-tracking-map';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -21,11 +21,10 @@ import { tapFeedback } from '@/lib/haptics';
 import {
   getShipmentBreakdown,
   type Shipment,
-  type ShipmentStatus,
   type ShipmentTracking,
   type ShipmentType,
 } from '@/lib/shipment-api';
-import { DELIVERY_STAGES, timeAgo, trackingStatusText } from '@/lib/shipment-status';
+import { headingTo, isBooked, journeyFor, timeAgo, trackingStatusText } from '@/lib/shipment-status';
 
 const GUTTER = 16;
 
@@ -78,15 +77,15 @@ export default function ShipmentDetailScreen() {
           <ScrollView contentContainerStyle={{ padding: GUTTER, gap: 12 }}>
             <SummaryCard shipment={shipment} copied={copied} onCopy={copyTracking} />
 
-            {shipment.paid && trackable ? (
+            {isBooked(shipment) && trackable ? (
               <LiveTrackingCard
                 tracking={trackingQuery.data}
-                status={shipment.status}
+                shipment={shipment}
                 onExpand={() => router.push({ pathname: '/track/[id]', params: { id } })}
               />
             ) : null}
 
-            {shipment.paid ? (
+            {isBooked(shipment) ? (
               <DeliveryTimeline shipment={shipment} />
             ) : (
               <View className="flex-row gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -117,7 +116,7 @@ export default function ShipmentDetailScreen() {
             )}
           </ScrollView>
 
-          {!shipment.paid ? (
+          {!isBooked(shipment) ? (
             <View className="border-t border-gray-100 py-3" style={{ paddingHorizontal: GUTTER }}>
               <Button
                 label={
@@ -171,7 +170,7 @@ function SummaryCard({
         <View className="flex-row items-center justify-between">
           <View className="flex-row gap-2">
             <StatusBadge shipment={shipment} />
-            {shipment.paid ? <PaidPill /> : null}
+            <PaymentPill shipment={shipment} />
           </View>
           <Text className="text-xs font-medium text-white/60">{TYPE_LABELS[shipment.type]}</Text>
         </View>
@@ -232,14 +231,13 @@ function ZoneLabel({
 
 function LiveTrackingCard({
   tracking,
-  status,
+  shipment,
   onExpand,
 }: {
   tracking?: ShipmentTracking;
-  status: ShipmentStatus;
+  shipment: Shipment;
   onExpand: () => void;
 }) {
-  const headingTo = status === 'IN_TRANSIT' ? 'dropoff' : 'pickup';
   return (
     <View className="gap-3 rounded-2xl border border-gray-100 bg-white p-4">
       <View className="flex-row items-center justify-between">
@@ -269,7 +267,7 @@ function LiveTrackingCard({
           courier={tracking?.courier ?? null}
           pickup={tracking?.pickup ?? { lat: null, lng: null }}
           dropoff={tracking?.dropoff ?? { lat: null, lng: null }}
-          headingTo={headingTo}
+          headingTo={headingTo(shipment)}
           height={200}
         />
         <View className="absolute bottom-3 right-3 flex-row items-center gap-1 rounded-full bg-white/95 px-3 py-1.5">
@@ -283,7 +281,7 @@ function LiveTrackingCard({
           <BikeIcon size={18} color={Brand.blue} />
         </View>
         <Text className="flex-1 text-sm font-medium text-brand-navy">
-          {trackingStatusText(status, tracking)}
+          {trackingStatusText(shipment, tracking)}
         </Text>
       </View>
     </View>
@@ -291,18 +289,20 @@ function LiveTrackingCard({
 }
 
 function DeliveryTimeline({ shipment }: { shipment: Shipment }) {
-  const currentIndex = DELIVERY_STAGES.findIndex((stage) => stage.status === shipment.status);
-
+  const { steps, notice } = journeyFor(shipment);
   return (
     <Card title="Delivery progress">
-      {DELIVERY_STAGES.map((stage, index) => {
-        const done = index < currentIndex || shipment.status === 'DELIVERED';
-        const current = index === currentIndex && !done;
-        const reached = done || current;
-        const isLast = index === DELIVERY_STAGES.length - 1;
-        const at = reached ? stage.at(shipment) : null;
+      {notice ? (
+        <View className="mb-4 rounded-xl bg-amber-50 p-3">
+          <Text className="text-sm text-amber-800">{notice}</Text>
+        </View>
+      ) : null}
+      {steps.map((step, index) => {
+        const done = step.state === 'done';
+        const current = step.state === 'current';
+        const isLast = index === steps.length - 1;
         return (
-          <View key={stage.status} className="flex-row">
+          <View key={step.key} className="flex-row">
             <View className="w-5 items-center">
               {done ? (
                 <View className="h-5 w-5 items-center justify-center rounded-full bg-brand-blue">
@@ -315,17 +315,13 @@ function DeliveryTimeline({ shipment }: { shipment: Shipment }) {
               ) : (
                 <View className="h-5 w-5 rounded-full border-2 border-gray-200 bg-white" />
               )}
-              {!isLast ? (
-                <View className={`w-0.5 flex-1 ${done ? 'bg-brand-blue' : 'bg-gray-200'}`} />
-              ) : null}
+              {!isLast ? <View className={`w-0.5 flex-1 ${done ? 'bg-brand-blue' : 'bg-gray-200'}`} /> : null}
             </View>
             <View className={`ml-3 flex-1 flex-row justify-between gap-3 ${isLast ? '' : 'pb-5'}`}>
-              <Text
-                className={`text-sm ${reached ? 'font-semibold text-gray-900' : 'text-gray-400'}`}
-              >
-                {stage.label}
+              <Text className={`text-sm ${done || current ? 'font-semibold text-gray-900' : 'text-gray-400'}`}>
+                {step.label}
               </Text>
-              {at ? <Text className="text-xs text-gray-500">{formatDateTime(at)}</Text> : null}
+              {step.at ? <Text className="text-xs text-gray-500">{formatDateTime(step.at)}</Text> : null}
             </View>
           </View>
         );

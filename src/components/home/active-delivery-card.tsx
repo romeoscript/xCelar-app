@@ -11,6 +11,7 @@ import { BikeIcon, ChevronRightIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { tapFeedback } from '@/lib/haptics';
 import { type Shipment } from '@/lib/shipment-api';
+import { headingTo, shipmentStatusMeta } from '@/lib/shipment-status';
 
 export type ActiveDeliveryCardProps = {
   shipment: Shipment;
@@ -19,9 +20,8 @@ export type ActiveDeliveryCardProps = {
 
 /** Highlights a delivery that's moving right now, one tap from the live map. */
 export function ActiveDeliveryCard({ shipment, onPress }: ActiveDeliveryCardProps) {
-  const inTransit = shipment.status === 'IN_TRANSIT';
-  const headline = inTransit ? 'On the way to drop-off' : 'Rider heading to pickup';
-  const destination = inTransit ? shipment.deliveryZone : shipment.pickupZone;
+  const headline = shipmentStatusMeta(shipment).label;
+  const destination = headingTo(shipment) === 'dropoff' ? shipment.deliveryZone : shipment.pickupZone;
 
   return (
     <Pressable

@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 
-export type PaymentMethod = 'balance' | 'paystack';
+export type PaymentMethod = 'balance' | 'paystack' | 'cod';
 
 export type PaymentOptionsProps = {
   price: number | null;
@@ -15,6 +15,8 @@ export type PaymentOptionsProps = {
   onOpenTerms: () => void;
   /** Foreign-currency shipments (e.g. USD imports) can only be paid by card. */
   cardOnly?: boolean;
+  /** Local deliveries can be paid in cash to the delivery rider. */
+  allowPayOnDelivery?: boolean;
 };
 
 export function PaymentOptions({
@@ -26,6 +28,7 @@ export function PaymentOptions({
   onTermsChange,
   onOpenTerms,
   cardOnly = false,
+  allowPayOnDelivery = false,
 }: PaymentOptionsProps) {
   const balance = balanceKobo / 100;
   const insufficient = price != null && balance < price;
@@ -76,6 +79,21 @@ export function PaymentOptions({
         </View>
         <RadioDot selected={method === 'paystack'} />
       </Pressable>
+
+      {allowPayOnDelivery ? (
+        <Pressable
+          onPress={() => select('cod')}
+          className={`flex-row items-center justify-between rounded-2xl border p-4 active:opacity-80 ${
+            method === 'cod' ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
+          }`}
+        >
+          <View className="flex-1 pr-3">
+            <Text className="text-base font-semibold text-gray-900">Pay on delivery</Text>
+            <Text className="text-sm text-gray-500">Pay the rider in cash when it&apos;s delivered</Text>
+          </View>
+          <RadioDot selected={method === 'cod'} />
+        </Pressable>
+      ) : null}
 
       <Pressable
         onPress={() => {

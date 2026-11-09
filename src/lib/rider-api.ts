@@ -1,4 +1,7 @@
 import { api } from './api';
+import type { DeliveryStage } from './shipment-api';
+
+export type { DeliveryStage };
 
 export type VehicleType = 'BACKPACK' | 'BIKE' | 'CAR' | 'TRUCK';
 export type VehicleOwnership = 'PERSONAL' | 'COMPANY';
@@ -19,10 +22,17 @@ export type RiderProfile = {
   status: RiderStatus;
   rejectionReason: string | null;
   isAvailable: boolean;
+  /** Taken off dispatch by a manager: can't go online or receive deliveries. */
+  isSuspended: boolean;
+  suspendedReason: string | null;
   documents: { type: RiderDocumentType; url: string | null }[];
 };
 
-export type DeliveryParty = {
+/** The stretch of the journey a rider is responsible for. */
+export type RiderLeg = 'PICKUP' | 'DELIVERY' | 'RETURN';
+
+export type Stop = {
+  kind: 'SENDER' | 'HUB' | 'RECIPIENT';
   name: string | null;
   phone: string | null;
   address: string | null;
@@ -30,23 +40,28 @@ export type DeliveryParty = {
   lng: number | null;
 };
 
-export type RiderDelivery = {
+/** One leg of a delivery as the rider sees it (`RiderJob` in xcellar-api). */
+export type RiderJob = {
   id: string;
-  status: string;
   trackingCode: string | null;
+  stage: DeliveryStage;
+  leg: RiderLeg;
+  /** True while this rider holds the parcel on this leg. */
+  isActive: boolean;
   packageCategory: string | null;
   description: string | null;
+  fragile: boolean;
   feeNaira: number | null;
-  distanceKm: number | null;
-  pickup: DeliveryParty;
-  dropoff: DeliveryParty;
+  /** Cash to collect at the drop-off; null when prepaid. */
+  cashToCollectNaira: number | null;
+  from: Stop;
+  to: Stop;
+  /** When the rider reached the customer on this leg. */
+  arrivedAt: string | null;
   acceptedAt: string | null;
-  arrivedPickupAt: string | null;
-  arrivedDropoffAt: string | null;
   pickedUpAt: string | null;
   deliveredAt: string | null;
   proofUrl: string | null;
-  paymentMethod: string | null;
 };
 
 export async function applyAsRider(input: {
@@ -77,32 +92,16 @@ export async function uploadRiderDocument(input: {
   return data.profile;
 }
 
-export async function getAvailableDeliveries(lat: number, lng: number): Promise<RiderDelivery[]> {
-  const { data } = await api.get<RiderDelivery[]>('/rider/deliveries/available', {
-    params: { lat, lng },
-  });
-  return data;
-}
-
-export async function acceptDelivery(id: string): Promise<RiderDelivery> {
-  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/accept`);
-  return data;
-}
-
-/** Pass on an available delivery so it stops appearing in this rider's feed. */
-export async function rejectDelivery(id: string): Promise<void> {
-  await api.post(`/rider/deliveries/${id}/reject`);
-}
-
 export type DeliveryProblemReason =
   | 'WRONG_ADDRESS'
   | 'RECIPIENT_UNAVAILABLE'
   | 'CANNOT_REACH'
   | 'PACKAGE_ISSUE'
+  | 'PAYMENT_REFUSED'
   | 'OTHER';
 
-/** Flag that an accepted delivery can't proceed. Before pickup it returns to the
- *  pool; after pickup it's cancelled for support to resolve. */
+/** The job can't go ahead. A pickup goes back to dispatch; a delivery attempt
+ *  fails and the rider brings the parcel back to the hub. */
 export async function reportDeliveryProblem(
   id: string,
   reason: DeliveryProblemReason,
@@ -111,30 +110,29 @@ export async function reportDeliveryProblem(
   await api.post(`/rider/deliveries/${id}/report`, { reason, ...(note ? { note } : {}) });
 }
 
-export async function getAvailableDelivery(id: string): Promise<RiderDelivery> {
-  const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}/preview`);
+/** Report reaching the customer on this leg (sender, or recipient on a delivery). */
+export async function markArrived(id: string): Promise<RiderJob> {
+  const { data } = await api.post<RiderJob>(`/rider/deliveries/${id}/arrive`);
   return data;
 }
 
-/** Report arriving at a stop (pickup while CONFIRMED, dropoff while IN_TRANSIT). */
-export async function markArrived(id: string, stop: 'pickup' | 'dropoff'): Promise<RiderDelivery> {
-  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/arrive`, { stop });
+/** Pickup leg: the parcel is collected and on its way to the hub. */
+export async function collectParcel(id: string): Promise<RiderJob> {
+  const { data } = await api.post<RiderJob>(`/rider/deliveries/${id}/pickup`);
   return data;
 }
 
-export async function pickupDelivery(id: string): Promise<RiderDelivery> {
-  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/pickup`);
+/** Finish a delivery or return with a proof photo. Cash jobs need `cashCollected`. */
+export async function completeLeg(
+  id: string,
+  input: { proofImageKey: string; cashCollected?: boolean },
+): Promise<RiderJob> {
+  const { data } = await api.post<RiderJob>(`/rider/deliveries/${id}/complete`, input);
   return data;
 }
 
-/** Complete a delivery. A proof-of-delivery photo key is required. */
-export async function completeDelivery(id: string, proofImageKey: string): Promise<RiderDelivery> {
-  const { data } = await api.post<RiderDelivery>(`/rider/deliveries/${id}/complete`, { proofImageKey });
-  return data;
-}
-
-export async function getMyDeliveries(): Promise<RiderDelivery[]> {
-  const { data } = await api.get<RiderDelivery[]>('/rider/deliveries');
+export async function getMyDeliveries(): Promise<RiderJob[]> {
+  const { data } = await api.get<RiderJob[]>('/rider/deliveries');
   return data;
 }
 
@@ -143,8 +141,14 @@ export async function reportDeliveryLocation(id: string, lat: number, lng: numbe
   await api.post(`/rider/deliveries/${id}/location`, { lat, lng });
 }
 
-export async function getDelivery(id: string): Promise<RiderDelivery> {
-  const { data } = await api.get<RiderDelivery>(`/rider/deliveries/${id}`);
+/** Report the rider's position while on shift and idle, so dispatch can see
+ *  who is close to a pickup. The server ignores it while offline. */
+export async function reportShiftLocation(lat: number, lng: number): Promise<void> {
+  await api.post('/rider/location', { lat, lng });
+}
+
+export async function getDelivery(id: string): Promise<RiderJob> {
+  const { data } = await api.get<RiderJob>(`/rider/deliveries/${id}`);
   return data;
 }
 

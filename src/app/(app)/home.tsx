@@ -25,6 +25,7 @@ import { ChevronRightIcon, PackageIcon, PlusIcon, SearchIcon } from '@/component
 import { SupportWidget } from '@/components/support-widget';
 import { Brand } from '@/constants/theme';
 import { isTrackable } from '@/hooks/use-shipment-tracking';
+import { isBooked } from '@/lib/shipment-status';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
@@ -120,7 +121,7 @@ export default function HomeScreen() {
 
   const draft = draftQuery.data;
   const shipments = shipmentsQuery.data ?? [];
-  const activeShipment = shipments.find((shipment) => shipment.paid && isTrackable(shipment));
+  const activeShipment = shipments.find((shipment) => isBooked(shipment) && isTrackable(shipment));
   const name = user?.fullName ?? 'there';
 
   const openFlow = (type: ShipmentType, id: string) =>

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,18 +13,16 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BellIcon, SearchIcon } from '@/components/icons';
-import { isActiveDelivery } from '@/components/rider/delivery-card';
+import { BellIcon } from '@/components/icons';
+import { DeliveryCard } from '@/components/rider/delivery-card';
 import { OfflineMoon, SearchingRadar } from '@/components/rider/idle-illustrations';
 import { RiderTabBar } from '@/components/rider/rider-tab-bar';
 import { StatTile } from '@/components/rider/stat-tile';
-import { BikeGlyph } from '@/components/rider/vehicle-icons';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { useRiderVehicle } from '@/hooks/use-rider-vehicle';
@@ -33,14 +31,27 @@ import { tapFeedback } from '@/lib/haptics';
 import { useAuthStore } from '@/lib/auth-store';
 import { getCurrentLocation } from '@/lib/location';
 import {
-  getAvailableDeliveries,
   getMyDeliveries,
   getMyRiderProfile,
-  rejectDelivery,
+  reportShiftLocation,
   setAvailability,
-  type RiderDelivery,
+  type RiderJob,
   type VehicleType,
 } from '@/lib/rider-api';
+import { isCompletedDelivery } from '@/lib/rider-jobs';
+
+/** While on shift: how often to refresh the position dispatch sees, and how
+ *  often to check for new assignments (push notifications are the fast path). */
+const LOCATION_INTERVAL_MS = 60_000;
+const ASSIGNMENTS_INTERVAL_MS = 20_000;
+
+/** Parcels already in hand first, then the oldest assignment. */
+function byPriority(a: RiderJob, b: RiderJob): number {
+  const aHolding = a.stage !== 'PICKUP_ASSIGNED';
+  const bHolding = b.stage !== 'PICKUP_ASSIGNED';
+  if (aHolding !== bHolding) return aHolding ? -1 : 1;
+  return new Date(a.acceptedAt ?? 0).getTime() - new Date(b.acceptedAt ?? 0).getTime();
+}
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -59,73 +70,56 @@ export default function RiderHomeScreen() {
   const displayName = (fullName.trim().split('@')[0] || 'Rider').trim();
   const vehicleType = useRiderVehicle();
 
-  const [whereTo, setWhereTo] = useState('');
-  const [rejected, setRejected] = useState<string[]>([]);
-
   const profileQuery = useQuery({ queryKey: ['rider-profile'], queryFn: getMyRiderProfile });
   const isOnline = profileQuery.data?.isAvailable ?? false;
+  const isSuspended = profileQuery.data?.isSuspended ?? false;
 
   const availabilityMutation = useMutation({
     mutationFn: (next: boolean) => setAvailability(next),
-    onSuccess: (profile) => {
-      queryClient.setQueryData(['rider-profile'], profile);
-      queryClient.invalidateQueries({ queryKey: ['rider-available'] });
-    },
+    onSuccess: (profile) => queryClient.setQueryData(['rider-profile'], profile),
   });
   const toggleOnline = () => {
     tapFeedback();
     availabilityMutation.mutate(!isOnline);
   };
 
-  // Persist the rejection so the job stays gone after a refresh/restart. The
-  // local `rejected` list removes it from view instantly; the server call keeps
-  // it out of the feed for good.
-  const rejectMutation = useMutation({
-    mutationFn: (deliveryId: string) => rejectDelivery(deliveryId),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['rider-available'] }),
-  });
-  const handleReject = (deliveryId: string) => {
-    setRejected((ids) => [...ids, deliveryId]);
-    rejectMutation.mutate(deliveryId);
-  };
-
-  // Only fetch a location (and prompt for the permission) once on shift.
+  // Only fetch a location (and prompt for the permission) once on shift, and
+  // keep it fresh so dispatch can see who is closest to a pickup.
   const locationQuery = useQuery({
     queryKey: ['rider-location'],
     queryFn: getCurrentLocation,
-    staleTime: 60_000,
+    staleTime: LOCATION_INTERVAL_MS,
+    refetchInterval: isOnline ? LOCATION_INTERVAL_MS : false,
     enabled: isOnline,
   });
   const location = locationQuery.data;
 
-  const availableQuery = useQuery({
-    queryKey: ['rider-available', location?.latitude, location?.longitude],
-    queryFn: () => getAvailableDeliveries(location!.latitude, location!.longitude),
-    enabled: isOnline && Boolean(location),
-  });
+  useEffect(() => {
+    if (isOnline && location) {
+      // Best effort: a missed ping just means a slightly older position on the board.
+      reportShiftLocation(location.latitude, location.longitude).catch(() => undefined);
+    }
+  }, [isOnline, location]);
 
-  const deliveriesQuery = useQuery({ queryKey: ['rider-deliveries'], queryFn: getMyDeliveries });
+  const deliveriesQuery = useQuery({
+    queryKey: ['rider-deliveries'],
+    queryFn: getMyDeliveries,
+    refetchInterval: isOnline ? ASSIGNMENTS_INTERVAL_MS : false,
+  });
   const myDeliveries = deliveriesQuery.data ?? [];
-  const activeDelivery = myDeliveries.find(isActiveDelivery);
+  const assigned = myDeliveries.filter((job) => job.isActive).sort(byPriority);
   const deliveredToday = myDeliveries.filter(
-    (delivery) =>
-      delivery.status === 'DELIVERED' &&
-      delivery.deliveredAt != null &&
-      new Date(delivery.deliveredAt).toDateString() === new Date().toDateString(),
+    (job) =>
+      isCompletedDelivery(job) &&
+      job.deliveredAt != null &&
+      new Date(job.deliveredAt).toDateString() === new Date().toDateString(),
   );
   const earnedToday = deliveredToday.reduce((sum, delivery) => sum + (delivery.feeNaira ?? 0), 0);
 
-  const term = whereTo.trim().toLowerCase();
-  const shown = (availableQuery.data ?? [])
-    .filter((delivery) => !rejected.includes(delivery.id))
-    .filter((delivery) => term === '' || (delivery.dropoff.address ?? '').toLowerCase().includes(term));
-
-  // Pull-to-refresh should recover from either a stale location or a failed
-  // fetch, so refresh both — location first, since the list depends on it.
   const refresh = () => {
-    void locationQuery.refetch();
-    void availableQuery.refetch();
+    void profileQuery.refetch();
     void deliveriesQuery.refetch();
+    if (isOnline) void locationQuery.refetch();
   };
 
   return (
@@ -166,23 +160,39 @@ export default function RiderHomeScreen() {
         <AvailabilityToggle
           online={isOnline}
           pending={availabilityMutation.isPending}
-          disabled={profileQuery.isLoading}
+          disabled={profileQuery.isLoading || isSuspended}
           onToggle={toggleOnline}
         />
       </LinearGradient>
 
       <FlatList
-        data={shown}
+        data={assigned}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
         ListHeaderComponent={
-          <View className="gap-4 px-6 pb-1 pt-5">
-            {activeDelivery ? (
-              <ActiveDeliveryBanner
-                delivery={activeDelivery}
-                onPress={() => router.push(`/rider/delivery/${activeDelivery.id}`)}
-              />
+          <View className="gap-4 px-6 pb-3 pt-5">
+            {isSuspended ? (
+              <View className="gap-1 rounded-2xl border border-red-100 bg-red-50 p-4">
+                <Text className="font-bold text-red-700">Your account is suspended</Text>
+                <Text className="text-sm text-red-600">
+                  {profileQuery.data?.suspendedReason
+                    ? profileQuery.data.suspendedReason
+                    : 'You can’t go online or receive deliveries. Contact your manager.'}
+                </Text>
+              </View>
+            ) : null}
+
+            {isOnline && locationQuery.isError ? (
+              <Pressable
+                onPress={() => void Linking.openSettings()}
+                className="flex-row items-center gap-3 rounded-2xl bg-amber-50 p-4 active:opacity-80"
+              >
+                <MaterialCommunityIcons name="map-marker-off" size={20} color="#b45309" />
+                <Text className="flex-1 text-sm text-amber-800">
+                  Location is off, so dispatch can’t see where you are. Tap to turn it on.
+                </Text>
+              </Pressable>
             ) : null}
 
             <View className="gap-2">
@@ -197,47 +207,33 @@ export default function RiderHomeScreen() {
               </View>
             </View>
 
-            {isOnline && (availableQuery.data?.length ?? 0) > 0 ? (
-              <View className="gap-5 pt-1">
-                <View className="flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
-                  <SearchIcon size={20} color={Brand.muted} />
-                  <TextInput
-                    value={whereTo}
-                    onChangeText={setWhereTo}
-                    placeholder="Filter by drop-off area"
-                    placeholderTextColor={Brand.muted}
-                    className="flex-1 text-base text-gray-900"
-                  />
-                </View>
-
-                <Text className="text-lg font-bold text-brand-navy">Available requests</Text>
-              </View>
+            {assigned.length > 0 ? (
+              <Text className="pt-1 text-lg font-bold text-brand-navy">
+                Assigned to you · {assigned.length}
+              </Text>
             ) : null}
           </View>
         }
         renderItem={({ item }) => (
-          <RequestCard
-            delivery={item}
-            onView={() => router.push(`/rider/request/${item.id}`)}
-            onReject={() => handleReject(item.id)}
-          />
+          <View className="px-6">
+            <DeliveryCard delivery={item} onPress={() => router.push(`/rider/delivery/${item.id}`)} />
+          </View>
         )}
         refreshControl={
           <RefreshControl
-            refreshing={locationQuery.isFetching || availableQuery.isFetching || deliveriesQuery.isRefetching}
+            refreshing={deliveriesQuery.isRefetching || profileQuery.isRefetching}
             onRefresh={refresh}
             tintColor={Brand.blue}
           />
         }
         ListEmptyComponent={
           <EmptyState
-            profileLoading={profileQuery.isLoading}
+            loading={profileQuery.isLoading || deliveriesQuery.isLoading}
+            suspended={isSuspended}
             offline={!isOnline}
             onGoOnline={() => availabilityMutation.mutate(true)}
             goingOnline={availabilityMutation.isPending}
-            locationError={locationQuery.isError ? locationQuery.error : null}
-            requestsError={availableQuery.isError ? availableQuery.error : null}
-            loading={(!location || availableQuery.isLoading) && !locationQuery.isError}
+            error={deliveriesQuery.isError ? deliveriesQuery.error : null}
             onRetry={refresh}
             vehicleType={vehicleType}
             area={location?.area ?? location?.region ?? null}
@@ -271,7 +267,7 @@ function AvailabilityToggle({
             {online ? 'You’re online' : 'You’re offline'}
           </Text>
           <Text className="text-xs text-white/50">
-            {online ? 'Receiving delivery requests' : 'Not receiving requests'}
+            {online ? 'Dispatch can assign you deliveries' : 'Dispatch can’t assign you deliveries'}
           </Text>
         </View>
       </View>
@@ -318,34 +314,45 @@ function EmptyCard({
 }
 
 function EmptyState({
-  profileLoading,
+  loading,
+  suspended,
   offline,
   onGoOnline,
   goingOnline,
-  locationError,
-  requestsError,
-  loading,
+  error,
   onRetry,
   vehicleType,
   area,
 }: {
-  profileLoading: boolean;
+  loading: boolean;
+  suspended: boolean;
   offline: boolean;
   onGoOnline: () => void;
   goingOnline: boolean;
-  locationError: unknown;
-  requestsError: unknown;
-  loading: boolean;
+  error: unknown;
   onRetry: () => void;
   vehicleType?: VehicleType;
   area: string | null;
 }) {
-  if (profileLoading) {
+  if (loading) {
     return (
       <View className="items-center py-16">
         <ActivityIndicator color={Brand.blue} />
       </View>
     );
+  }
+  if (error) {
+    return (
+      <EmptyCard
+        title="Couldn’t load your deliveries"
+        body={errorMessage(error, 'Something went wrong. Please try again.')}
+        actionLabel="Try again"
+        onAction={onRetry}
+      />
+    );
+  }
+  if (suspended) {
+    return null;
   }
   if (offline) {
     return (
@@ -354,7 +361,7 @@ function EmptyState({
           <OfflineMoon />
           <Text className="mt-6 text-xl font-bold text-brand-navy">You’re offline</Text>
           <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
-            Go online to start receiving delivery requests near you.
+            Go online so dispatch can assign you deliveries.
           </Text>
           <View className="mt-6 w-56">
             <Button label={goingOnline ? 'Going online…' : 'Go online'} onPress={onGoOnline} />
@@ -363,40 +370,13 @@ function EmptyState({
       </Animated.View>
     );
   }
-  if (locationError) {
-    return (
-      <EmptyCard
-        title="Location needed"
-        body={errorMessage(locationError, 'We couldn’t get your location. Enable it to see nearby jobs.')}
-        actionLabel="Open settings"
-        onAction={() => void Linking.openSettings()}
-      />
-    );
-  }
-  if (loading) {
-    return (
-      <View className="items-center py-16">
-        <ActivityIndicator color={Brand.blue} />
-      </View>
-    );
-  }
-  if (requestsError) {
-    return (
-      <EmptyCard
-        title="Couldn’t load requests"
-        body={errorMessage(requestsError, 'Something went wrong. Please try again.')}
-        actionLabel="Try again"
-        onAction={onRetry}
-      />
-    );
-  }
   return (
     <Animated.View entering={FadeIn.duration(400)}>
       <View className="items-center px-8 pt-8">
         <SearchingRadar vehicleType={vehicleType} />
-        <Text className="mt-4 text-xl font-bold text-brand-navy">Looking for deliveries</Text>
+        <Text className="mt-4 text-xl font-bold text-brand-navy">Waiting for dispatch</Text>
         <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
-          New requests near you will appear here, and we’ll notify you the moment one comes in.
+          Your manager assigns deliveries. We’ll notify you the moment one is yours.
         </Text>
         {area ? (
           <View className="mt-5 flex-row items-center gap-1.5 rounded-full bg-brand-surface px-3.5 py-2">
@@ -409,48 +389,6 @@ function EmptyState({
   );
 }
 
-function ActiveDeliveryBanner({
-  delivery,
-  onPress,
-}: {
-  delivery: RiderDelivery;
-  onPress: () => void;
-}) {
-  const inTransit = delivery.status === 'IN_TRANSIT';
-  return (
-    <Pressable
-      onPress={() => {
-        tapFeedback();
-        onPress();
-      }}
-      accessibilityRole="button"
-      className="flex-row items-center gap-3 rounded-2xl bg-brand-blue p-4 active:opacity-90"
-    >
-      <View className="h-11 w-11 items-center justify-center rounded-full bg-white/20">
-        <MaterialCommunityIcons
-          name={inTransit ? 'map-marker-path' : 'package-variant-closed'}
-          size={22}
-          color="#ffffff"
-        />
-      </View>
-      <View className="flex-1">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-white/70">
-          Delivery in progress
-        </Text>
-        <Text className="text-base font-bold text-white" numberOfLines={1}>
-          {inTransit ? 'Heading to drop-off' : 'Heading to pickup'}
-        </Text>
-        <Text className="text-xs text-white/70" numberOfLines={1}>
-          {(inTransit ? delivery.dropoff.address : delivery.pickup.address) ?? delivery.trackingCode}
-        </Text>
-      </View>
-      <View className="rounded-full bg-white px-3 py-1.5">
-        <Text className="text-xs font-bold text-brand-blue">Continue</Text>
-      </View>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   header: {
     overflow: 'hidden',
@@ -460,57 +398,3 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
   },
 });
-
-function RequestCard({
-  delivery,
-  onView,
-  onReject,
-}: {
-  delivery: RiderDelivery;
-  onView: () => void;
-  onReject: () => void;
-}) {
-  return (
-    <View className="mx-6 mb-4 gap-3 border-b border-gray-100 pb-5">
-      <View>
-        <Text className="text-base font-bold text-brand-navy">
-          {delivery.packageCategory ?? 'Delivery'}
-        </Text>
-        {delivery.description ? (
-          <Text className="text-sm text-gray-500" numberOfLines={1}>
-            {delivery.description}
-          </Text>
-        ) : null}
-      </View>
-
-      <View className="flex-row items-center gap-3">
-        <View className="h-12 w-14 items-center justify-center rounded-xl bg-brand-surface">
-          <BikeGlyph color={Brand.navy} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Drop off{delivery.distanceKm != null ? ` · ${delivery.distanceKm} km` : ''}
-          </Text>
-          <Text className="text-sm font-medium text-brand-navy" numberOfLines={1}>
-            {delivery.dropoff.address ?? '—'}
-          </Text>
-        </View>
-      </View>
-
-      <View className="flex-row gap-3">
-        <Pressable
-          onPress={onReject}
-          className="flex-1 items-center rounded-xl bg-brand-surface py-3.5 active:opacity-70"
-        >
-          <Text className="text-base font-semibold text-brand-navy">Reject</Text>
-        </Pressable>
-        <Pressable
-          onPress={onView}
-          className="flex-1 items-center rounded-xl bg-brand-blue py-3.5 active:opacity-80"
-        >
-          <Text className="text-base font-semibold text-white">View details</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}

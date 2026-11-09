@@ -1,13 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { getShipment, getShipmentTracking, type Shipment } from '@/lib/shipment-api';
+import { getShipment, getShipmentTracking, type DeliveryStage, type Shipment } from '@/lib/shipment-api';
 
-/** Only a local delivery that's actually moving has a rider to track. */
+/** Hub stages where a rider is out with (or on the way to) the customer's package. */
+const RIDER_OUT_STAGES: DeliveryStage[] = ['PICKUP_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'];
+
+/** Only a local delivery with a rider out on it has someone to track. */
 export function isTrackable(shipment?: Shipment): boolean {
-  return (
-    shipment?.type === 'LOCAL' &&
-    (shipment.status === 'CONFIRMED' || shipment.status === 'IN_TRANSIT')
-  );
+  if (shipment?.type !== 'LOCAL') {
+    return false;
+  }
+  if (shipment.stage) {
+    return RIDER_OUT_STAGES.includes(shipment.stage);
+  }
+  return shipment.status === 'CONFIRMED' || shipment.status === 'IN_TRANSIT';
 }
 
 /**

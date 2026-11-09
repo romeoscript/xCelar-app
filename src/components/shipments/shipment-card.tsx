@@ -10,10 +10,11 @@ import {
 } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { isTrackable } from '@/hooks/use-shipment-tracking';
+import { isBooked } from '@/lib/shipment-status';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { type Shipment, type ShipmentType } from '@/lib/shipment-api';
-import { PaidPill, StatusBadge } from './badges';
+import { PaymentPill, StatusBadge } from './badges';
 
 // Each shipment type resumes payment in its own booking flow.
 const PAY_ROUTE: Record<ShipmentType, '/ship-local' | '/ship-export' | '/ship-import'> = {
@@ -45,7 +46,7 @@ export function ShipmentCard({ shipment, onPress }: ShipmentCardProps) {
     shipment.receiverAddress ||
     'Delivery';
   const type = TYPE_META[shipment.type];
-  const live = shipment.paid && isTrackable(shipment);
+  const live = isBooked(shipment) && isTrackable(shipment);
 
   const resumePayment = () => {
     tapFeedback();
@@ -96,7 +97,7 @@ export function ShipmentCard({ shipment, onPress }: ShipmentCardProps) {
       <View className="mt-4 flex-row items-center justify-between border-t border-gray-100 pt-3">
         <View className="flex-row items-center gap-2">
           <StatusBadge shipment={shipment} />
-          {shipment.paid ? <PaidPill /> : null}
+          <PaymentPill shipment={shipment} />
         </View>
         <View className="flex-row items-center gap-1">
           {live ? (
@@ -109,7 +110,7 @@ export function ShipmentCard({ shipment, onPress }: ShipmentCardProps) {
         </View>
       </View>
 
-      {!shipment.paid ? (
+      {!isBooked(shipment) ? (
         <Pressable
           onPress={resumePayment}
           className="mt-3 items-center rounded-xl bg-brand-blue py-3 active:opacity-90"
