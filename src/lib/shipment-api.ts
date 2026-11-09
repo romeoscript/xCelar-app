@@ -269,6 +269,12 @@ export async function bookCashOnDelivery(id: string, termsAccepted: boolean): Pr
   return data;
 }
 
+/** Approved businesses book local deliveries now and pay on the monthly invoice. */
+export async function bookOnAccount(id: string, termsAccepted: boolean): Promise<Shipment> {
+  const { data } = await api.post<Shipment>(`/shipments/${id}/pay`, { method: 'account', termsAccepted });
+  return data;
+}
+
 export async function initPaystackForShipment(
   id: string,
   termsAccepted: boolean,

@@ -19,18 +19,20 @@ import { SenderStep } from '@/components/ship/sender-step';
 import { StepIndicator } from '@/components/ship/step-indicator';
 import { Button } from '@/components/ui/button';
 import { PaystackCheckout } from '@/components/paystack-checkout';
-import { PaymentOptions, type PaymentMethod } from '@/components/ship/payment-options';
+import { PaymentOptions, type AccountOption, type PaymentMethod } from '@/components/ship/payment-options';
 import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
 import { ITEM_CATEGORY_OPTIONS } from '@/constants/categories';
 import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { useAuthStore } from '@/lib/auth-store';
+import { BusinessQueryKeys, getMyBusiness, type MyBusiness } from '@/lib/business-api';
 import { formatNaira } from '@/lib/format';
 import { successFeedback } from '@/lib/haptics';
 import { toast } from '@/lib/toast-store';
 import {
   bookCashOnDelivery,
+  bookOnAccount,
   getShipment,
   initPaystackForShipment,
   payWithBalance,
@@ -242,6 +244,18 @@ export default function ShipLocalScreen() {
     onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
   });
 
+  const businessQuery = useQuery({ queryKey: BusinessQueryKeys.mine, queryFn: getMyBusiness, enabled: user?.role === 'USER' });
+  const businessAccount = accountOptionFor(businessQuery.data);
+
+  const bookOnBusinessAccount = useMutation({
+    mutationFn: () => bookOnAccount(id as string, termsAccepted),
+    onSuccess: (shipment) => {
+      void queryClient.invalidateQueries({ queryKey: BusinessQueryKeys.mine });
+      return finalizeBooking(shipment);
+    },
+    onError: (mutationError) => setPayError(getApiErrorMessage(mutationError)),
+  });
+
   const bookOnDelivery = useMutation({
     mutationFn: () => bookCashOnDelivery(id as string, termsAccepted),
     onSuccess: finalizeBooking,
@@ -260,6 +274,8 @@ export default function ShipLocalScreen() {
       payBalance.mutate();
     } else if (paymentMethod === 'cod') {
       bookOnDelivery.mutate();
+    } else if (paymentMethod === 'account') {
+      bookOnBusinessAccount.mutate();
     } else {
       initPaystack.mutate();
     }
@@ -279,7 +295,11 @@ export default function ShipLocalScreen() {
   };
 
   const payPending =
-    payBalance.isPending || bookOnDelivery.isPending || initPaystack.isPending || checkout != null;
+    payBalance.isPending ||
+    bookOnDelivery.isPending ||
+    bookOnBusinessAccount.isPending ||
+    initPaystack.isPending ||
+    checkout != null;
 
   if (status !== 'authenticated') {
     return <Redirect href="/" />;
@@ -458,6 +478,7 @@ export default function ShipLocalScreen() {
                 onTermsChange={setTermsAccepted}
                 onOpenTerms={() => router.push('/terms')}
                 allowPayOnDelivery
+                businessAccount={businessAccount}
               />
             </>
           ) : null}
@@ -558,8 +579,22 @@ function SummaryCard({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
+/** The on-account option for an approved or paused business; null for everyone else. */
+function accountOptionFor(mine: MyBusiness | undefined): AccountOption | null {
+  const status = mine?.business?.status;
+  if (!mine?.credit || (status !== 'APPROVED' && status !== 'SUSPENDED')) return null;
+  const blockedReason =
+    status === 'SUSPENDED'
+      ? 'Paused on your account'
+      : mine.credit.overdueInvoices > 0
+        ? 'Pay your overdue invoice first'
+        : null;
+  return { availableNaira: mine.credit.availableNaira, blockedReason };
+}
+
 function payButtonLabel(method: PaymentMethod, price: number | null): string {
   if (method === 'cod') return 'Book · pay on delivery';
+  if (method === 'account') return 'Book on account';
   return price != null ? `Pay ${formatNaira(price)}` : 'Pay';
 }
 

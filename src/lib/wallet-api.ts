@@ -7,6 +7,7 @@ export type VerifyResult = {
   status?: string;
   balanceKobo?: number;
   shipmentId?: string | null;
+  invoiceId?: string | null;
 };
 
 export type PaymentInit = {

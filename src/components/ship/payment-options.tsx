@@ -3,7 +3,10 @@ import { Pressable, Text, View } from 'react-native';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 
-export type PaymentMethod = 'balance' | 'paystack' | 'cod';
+export type PaymentMethod = 'balance' | 'paystack' | 'cod' | 'account';
+
+/** An approved business's room to book on account; `blockedReason` explains when it can't. */
+export type AccountOption = { availableNaira: number; blockedReason: string | null };
 
 export type PaymentOptionsProps = {
   price: number | null;
@@ -17,6 +20,8 @@ export type PaymentOptionsProps = {
   cardOnly?: boolean;
   /** Local deliveries can be paid in cash to the delivery rider. */
   allowPayOnDelivery?: boolean;
+  /** Set for approved businesses: book now, billed on the monthly invoice. */
+  businessAccount?: AccountOption | null;
 };
 
 export function PaymentOptions({
@@ -29,9 +34,13 @@ export function PaymentOptions({
   onOpenTerms,
   cardOnly = false,
   allowPayOnDelivery = false,
+  businessAccount = null,
 }: PaymentOptionsProps) {
   const balance = balanceKobo / 100;
   const insufficient = price != null && balance < price;
+  const accountUnavailable =
+    businessAccount?.blockedReason ??
+    (businessAccount && price != null && businessAccount.availableNaira < price ? 'Over your remaining credit' : null);
 
   const select = (next: PaymentMethod) => {
     tapFeedback();
@@ -79,6 +88,24 @@ export function PaymentOptions({
         </View>
         <RadioDot selected={method === 'paystack'} />
       </Pressable>
+
+      {businessAccount ? (
+        <Pressable
+          disabled={Boolean(accountUnavailable)}
+          onPress={() => select('account')}
+          className={`flex-row items-center justify-between rounded-2xl border p-4 ${
+            method === 'account' && !accountUnavailable ? 'border-brand-blue bg-brand-blue-tint' : 'border-gray-200 bg-white'
+          } ${accountUnavailable ? 'opacity-60' : 'active:opacity-80'}`}
+        >
+          <View className="flex-1 pr-3">
+            <Text className="text-base font-semibold text-gray-900">Business account</Text>
+            <Text className={`text-sm ${accountUnavailable ? 'text-red-500' : 'text-gray-500'}`}>
+              {accountUnavailable ?? `On this month’s invoice · ${formatNaira(businessAccount.availableNaira)} credit left`}
+            </Text>
+          </View>
+          <RadioDot selected={method === 'account' && !accountUnavailable} />
+        </Pressable>
+      ) : null}
 
       {allowPayOnDelivery ? (
         <Pressable

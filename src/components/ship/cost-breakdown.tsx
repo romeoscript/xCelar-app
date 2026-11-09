@@ -10,6 +10,14 @@ export type CostBreakdownProps = {
 };
 
 /** Itemised delivery price: base, distance, weight, fragile, VAT, total. */
+/** How the shipment is paid, keyed by the API's payment method. */
+const PAYMENT_NOTES: Record<string, string> = {
+  BALANCE: 'Paid with wallet balance',
+  PAYSTACK: 'Paid with card / Paystack',
+  COD: 'Pay the rider in cash on delivery',
+  ACCOUNT: 'Billed to your business account',
+};
+
 export function CostBreakdown({ breakdown, paymentMethod }: CostBreakdownProps) {
   const { currency } = breakdown;
 
@@ -46,7 +54,7 @@ export function CostBreakdown({ breakdown, paymentMethod }: CostBreakdownProps) 
 
       {paymentMethod ? (
         <Text className="mt-2 text-sm text-gray-500">
-          Paid with {paymentMethod === 'BALANCE' ? 'wallet balance' : 'card / Paystack'}
+          {PAYMENT_NOTES[paymentMethod] ?? 'Paid with card / Paystack'}
         </Text>
       ) : null}
     </View>

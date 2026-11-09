@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -19,10 +19,12 @@ import {
   MessageIcon,
   PinIcon,
   ShieldIcon,
+  StorefrontIcon,
   TrashIcon,
   WalletIcon,
 } from '@/components/icons';
 import { logout } from '@/lib/auth-api';
+import { BusinessQueryKeys, getMyBusiness, type BusinessStatus } from '@/lib/business-api';
 import { useAuthStore } from '@/lib/auth-store';
 import {
   authenticate,
@@ -45,6 +47,12 @@ function initials(fullName: string): string {
   return (first + last).toUpperCase() || '?';
 }
 
+function accountLabel(role: string | undefined, businessStatus: BusinessStatus | undefined): string {
+  if (role === 'COURIER') return 'Courier account';
+  if (businessStatus === 'APPROVED' || businessStatus === 'SUSPENDED') return 'Business account';
+  return 'Individual account';
+}
+
 export default function AccountScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -54,6 +62,11 @@ export default function AccountScreen() {
   const pushEnabled = usePreferencesStore((state) => state.pushEnabled);
   const setBiometricEnabled = usePreferencesStore((state) => state.setBiometricEnabled);
   const setPushEnabled = usePreferencesStore((state) => state.setPushEnabled);
+
+  const isCustomer = user?.role === 'USER';
+  const businessQuery = useQuery({ queryKey: BusinessQueryKeys.mine, queryFn: getMyBusiness, enabled: isCustomer });
+  const businessStatus = businessQuery.data?.business?.status;
+  const hasInvoices = businessStatus === 'APPROVED' || businessStatus === 'SUSPENDED';
 
   const [biometricLabel, setBiometricLabel] = useState('biometric unlock');
   const [busyToggle, setBusyToggle] = useState(false);
@@ -157,7 +170,7 @@ export default function AccountScreen() {
             <Text className="text-xl font-bold text-brand-navy">{user?.fullName}</Text>
             <View className="rounded-full bg-brand-blue-tint px-3 py-1">
               <Text className="text-xs font-semibold text-brand-blue">
-                {user?.role === 'COURIER' ? 'Courier account' : 'Individual account'}
+                {accountLabel(user?.role, businessStatus)}
               </Text>
             </View>
           </View>
@@ -172,6 +185,19 @@ export default function AccountScreen() {
             onPress={() => router.push('/change-password')}
           />
         </SettingsSection>
+
+        {isCustomer ? (
+          <SettingsSection title="Business">
+            <SettingsRow
+              icon={StorefrontIcon}
+              label={businessStatus ? 'Business account' : 'Ship on account as a business'}
+              onPress={() => router.push('/business')}
+            />
+            {hasInvoices ? (
+              <SettingsRow icon={DocumentIcon} label="Invoices" onPress={() => router.push('/invoices')} />
+            ) : null}
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection title="Security & Preferences">
           <SettingsRow
