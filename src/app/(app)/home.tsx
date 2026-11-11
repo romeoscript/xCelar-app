@@ -260,8 +260,8 @@ export default function HomeScreen() {
 
         {onTheMap.length > 0 ? (
           <Reveal step={3}>
-            <Section title="On the map">
-              <DeliveriesMap shipments={onTheMap} onOpen={openShipment} />
+            <Section title="On the map" action={{ label: 'View map', onPress: () => router.push('/deliveries-map') }}>
+              <DeliveriesMap shipments={onTheMap} onOpen={openShipment} onOpenMap={() => router.push('/deliveries-map')} />
             </Section>
           </Reveal>
         ) : null}
