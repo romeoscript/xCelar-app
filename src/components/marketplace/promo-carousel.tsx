@@ -59,7 +59,7 @@ export function PromoCarousel() {
         onMomentumScrollEnd={onScrollEnd}
       >
         {SLIDES.map((slide) => (
-          <View key={slide.title} style={{ width: SCREEN_WIDTH }} className="px-6">
+          <View key={slide.title} style={{ width: SCREEN_WIDTH }} className="px-5">
             <View className={`h-28 justify-center rounded-3xl px-5 ${slide.bg}`}>
               <Text className={`text-xs font-medium ${slide.eyebrowClass}`}>{slide.eyebrow}</Text>
               <Text className={`mt-1 text-lg font-extrabold ${slide.textClass}`}>{slide.title}</Text>

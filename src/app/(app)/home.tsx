@@ -12,14 +12,14 @@ import { QuickActions } from '@/components/home/quick-actions';
 import { ResumeDraftsSheet } from '@/components/home/resume-drafts-sheet';
 import { ShipmentStrip } from '@/components/home/shipment-strip';
 import { ArrowRightIcon, ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
-import { SupportWidget } from '@/components/support-widget';
 import { Brand } from '@/constants/theme';
 import { isTrackable } from '@/hooks/use-shipment-tracking';
 import { isBooked } from '@/lib/shipment-status';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
+import { BOOKING_ROUTE, freshDraftId } from '@/lib/booking';
+import { initials } from '@/lib/format';
 import {
-  createDraft,
   discardShipment,
   getOpenDraft,
   getOpenDrafts,
@@ -31,13 +31,6 @@ import {
 
 const TOTAL_STEPS = 4;
 
-// Each shipment type resumes in its own booking flow.
-const SHIP_ROUTE: Record<ShipmentType, '/ship-local' | '/ship-export' | '/ship-import'> = {
-  LOCAL: '/ship-local',
-  EXPORT: '/ship-export',
-  IMPORT: '/ship-import',
-};
-
 const QUICK_ACTION_TYPE: Record<string, ShipmentType> = {
   'ship-local': 'LOCAL',
   export: 'EXPORT',
@@ -46,13 +39,6 @@ const QUICK_ACTION_TYPE: Record<string, ShipmentType> = {
 
 function draftProgress(currentStep: number): number {
   return Math.min(100, Math.max(0, Math.round((currentStep / TOTAL_STEPS) * 100)));
-}
-
-function initials(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-  return (first + last).toUpperCase() || '?';
 }
 
 export default function HomeScreen() {
@@ -109,14 +95,10 @@ export default function HomeScreen() {
   const recent = booked.filter((shipment) => shipment.id !== activeShipment?.id).slice(0, 6);
 
   const openFlow = (type: ShipmentType, id: string) =>
-    router.push({ pathname: SHIP_ROUTE[type], params: { id } });
+    router.push({ pathname: BOOKING_ROUTE[type], params: { id } });
 
   // Reuse an untouched (0%) draft or create a brand-new one, then open its flow.
-  const startFresh = async (type: ShipmentType) => {
-    const existing = await getOpenDraft(type);
-    const draft = existing && existing.currentStep === 0 ? existing : await createDraft(type);
-    openFlow(type, draft.id);
-  };
+  const startFresh = async (type: ShipmentType) => openFlow(type, await freshDraftId(type));
 
   // Quick action: prompt to resume when in-progress drafts exist, else start fresh.
   const startFlow = async (type: ShipmentType) => {
@@ -287,8 +269,6 @@ export default function HomeScreen() {
           </Section>
         </Reveal>
       </ScrollView>
-
-      <SupportWidget />
 
       <ResumeDraftsSheet
         drafts={resumeDrafts}

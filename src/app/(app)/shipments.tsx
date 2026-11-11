@@ -4,12 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
-import { PackageIcon } from '@/components/icons';
 import { ShipmentCard } from '@/components/shipments/shipment-card';
+import { TabHeader } from '@/components/tab-header';
+import { Button } from '@/components/ui/button';
 import { QueryError } from '@/components/ui/query-error';
 import { Brand } from '@/constants/theme';
+import { BOOKING_ROUTE, freshDraftId } from '@/lib/booking';
 import { tapFeedback } from '@/lib/haptics';
 import { getShipments, type Shipment, type ShipmentStatus } from '@/lib/shipment-api';
 
@@ -27,12 +29,25 @@ const FILTERS: { key: Filter; label: string; matches: (shipment: Shipment) => bo
   { key: 'delivered', label: 'Delivered', matches: (shipment) => shipment.status === 'DELIVERED' },
 ];
 
-const GUTTER = 16;
+const GUTTER = 20;
+const courier = require('@/assets/images/courier-character.png');
 
 export default function ShipmentsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>('all');
+  // Only show the pull-to-refresh spinner for a pull, not the refresh on focus.
+  const [pulling, setPulling] = useState(false);
+  const [starting, setStarting] = useState(false);
+
+  const sendPackage = async () => {
+    setStarting(true);
+    try {
+      router.push({ pathname: BOOKING_ROUTE.LOCAL, params: { id: await freshDraftId('LOCAL') } });
+    } finally {
+      setStarting(false);
+    }
+  };
 
   const shipmentsQuery = useQuery({ queryKey: ['shipments'], queryFn: getShipments });
 
@@ -55,12 +70,16 @@ export default function ShipmentsScreen() {
     return all.filter(option.matches);
   }, [all, filter]);
 
+  const moving = counts.active ?? 0;
+
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar style="dark" />
-      <View className="pt-2" style={{ paddingHorizontal: GUTTER }}>
-        <Text className="text-2xl font-bold text-brand-navy">Shipments</Text>
-        <View className="mt-4 flex-row rounded-xl bg-gray-100 p-1">
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
+      <TabHeader
+        title="Shipments"
+        subtitle={moving > 0 ? `${moving} on the way right now` : 'Everything you’ve sent with Xcelar'}
+      >
+        <View className="flex-row rounded-full bg-white/15 p-1">
           {FILTERS.map((option) => {
             const selected = option.key === filter;
             return (
@@ -74,30 +93,19 @@ export default function ShipmentsScreen() {
                 }}
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
-                className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-lg py-2 ${selected ? 'bg-white' : ''}`}
-                style={selected ? segmentShadow : undefined}
+                className={`h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-full ${selected ? 'bg-white' : ''}`}
               >
-                <Text
-                  className={`text-sm font-semibold ${selected ? 'text-brand-navy' : 'text-gray-500'}`}
-                >
-                  {option.label}
-                </Text>
+                <Text className={`text-sm font-semibold ${selected ? 'text-brand-blue' : 'text-white'}`}>{option.label}</Text>
                 {shipmentsQuery.data ? (
-                  <View
-                    className={`min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${selected ? 'bg-brand-blue' : 'bg-gray-200'}`}
-                  >
-                    <Text
-                      className={`text-[11px] font-bold ${selected ? 'text-white' : 'text-gray-500'}`}
-                    >
-                      {counts[option.key]}
-                    </Text>
+                  <View className={`min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${selected ? 'bg-brand-blue' : 'bg-white/20'}`}>
+                    <Text className="text-[11px] font-bold text-white">{counts[option.key]}</Text>
                   </View>
                 ) : null}
               </Pressable>
             );
           })}
         </View>
-      </View>
+      </TabHeader>
 
       {shipmentsQuery.isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -112,11 +120,15 @@ export default function ShipmentsScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(shipment) => shipment.id}
-          contentContainerStyle={{ padding: GUTTER, gap: 12 }}
+          contentContainerStyle={{ padding: GUTTER, gap: 12, paddingBottom: 32 }}
           refreshControl={
             <RefreshControl
-              refreshing={shipmentsQuery.isRefetching}
-              onRefresh={() => shipmentsQuery.refetch()}
+              refreshing={pulling}
+              onRefresh={async () => {
+                setPulling(true);
+                await shipmentsQuery.refetch();
+                setPulling(false);
+              }}
               tintColor={Brand.blue}
             />
           }
@@ -126,30 +138,26 @@ export default function ShipmentsScreen() {
             </Animated.View>
           )}
           ListEmptyComponent={
-            <View className="mt-6 items-center gap-2 rounded-2xl border border-gray-100 bg-brand-surface px-6 py-12">
-              <View className="mb-1 h-14 w-14 items-center justify-center rounded-full bg-white">
-                <PackageIcon size={26} color={Brand.muted} />
+            filter === 'all' ? (
+              <View className="mt-4 items-center px-4">
+                <Image source={courier} style={{ width: 150, height: 188 }} contentFit="contain" accessible={false} />
+                <Text className="mt-4 text-xl font-extrabold text-brand-navy">No shipments yet</Text>
+                <Text className="mt-1.5 text-center text-sm leading-5 text-gray-500">
+                  Book your first pickup and you’ll see every stop it makes, right here.
+                </Text>
+                <View className="mt-5 w-56">
+                  <Button label="Send a package" loading={starting} onPress={() => void sendPackage()} />
+                </View>
               </View>
-              <Text className="font-semibold text-gray-700">
-                {filter === 'all' ? 'No shipments yet' : `No ${filter} shipments`}
-              </Text>
-              <Text className="text-center text-sm text-gray-500">
-                {filter === 'all'
-                  ? 'Book your first delivery and track it right here.'
-                  : 'Shipments will show up here as their status changes.'}
-              </Text>
-            </View>
+            ) : (
+              <View className="mt-4 items-center gap-1.5 rounded-3xl bg-brand-surface px-6 py-10">
+                <Text className="text-base font-bold text-brand-navy">No {filter} shipments</Text>
+                <Text className="text-center text-sm text-gray-500">They’ll show up here as their status changes.</Text>
+              </View>
+            )
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const segmentShadow = {
-  shadowColor: '#000000',
-  shadowOpacity: 0.08,
-  shadowRadius: 4,
-  shadowOffset: { width: 0, height: 1 },
-  elevation: 2,
-} as const;

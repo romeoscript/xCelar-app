@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { JourneyProgress } from '@/components/home/journey-progress';
 import { ChevronRightIcon, PlusIcon } from '@/components/icons';
+import { TAB_HEADER_OVERLAP } from '@/components/tab-header';
 import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
@@ -13,10 +14,8 @@ import { journeyFor, shipmentStatusMeta } from '@/lib/shipment-status';
 
 const courier = require('@/assets/images/courier-character.png');
 
-/** Deep end of the header gradient, a shade under Xcelar blue. */
-const HEADER_DEEP = '#1565C8';
 /** How far the tracking search overlaps the bottom of the header. */
-export const SEARCH_OVERLAP = 28;
+export const SEARCH_OVERLAP = TAB_HEADER_OVERLAP;
 
 export type HomeHeaderProps = {
   firstName: string;
@@ -40,7 +39,7 @@ export function HomeHeader(props: HomeHeaderProps) {
 
   return (
     <LinearGradient
-      colors={[Brand.blue, HEADER_DEEP]}
+      colors={[Brand.blue, Brand.blueDeep]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{

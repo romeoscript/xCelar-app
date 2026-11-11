@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   HeartFilledIcon,
@@ -14,6 +13,7 @@ import {
   VerifiedBadgeIcon,
 } from '@/components/icons';
 import { PromoCarousel } from '@/components/marketplace/promo-carousel';
+import { TAB_HEADER_OVERLAP, TabHeader } from '@/components/tab-header';
 import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { useFavoritesStore } from '@/lib/favorites-store';
@@ -55,37 +55,42 @@ export default function MarketplaceScreen() {
     .sort((a, b) => (sortBy === 'rating' ? (b.rating ?? 0) - (a.rating ?? 0) : 0));
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar style="dark" />
-      <View className="gap-3 px-6 pb-3 pt-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-2xl font-extrabold text-brand-navy">Marketplace</Text>
-          <Pressable onPress={() => router.push('/orders')} hitSlop={8} className="active:opacity-70">
-            <Text className="text-sm font-semibold text-brand-blue">My orders</Text>
-          </Pressable>
-        </View>
-        <View className="flex-row items-center gap-2 rounded-2xl bg-brand-surface px-4 py-3">
-          <SearchIcon size={20} color={Brand.muted} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search partners"
-            placeholderTextColor={Brand.muted}
-            className="flex-1 text-base text-gray-900"
-          />
-        </View>
-      </View>
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
       <FlatList
         data={shown}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          <View className="gap-4 pt-2">
+          <View className="gap-5">
+            <View>
+              <TabHeader
+                title="Marketplace"
+                subtitle="Order from local partners, delivered by Xcelar."
+                action={{ label: 'My orders', onPress: () => router.push('/orders') }}
+                overlap
+              />
+              <View
+                className="mx-5 flex-row items-center gap-2 rounded-full bg-white px-5"
+                style={[searchShadow, { marginTop: -TAB_HEADER_OVERLAP }]}
+              >
+                <SearchIcon size={20} color={Brand.muted} />
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search restaurants, shops and pharmacies"
+                  placeholderTextColor={Brand.muted}
+                  returnKeyType="search"
+                  className="h-14 flex-1 text-base text-gray-900"
+                />
+              </View>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, gap: 18 }}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}
             >
               <CategoryCircle image={ALL_IMAGE} label="All" active={category === null} onPress={() => setCategory(null)} />
               {categories.map((item) => (
@@ -103,11 +108,11 @@ export default function MarketplaceScreen() {
 
             {featured.length > 0 ? (
               <View className="gap-3">
-                <Text className="px-6 text-lg font-bold text-brand-navy">Popular brands</Text>
+                <Text className="px-5 text-lg font-bold text-brand-navy">Popular brands</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}
+                  contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
                 >
                   {featured.map((vendor) => (
                     <PopularCard
@@ -120,7 +125,7 @@ export default function MarketplaceScreen() {
               </View>
             ) : null}
 
-            <View className="flex-row items-center gap-2 px-6">
+            <View className="flex-row items-center gap-2 px-5">
               <FilterChip
                 label="Top rated"
                 active={sortBy === 'rating'}
@@ -129,12 +134,12 @@ export default function MarketplaceScreen() {
               <FilterChip label="Open now" active={openNow} onPress={() => setOpenNow((value) => !value)} />
             </View>
 
-            <Text className="px-6 text-lg font-bold text-brand-navy">{category ?? 'All partners'}</Text>
+            <Text className="px-5 text-lg font-bold text-brand-navy">{category ?? 'All partners'}</Text>
           </View>
         }
         ListEmptyComponent={
           vendorsQuery.isLoading ? null : vendorsQuery.isError ? (
-            <View className="mx-6 items-center gap-3 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
+            <View className="mx-5 items-center gap-3 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
               <StorefrontIcon size={32} color={Brand.muted} />
               <Text className="font-semibold text-gray-700">Couldn’t load partners</Text>
               <View className="w-40">
@@ -142,7 +147,7 @@ export default function MarketplaceScreen() {
               </View>
             </View>
           ) : (
-            <View className="mx-6 items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
+            <View className="mx-5 items-center gap-2 rounded-3xl border border-gray-100 bg-brand-surface px-6 py-12">
               <StorefrontIcon size={32} color={Brand.muted} />
               <Text className="font-semibold text-gray-700">No partners found</Text>
               <Text className="text-center text-sm text-gray-500">Try a different search or filter.</Text>
@@ -153,9 +158,17 @@ export default function MarketplaceScreen() {
           <VendorCard vendor={item} onPress={() => router.push(`/vendor/${item.id}`)} />
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
+
+const searchShadow = {
+  shadowColor: '#1E1B4B',
+  shadowOpacity: 0.1,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 5,
+} as const;
 
 function CategoryCircle({
   image,
@@ -239,7 +252,7 @@ function VendorCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }
   const toggleFavorite = useFavoritesStore((state) => state.toggle);
 
   return (
-    <Pressable onPress={onPress} className="mx-6 mb-5 active:opacity-90">
+    <Pressable onPress={onPress} className="mx-5 mb-5 active:opacity-90">
       <View className="h-44 overflow-hidden rounded-2xl bg-brand-surface">
         {vendor.coverImageUrl ? (
           <Image source={{ uri: vendor.coverImageUrl }} className="h-44 w-full" resizeMode="cover" />

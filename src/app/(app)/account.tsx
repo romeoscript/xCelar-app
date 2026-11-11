@@ -2,11 +2,11 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { SettingsRow } from '@/components/account/settings-row';
 import { SettingsSection } from '@/components/account/settings-section';
+import { TabHeader } from '@/components/tab-header';
 import {
   BellIcon,
   DocumentIcon,
@@ -22,10 +22,13 @@ import {
   StorefrontIcon,
   TrashIcon,
   WalletIcon,
+  PlusIcon,
 } from '@/components/icons';
+import { Brand } from '@/constants/theme';
 import { logout } from '@/lib/auth-api';
 import { BusinessQueryKeys, getMyBusiness, type BusinessStatus } from '@/lib/business-api';
 import { useAuthStore } from '@/lib/auth-store';
+import { formatNaira, initials } from '@/lib/format';
 import {
   authenticate,
   getBiometricLabel,
@@ -39,13 +42,6 @@ import {
 } from '@/lib/notifications';
 import { usePreferencesStore } from '@/lib/preferences-store';
 import { toast } from '@/lib/toast-store';
-
-function initials(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-  return (first + last).toUpperCase() || '?';
-}
 
 function accountLabel(role: string | undefined, businessStatus: BusinessStatus | undefined): string {
   if (role === 'COURIER') return 'Courier account';
@@ -155,113 +151,132 @@ export default function AccountScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar style="dark" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, gap: 24 }}>
-        <View className="items-center gap-3">
-          <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-brand-navy">
-            {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} className="h-20 w-20" resizeMode="cover" />
-            ) : (
-              <Text className="text-2xl font-bold text-white">{initials(user?.fullName ?? '?')}</Text>
-            )}
-          </View>
-          <View className="items-center gap-1.5">
-            <Text className="text-xl font-bold text-brand-navy">{user?.fullName}</Text>
-            <View className="rounded-full bg-brand-blue-tint px-3 py-1">
-              <Text className="text-xs font-semibold text-brand-blue">
-                {accountLabel(user?.role, businessStatus)}
+    <View className="flex-1 bg-white">
+      <StatusBar style="light" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        <TabHeader title="Account">
+          <View className="flex-row items-center gap-4">
+            <View className="h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-white/40 bg-brand-gold">
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} className="h-16 w-16" resizeMode="cover" />
+              ) : (
+                <Text className="text-xl font-bold text-brand-navy">{initials(user?.fullName ?? '?')}</Text>
+              )}
+            </View>
+            <View className="flex-1 gap-1.5">
+              <Text className="text-lg font-bold text-white" numberOfLines={1}>
+                {user?.fullName}
               </Text>
+              <View className="self-start rounded-full bg-white/15 px-2.5 py-1">
+                <Text className="text-xs font-semibold text-white">{accountLabel(user?.role, businessStatus)}</Text>
+              </View>
             </View>
           </View>
-        </View>
+          <Pressable
+            onPress={() => router.push('/wallet')}
+            accessibilityRole="button"
+            accessibilityLabel="Wallet. Top up"
+            className="mt-5 flex-row items-center justify-between rounded-2xl bg-white/15 py-3 pl-4 pr-3 active:opacity-80"
+          >
+            <View>
+              <Text className="text-xs text-white/75">Wallet balance</Text>
+              <Text className="text-xl font-extrabold text-white">{formatNaira((user?.balanceKobo ?? 0) / 100)}</Text>
+            </View>
+            <View className="flex-row items-center gap-1 rounded-full bg-brand-gold px-3.5 py-2">
+              <PlusIcon size={14} color={Brand.navy} />
+              <Text className="text-sm font-bold text-brand-navy">Top up</Text>
+            </View>
+          </Pressable>
+        </TabHeader>
 
-        <SettingsSection title="Account">
-          <SettingsRow icon={IdCardIcon} label="My profile" onPress={() => router.push('/profile')} />
-          <SettingsRow icon={WalletIcon} label="My wallet" onPress={() => router.push('/wallet')} />
-          <SettingsRow
-            icon={LockIcon}
-            label="My password"
-            onPress={() => router.push('/change-password')}
-          />
-        </SettingsSection>
-
-        {isCustomer ? (
-          <SettingsSection title="Business">
+        <View className="gap-6 px-5 pt-6">
+          <SettingsSection title="Account">
+            <SettingsRow icon={IdCardIcon} label="My profile" onPress={() => router.push('/profile')} />
+            <SettingsRow icon={WalletIcon} label="My wallet" onPress={() => router.push('/wallet')} />
             <SettingsRow
-              icon={StorefrontIcon}
-              label={businessStatus ? 'Business account' : 'Ship on account as a business'}
-              onPress={() => router.push('/business')}
+              icon={LockIcon}
+              label="My password"
+              onPress={() => router.push('/change-password')}
             />
-            {hasInvoices ? (
-              <SettingsRow icon={DocumentIcon} label="Invoices" onPress={() => router.push('/invoices')} />
-            ) : null}
           </SettingsSection>
-        ) : null}
 
-        <SettingsSection title="Security & Preferences">
-          <SettingsRow
-            icon={FingerprintIcon}
-            label={`Enable ${biometricLabel}`}
-            trailing="toggle"
-            toggleValue={biometricEnabled}
-            onToggle={handleBiometricToggle}
-            toggleDisabled={busyToggle}
-          />
-          <SettingsRow
-            icon={BellIcon}
-            label="Enable push notifications"
-            trailing="toggle"
-            toggleValue={pushEnabled}
-            onToggle={handlePushToggle}
-            toggleDisabled={busyToggle}
-          />
-        </SettingsSection>
+          {isCustomer ? (
+            <SettingsSection title="Business">
+              <SettingsRow
+                icon={StorefrontIcon}
+                label={businessStatus ? 'Business account' : 'Ship on account as a business'}
+                onPress={() => router.push('/business')}
+              />
+              {hasInvoices ? (
+                <SettingsRow icon={DocumentIcon} label="Invoices" onPress={() => router.push('/invoices')} />
+              ) : null}
+            </SettingsSection>
+          ) : null}
 
-        <SettingsSection title="Saved items">
-          <SettingsRow
-            icon={PinIcon}
-            label="Saved addresses"
-            onPress={() => router.push('/saved-addresses')}
-          />
-        </SettingsSection>
+          <SettingsSection title="Security & Preferences">
+            <SettingsRow
+              icon={FingerprintIcon}
+              label={`Enable ${biometricLabel}`}
+              trailing="toggle"
+              toggleValue={biometricEnabled}
+              onToggle={handleBiometricToggle}
+              toggleDisabled={busyToggle}
+            />
+            <SettingsRow
+              icon={BellIcon}
+              label="Enable push notifications"
+              trailing="toggle"
+              toggleValue={pushEnabled}
+              onToggle={handlePushToggle}
+              toggleDisabled={busyToggle}
+            />
+          </SettingsSection>
 
-        <SettingsSection title="Support & Legal">
-          <SettingsRow icon={InfoIcon} label="About us" onPress={() => router.push('/about')} />
-          <SettingsRow icon={MessageIcon} label="Contact us" onPress={() => router.push('/contact')} />
-          <SettingsRow icon={HelpCircleIcon} label="FAQ" onPress={() => router.push('/faq')} />
-          <SettingsRow
-            icon={DocumentIcon}
-            label="Terms of service"
-            onPress={() => router.push('/terms')}
-          />
-          <SettingsRow
-            icon={ShieldIcon}
-            label="Privacy policy"
-            onPress={() => router.push('/privacy')}
-          />
-        </SettingsSection>
+          <SettingsSection title="Saved items">
+            <SettingsRow
+              icon={PinIcon}
+              label="Saved addresses"
+              onPress={() => router.push('/saved-addresses')}
+            />
+          </SettingsSection>
 
-        <SettingsSection title="Session">
-          <SettingsRow
-            icon={LogoutIcon}
-            label="Sign out"
-            trailing="none"
-            destructive
-            onPress={confirmSignOut}
-          />
-        </SettingsSection>
+          <SettingsSection title="Support & Legal">
+            <SettingsRow icon={InfoIcon} label="About us" onPress={() => router.push('/about')} />
+            <SettingsRow icon={MessageIcon} label="Contact us" onPress={() => router.push('/contact')} />
+            <SettingsRow icon={HelpCircleIcon} label="FAQ" onPress={() => router.push('/faq')} />
+            <SettingsRow
+              icon={DocumentIcon}
+              label="Terms of service"
+              onPress={() => router.push('/terms')}
+            />
+            <SettingsRow
+              icon={ShieldIcon}
+              label="Privacy policy"
+              onPress={() => router.push('/privacy')}
+            />
+          </SettingsSection>
 
-        <SettingsSection title="Account deletion">
-          <SettingsRow
-            icon={TrashIcon}
-            label="Delete account"
-            trailing="none"
-            destructive
-            onPress={() => router.push('/delete-account')}
-          />
-        </SettingsSection>
+          <SettingsSection title="Session">
+            <SettingsRow
+              icon={LogoutIcon}
+              label="Sign out"
+              trailing="none"
+              destructive
+              onPress={confirmSignOut}
+            />
+          </SettingsSection>
+
+          <SettingsSection title="Account deletion">
+            <SettingsRow
+              icon={TrashIcon}
+              label="Delete account"
+              trailing="none"
+              destructive
+              onPress={() => router.push('/delete-account')}
+            />
+          </SettingsSection>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

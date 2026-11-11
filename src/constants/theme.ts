@@ -79,5 +79,7 @@ export const Brand = {
   night: '#0B0A18',
   mist: '#E8EBF3',
   blueTint: '#EAF3FE',
+  /** Deep end of the blue header gradient. */
+  blueDeep: '#1565C8',
   muted: '#7E83A8',
 } as const;

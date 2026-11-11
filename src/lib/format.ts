@@ -24,3 +24,11 @@ export function formatFileSize(bytes: number): string {
   const kb = bytes / 1024;
   return kb < 1024 ? `${kb.toFixed(1)}kb` : `${(kb / 1024).toFixed(1)}MB`;
 }
+
+/** Up to two initials for an avatar, e.g. "Ada Okafor" -> "AO". */
+export function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase() || '?';
+}
