@@ -118,7 +118,8 @@
             ]
           }
         ]
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.xcellar.app",
@@ -139,12 +140,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#0B0A18",
+          "image": "./assets/images/splash-blank.png",
           "imageWidth": 200,
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 160
+            "image": "./assets/images/splash-blank.png",
+            "imageWidth": 160,
+            "backgroundColor": "#0B0A18"
           }
         }
       ],
@@ -169,7 +171,8 @@
           "cameraPermission": "Xcelar needs camera access to photograph your invoice or proof of purchase."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

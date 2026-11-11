@@ -60,6 +60,22 @@ export async function login(input: LoginInput): Promise<AuthSession> {
   return data;
 }
 
+/** Exchange a Google ID token for an Xcelar session (signs up on first use). */
+export async function signInWithGoogleToken(idToken: string): Promise<AuthSession> {
+  const { data } = await api.post<AuthSession>('/auth/oauth/google', { idToken });
+  return data;
+}
+
+/** Exchange an Apple identity token, plus the raw nonce it was bound to, for an Xcelar session. */
+export async function signInWithAppleToken(input: {
+  identityToken: string;
+  nonce: string;
+  fullName?: string;
+}): Promise<AuthSession> {
+  const { data } = await api.post<AuthSession>('/auth/oauth/apple', input);
+  return data;
+}
+
 /** Verify the email with the 6-digit OTP; returns the updated (verified) user. */
 export async function verifyEmail(code: string): Promise<User> {
   const { data } = await api.post<{ user: User }>('/auth/verify-email', { code });

@@ -21,6 +21,15 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
   return fallback;
 }
 
+/**
+ * A message for any failure: the API's own wording for API errors, otherwise
+ * the error's message (e.g. "Google sign-in works in the installed app").
+ */
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
+  if (error instanceof AxiosError) return getApiErrorMessage(error, fallback);
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 /** Pull the first field message from a zod `fieldErrors` map, if present. */
 function firstFieldError(details: unknown): string | null {
   if (!details || typeof details !== 'object') {

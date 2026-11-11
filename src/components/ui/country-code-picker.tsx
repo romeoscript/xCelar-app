@@ -35,7 +35,7 @@ export function CountryCodePicker({ value, onChange }: CountryCodePickerProps) {
     <>
       <Pressable
         onPress={() => setIsOpen(true)}
-        className="h-14 flex-row items-center gap-1 rounded-2xl border border-gray-200 bg-gray-50 px-3 active:opacity-70"
+        className="h-12 flex-row items-center gap-1 rounded-[14px] border border-gray-200 bg-gray-50 px-3 active:opacity-70"
       >
         <Text className="text-base">{value.flag}</Text>
         <Text className="text-base font-medium text-gray-900">{value.dialCode}</Text>

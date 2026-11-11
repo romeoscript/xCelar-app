@@ -52,13 +52,13 @@ export function Button({
     <Pressable
       disabled={isDisabled}
       onPress={handlePress}
-      className={`h-16 items-center justify-center rounded-full px-6 active:opacity-80 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : ''} ${className ?? ''}`}
+      className={`h-12 items-center justify-center rounded-full px-6 active:opacity-80 ${containerByVariant[variant]} ${isDisabled ? 'opacity-60' : ''} ${className ?? ''}`}
       {...rest}
     >
       {loading ? (
         <ActivityIndicator color={spinnerByVariant[variant]} />
       ) : (
-        <Text className={`text-lg font-semibold ${labelByVariant[variant]}`}>{label}</Text>
+        <Text className={`text-base font-semibold ${labelByVariant[variant]}`}>{label}</Text>
       )}
     </Pressable>
   );

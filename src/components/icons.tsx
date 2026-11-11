@@ -174,6 +174,14 @@ export function ChevronRightIcon({ size = 22, color = '#000000' }: IconProps) {
   );
 }
 
+export function ArrowRightIcon({ size = 22, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 12h14M13 6l6 6-6 6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function PencilIcon({ size = 22, color = '#000000' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

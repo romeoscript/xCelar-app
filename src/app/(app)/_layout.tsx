@@ -1,8 +1,8 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { BiometricGate } from '@/components/biometric-gate';
+import { FloatingTabBar } from '@/components/floating-tab-bar';
 import { HomeIcon, PackageIcon, StorefrontIcon, UserIcon } from '@/components/icons';
-import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function AppTabsLayout() {
@@ -20,15 +20,7 @@ export default function AppTabsLayout() {
 
   return (
     <BiometricGate>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: Brand.blue,
-          tabBarInactiveTintColor: Brand.muted,
-          tabBarStyle: { backgroundColor: '#ffffff', borderTopColor: '#EFEFF2' },
-          tabBarLabelStyle: { fontSize: 12 },
-        }}
-      >
+      <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false }}>
         <Tabs.Screen
           name="home"
           options={{ title: 'Home', tabBarIcon: ({ color }) => <HomeIcon size={24} color={color} /> }}
