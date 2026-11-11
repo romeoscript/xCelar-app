@@ -8,8 +8,8 @@ import { Brand } from '@/constants/theme';
 import { type PickedLocation, reverseGeocode } from '@/lib/location';
 import { MAP_PROVIDER } from '@/lib/maps';
 
-// Lagos as the default starting point.
-const DEFAULT_CENTER = { lat: 6.5244, lng: 3.3792 };
+// Nsukka as the default starting point: our current operating area.
+const DEFAULT_CENTER = { lat: 6.8567, lng: 7.3958 };
 
 export type MapPickerProps = {
   visible: boolean;
