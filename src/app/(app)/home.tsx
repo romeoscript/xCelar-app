@@ -6,15 +6,18 @@ import { Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-na
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { BannerCarousel } from '@/components/home/banner-carousel';
+import { DeliveriesMap, locatedDeliveries } from '@/components/home/deliveries-map';
 import { HomeHeader, SEARCH_OVERLAP } from '@/components/home/home-header';
 import { BusinessCard, HelpLinks, HowItWorks, RecentActivity } from '@/components/home/home-sections';
 import { QuickActions } from '@/components/home/quick-actions';
 import { ResumeDraftsSheet } from '@/components/home/resume-drafts-sheet';
 import { ShipmentStrip } from '@/components/home/shipment-strip';
+import { WeekStats } from '@/components/home/week-stats';
 import { ArrowRightIcon, ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { isTrackable } from '@/hooks/use-shipment-tracking';
 import { isBooked, isInProgress } from '@/lib/shipment-status';
+import { weekStats } from '@/lib/shipment-stats';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { BOOKING_ROUTE, freshDraftId } from '@/lib/booking';
@@ -96,6 +99,9 @@ export default function HomeScreen() {
   // Newest first; the header already shows the one that's moving.
   const booked = [...shipments.filter(isBooked)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const recent = booked.filter((shipment) => shipment.id !== activeShipment?.id).slice(0, 6);
+  const stats = weekStats(booked);
+  const onTheMap = locatedDeliveries(booked.filter(isInProgress));
+  const openShipment = (shipment: Shipment) => router.push(`/shipment/${shipment.id}`);
 
   const openFlow = (type: ShipmentType, id: string) =>
     router.push({ pathname: BOOKING_ROUTE[type], params: { id } });
@@ -236,26 +242,42 @@ export default function HomeScreen() {
           </Section>
         </Reveal>
 
-        {recent.length > 0 ? (
+        {booked.length > 0 ? (
           <Reveal step={1}>
+            <Section title="This week">
+              <WeekStats stats={stats} />
+            </Section>
+          </Reveal>
+        ) : null}
+
+        {recent.length > 0 ? (
+          <Reveal step={2}>
             <Section title="Your shipments" action={{ label: 'View all', onPress: () => router.push('/shipments') }}>
-              <ShipmentStrip shipments={recent} onOpen={(shipment) => router.push(`/shipment/${shipment.id}`)} />
+              <ShipmentStrip shipments={recent} onOpen={openShipment} />
+            </Section>
+          </Reveal>
+        ) : null}
+
+        {onTheMap.length > 0 ? (
+          <Reveal step={3}>
+            <Section title="On the map">
+              <DeliveriesMap shipments={onTheMap} onOpen={openShipment} />
             </Section>
           </Reveal>
         ) : null}
 
         {bannersQuery.data && bannersQuery.data.length > 0 ? (
-          <Reveal step={2}>
+          <Reveal step={4}>
             <Section title="For you">
               <BannerCarousel banners={bannersQuery.data} />
             </Section>
           </Reveal>
         ) : null}
 
-        <Reveal step={3}>
+        <Reveal step={5}>
           {booked.length > 0 ? (
             <Section title="Recent activity">
-              <RecentActivity shipments={booked.slice(0, 4)} onOpen={(shipment) => router.push(`/shipment/${shipment.id}`)} />
+              <RecentActivity shipments={booked.slice(0, 4)} onOpen={openShipment} />
             </Section>
           ) : (
             <Section title="How it works">
@@ -264,13 +286,13 @@ export default function HomeScreen() {
           )}
         </Reveal>
 
-        <Reveal step={4}>
+        <Reveal step={6}>
           <View className="mt-7">
             <BusinessCard onPress={() => router.push('/business')} />
           </View>
         </Reveal>
 
-        <Reveal step={5}>
+        <Reveal step={7}>
           <Section title="Need a hand?">
             <HelpLinks onFaq={() => router.push('/faq')} onContact={() => router.push('/contact')} />
           </Section>
