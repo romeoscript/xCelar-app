@@ -13,7 +13,7 @@ import {
 import { Brand } from '@/constants/theme';
 import { tapFeedback } from '@/lib/haptics';
 import { type Shipment } from '@/lib/shipment-api';
-import { shipmentStatusMeta, timeAgo } from '@/lib/shipment-status';
+import { areaName, shipmentStatusMeta, timeAgo } from '@/lib/shipment-status';
 
 type Icon = (props: IconProps) => React.JSX.Element;
 
@@ -51,7 +51,7 @@ export function RecentActivity({ shipments, onOpen }: { shipments: Shipment[]; o
     <View className="mx-5">
       {shipments.map((shipment, index) => {
         const status = shipmentStatusMeta(shipment);
-        const route = [shipment.pickupZone, shipment.deliveryZone ?? shipment.destinationCountryName].filter(Boolean).join(' → ');
+        const route = [areaName(shipment.pickupZone), areaName(shipment.deliveryZone) ?? shipment.destinationCountryName].filter(Boolean).join(' → ');
         const last = index === shipments.length - 1;
         return (
           <View key={shipment.id} className="flex-row gap-3">

@@ -14,7 +14,7 @@ import { ShipmentStrip } from '@/components/home/shipment-strip';
 import { ArrowRightIcon, ChevronRightIcon, PackageIcon, SearchIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { isTrackable } from '@/hooks/use-shipment-tracking';
-import { isBooked } from '@/lib/shipment-status';
+import { isBooked, isInProgress } from '@/lib/shipment-status';
 import { getBanners } from '@/lib/banner-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { BOOKING_ROUTE, freshDraftId } from '@/lib/booking';
@@ -88,7 +88,10 @@ export default function HomeScreen() {
 
   const draft = draftQuery.data;
   const shipments = shipmentsQuery.data ?? [];
-  const activeShipment = shipments.find((shipment) => isBooked(shipment) && isTrackable(shipment));
+  // The header follows the most recent delivery that hasn't finished: one a
+  // rider is out on first, else one that's booked and waiting for pickup.
+  const inProgress = shipments.filter((shipment) => isBooked(shipment) && isInProgress(shipment));
+  const activeShipment = inProgress.find((shipment) => isTrackable(shipment)) ?? inProgress[0];
   const name = user?.fullName ?? 'there';
   // Newest first; the header already shows the one that's moving.
   const booked = [...shipments.filter(isBooked)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -164,7 +167,11 @@ export default function HomeScreen() {
           activeShipment={activeShipment}
           onAccount={() => router.push('/account')}
           onWallet={() => router.push('/wallet')}
-          onTrack={(shipment) => router.push({ pathname: '/track/[id]', params: { id: shipment.id } })}
+          onTrack={(shipment) =>
+            isTrackable(shipment)
+              ? router.push({ pathname: '/track/[id]', params: { id: shipment.id } })
+              : router.push(`/shipment/${shipment.id}`)
+          }
           onBook={() => handleQuickAction('ship-local')}
         />
 

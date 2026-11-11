@@ -183,3 +183,16 @@ export function trackingStatusText(shipment: TrackingSubject, tracking?: Shipmen
     ? 'Your rider has arrived at the pickup point.'
     : 'Your rider is on the way to collect the package.';
 }
+
+/** A zone's area without the state, e.g. "Eti Osa, Lagos" -> "Eti Osa". */
+export function areaName(zone: string | null | undefined): string | null {
+  return zone ? zone.split(',')[0].trim() : null;
+}
+
+const FINISHED_STAGES: DeliveryStage[] = ['DELIVERED', 'RETURNED_TO_SENDER'];
+
+/** Booked and not yet finished: delivered, returned or cancelled. */
+export function isInProgress(shipment: Pick<Shipment, 'status' | 'stage'>): boolean {
+  if (shipment.status === 'DELIVERED' || shipment.status === 'CANCELLED' || shipment.status === 'DRAFT') return false;
+  return !(shipment.stage && FINISHED_STAGES.includes(shipment.stage));
+}

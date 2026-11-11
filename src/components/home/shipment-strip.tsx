@@ -4,7 +4,7 @@ import { PackageIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 import { tapFeedback } from '@/lib/haptics';
 import { type Shipment } from '@/lib/shipment-api';
-import { shipmentStatusMeta } from '@/lib/shipment-status';
+import { areaName, shipmentStatusMeta } from '@/lib/shipment-status';
 
 const CARD_WIDTH = 216;
 
@@ -33,8 +33,8 @@ export function ShipmentStrip({ shipments, onOpen }: { shipments: Shipment[]; on
 
 function ShipmentTile({ shipment, onPress }: { shipment: Shipment; onPress: () => void }) {
   const status = shipmentStatusMeta(shipment);
-  const from = shipment.pickupZone ?? 'Pickup';
-  const to = shipment.deliveryZone ?? shipment.destinationCountryName ?? 'Drop-off';
+  const from = areaName(shipment.pickupZone) ?? 'Pickup';
+  const to = areaName(shipment.deliveryZone) ?? shipment.destinationCountryName ?? 'Drop-off';
 
   return (
     <Pressable

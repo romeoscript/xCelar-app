@@ -10,7 +10,7 @@ import { Brand } from '@/constants/theme';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { type Shipment } from '@/lib/shipment-api';
-import { journeyFor, shipmentStatusMeta } from '@/lib/shipment-status';
+import { areaName, journeyFor, shipmentStatusMeta } from '@/lib/shipment-status';
 
 const courier = require('@/assets/images/courier-character.png');
 
@@ -112,8 +112,8 @@ function GreetingRow({ firstName, initials, avatarUrl, balanceKobo, onAccount, o
 function CurrentDelivery({ shipment, onTrack }: { shipment: Shipment; onTrack: () => void }) {
   const status = shipmentStatusMeta(shipment).label;
   const { steps } = journeyFor(shipment);
-  const from = shipment.pickupZone;
-  const to = shipment.deliveryZone ?? shipment.destinationCountryName;
+  const from = areaName(shipment.pickupZone);
+  const to = areaName(shipment.deliveryZone) ?? shipment.destinationCountryName;
 
   return (
     <Pressable
