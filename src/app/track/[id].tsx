@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,10 +8,11 @@ import { LiveTrackingMap } from '@/components/shipments/live-tracking-map';
 import { Brand } from '@/constants/theme';
 import { useShipmentTracking } from '@/hooks/use-shipment-tracking';
 import { headingTo, timeAgo, trackingStatusText } from '@/lib/shipment-status';
+import { useGoBack } from '@/hooks/use-go-back';
 
 /** Full-screen, pan-and-zoom version of the shipment's live tracking map. */
 export default function TrackShipmentScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { shipmentQuery, trackingQuery, trackable } = useShipmentTracking(id);
@@ -50,7 +51,7 @@ export default function TrackShipmentScreen() {
       )}
 
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack()}
         hitSlop={8}
         accessibilityLabel="Back"
         style={{ top: insets.top + 8 }}

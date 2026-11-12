@@ -135,6 +135,11 @@ export async function reportShiftLocation(lat: number, lng: number): Promise<voi
   await api.post('/rider/location', { lat, lng });
 }
 
+/** Tell the server the rider has seen a newly assigned job, so it stops ringing their phone. */
+export async function markDeliverySeen(id: string): Promise<void> {
+  await api.post(`/rider/deliveries/${id}/seen`);
+}
+
 export async function getDelivery(id: string): Promise<RiderJob> {
   const { data } = await api.get<RiderJob>(`/rider/deliveries/${id}`);
   return data;

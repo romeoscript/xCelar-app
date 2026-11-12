@@ -21,12 +21,14 @@ import { addToCartWithConfirm, cartCount, cartSubtotalKobo, useCartStore } from 
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getVendor, type Product, type Vendor } from '@/lib/marketplace-api';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const HEADER_HEIGHT = 280;
 const CARD_WIDTH = Dimensions.get('window').width - 48;
 
 export default function VendorScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -52,7 +54,7 @@ export default function VendorScreen() {
       <View className="flex-1 bg-white">
         <StatusBar style="dark" />
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           hitSlop={8}
           style={{ top: insets.top + 8 }}
           className="absolute left-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-brand-surface active:opacity-80"
@@ -165,7 +167,7 @@ export default function VendorScreen() {
       </Animated.ScrollView>
 
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack()}
         hitSlop={8}
         style={{ top: insets.top + 8 }}
         className="absolute left-4 h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-80"

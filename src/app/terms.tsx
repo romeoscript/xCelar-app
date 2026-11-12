@@ -1,10 +1,10 @@
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const SECTIONS: { title: string; body: string }[] = [
   {
@@ -30,14 +30,14 @@ const SECTIONS: { title: string; body: string }[] = [
 ];
 
 export default function TermsScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar style="dark" />
       <View className="px-6 pt-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 active:opacity-70"
         >

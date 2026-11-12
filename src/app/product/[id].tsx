@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
@@ -15,9 +15,10 @@ import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getProduct } from '@/lib/marketplace-api';
 import { toast } from '@/lib/toast-store';
+import { useGoBack } from '@/hooks/use-go-back';
 
 export default function ProductScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [quantity, setQuantity] = useState(1);
@@ -39,7 +40,7 @@ export default function ProductScreen() {
       <View className="flex-1 bg-white">
         <StatusBar style="dark" />
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           hitSlop={8}
           style={{ top: insets.top + 8 }}
           className="absolute left-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-brand-surface active:opacity-80"
@@ -70,7 +71,7 @@ export default function ProductScreen() {
         add(vendor, product);
       }
       toast(`Added ${quantity} to cart`);
-      router.back();
+      goBack();
     });
   };
 
@@ -93,7 +94,7 @@ export default function ProductScreen() {
       </ScrollView>
 
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack()}
         hitSlop={8}
         style={{ top: insets.top + 8 }}
         className="absolute left-4 h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-80"

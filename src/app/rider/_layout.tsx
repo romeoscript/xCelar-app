@@ -1,6 +1,7 @@
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
+import { RiderLiveUpdates } from '@/components/rider/rider-live-updates';
 import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 
@@ -17,7 +18,8 @@ export default function RiderLayout() {
   const status = useAuthStore((state) => state.status);
   const role = useAuthStore((state) => state.user?.role);
   const segments = useSegments();
-  const screen = segments[1]; // the route under /rider; undefined at the index
+  // The route under /rider, skipping groups like (tabs); undefined at the index.
+  const screen = segments.filter((segment) => !segment.startsWith('('))[1];
 
   const stack = <Stack screenOptions={{ headerShown: false }} />;
 
@@ -45,5 +47,10 @@ export default function RiderLayout() {
     return <Redirect href="/rider" />;
   }
 
-  return stack;
+  return (
+    <>
+      {stack}
+      {role === 'COURIER' ? <RiderLiveUpdates /> : null}
+    </>
+  );
 }

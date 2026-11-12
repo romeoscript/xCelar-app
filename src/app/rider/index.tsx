@@ -10,12 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Brand } from '@/constants/theme';
 import { useAuthStore } from '@/lib/auth-store';
 import { getMyRiderProfile } from '@/lib/rider-api';
+import { useGoBack } from '@/hooks/use-go-back';
 
 /** Routes into the rider experience. Xcelar staff add riders, so a signed-out
  *  visitor is offered activation or sign-in, and a signed-in account without a
  *  rider record is told how to join rather than shown an application. */
 export default function RiderGate() {
   const router = useRouter();
+  const goBack = useGoBack();
   const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
   const isCourier = useAuthStore((state) => state.user?.role === 'COURIER');
   const updateUser = useAuthStore((state) => state.updateUser);
@@ -39,7 +41,7 @@ export default function RiderGate() {
   if (!isAuthenticated) {
     return (
       <RiderLanding
-        onBack={() => router.back()}
+        onBack={() => goBack()}
         onActivate={() => router.push('/rider/activate')}
         onSignIn={() => router.push({ pathname: '/sign-in', params: { next: 'rider' } })}
       />
@@ -121,8 +123,8 @@ function RiderLanding({
           />
           <Perk
             icon={WalletIcon}
-            title="Paid per drop-off"
-            body="Clear earnings on every completed delivery."
+            title="Cash kept straight"
+            body="Pay-on-delivery cash is tracked until you hand it in at the hub."
           />
         </View>
       </View>

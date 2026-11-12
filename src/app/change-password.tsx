@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
@@ -11,11 +10,12 @@ import { TextField } from '@/components/ui/text-field';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { changePassword, type ChangePasswordInput } from '@/lib/profile-api';
 import { toast } from '@/lib/toast-store';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function ChangePasswordScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -26,7 +26,7 @@ export default function ChangePasswordScreen() {
     mutationFn: (input: ChangePasswordInput) => changePassword(input),
     onSuccess: () => {
       toast('Password updated');
-      router.back();
+      goBack();
     },
   });
 

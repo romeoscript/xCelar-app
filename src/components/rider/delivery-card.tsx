@@ -44,11 +44,6 @@ export function DeliveryCard({
             </Text>
           ) : null}
         </View>
-        {delivery.feeNaira != null ? (
-          <Text className="text-base font-extrabold text-brand-navy">
-            {formatNaira(delivery.feeNaira)}
-          </Text>
-        ) : null}
       </View>
 
       <View className="mt-4 flex-row">

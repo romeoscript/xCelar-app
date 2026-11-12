@@ -14,6 +14,7 @@ import { MAP_PROVIDER } from '@/lib/maps';
 import { getShipments } from '@/lib/shipment-api';
 import { areaName, isBooked, isInProgress, shipmentStatusMeta } from '@/lib/shipment-status';
 import { distanceKm } from '@/lib/shipment-stats';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const CARD_WIDTH = Dimensions.get('window').width - 72;
 const CARD_GAP = 12;
@@ -24,6 +25,7 @@ const CARDS_HEIGHT = 190;
 /** Every delivery on the go, full screen: pan and zoom, or pick one to fly to it. */
 export default function DeliveriesMapScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const [selectedId, setSelectedId] = useState<string | undefined>();
@@ -82,7 +84,7 @@ export default function DeliveriesMapScreen() {
       )}
 
       <View className="absolute left-4 right-4 flex-row items-center justify-between" style={{ top: insets.top + 8 }}>
-        <RoundButton label="Go back" onPress={() => router.back()}>
+        <RoundButton label="Go back" onPress={() => goBack()}>
           <ChevronLeftIcon size={22} color={Brand.navy} />
         </RoundButton>
         <View className="rounded-full bg-white px-4 py-2" style={floatShadow}>

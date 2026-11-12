@@ -42,6 +42,7 @@ import {
   type ShipmentUpdate,
 } from '@/lib/shipment-api';
 import { getWalletBalance, type VerifyResult } from '@/lib/wallet-api';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const STEP_TITLES = ['Sender details', 'Recipient details', 'Package details', 'Review & pay'];
 const TOTAL_STEPS = STEP_TITLES.length;
@@ -207,6 +208,7 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
 
 export default function ShipImportScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
@@ -360,7 +362,7 @@ export default function ShipImportScreen() {
   const handleBack = () => {
     setErrors({});
     if (step === 0) {
-      router.back();
+      goBack();
     } else {
       setStep((current) => current - 1);
     }
@@ -542,7 +544,7 @@ export default function ShipImportScreen() {
                 loading={payPending}
                 onPress={handlePay}
               />
-              <Pressable onPress={() => router.back()} className="items-center py-2 active:opacity-70">
+              <Pressable onPress={() => goBack()} className="items-center py-2 active:opacity-70">
                 <Text className="text-sm font-medium text-gray-500">Save as draft</Text>
               </Pressable>
             </>

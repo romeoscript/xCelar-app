@@ -29,7 +29,7 @@ export function jobBadge(job: RiderJob): JobBadge {
   return { label: job.leg === 'PICKUP' ? 'At hub' : 'Handed back', ...GREY };
 }
 
-/** Deliveries this rider completed — what earnings and "completed" count. */
+/** Deliveries this rider completed — what the "delivered" counts use. */
 export function isCompletedDelivery(job: RiderJob): boolean {
   return job.leg === 'DELIVERY' && job.stage === 'DELIVERED';
 }

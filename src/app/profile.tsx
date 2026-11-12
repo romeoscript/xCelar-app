@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
@@ -18,6 +17,7 @@ import { type Gender } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { updateProfile, type UpdateProfileInput } from '@/lib/profile-api';
 import { toast } from '@/lib/toast-store';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const STATE_OPTIONS = NIGERIAN_STATES.map((state) => ({ value: state, label: state }));
 
@@ -44,7 +44,7 @@ function toIsoDate(date: Date): string {
 }
 
 export default function ProfileScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
 
@@ -60,7 +60,7 @@ export default function ProfileScreen() {
     onSuccess: (updated) => {
       updateUser(updated);
       toast('Profile updated');
-      router.back();
+      goBack();
     },
   });
 
@@ -104,7 +104,7 @@ export default function ProfileScreen() {
   const handleSave = () => {
     const changes = buildChanges();
     if (Object.keys(changes).length === 0) {
-      router.back();
+      goBack();
       return;
     }
     mutation.mutate(changes);

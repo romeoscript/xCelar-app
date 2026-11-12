@@ -1,8 +1,8 @@
-import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
+import { useGoBack } from '@/hooks/use-go-back';
 
 export type ScreenHeaderProps = {
   title?: string;
@@ -12,12 +12,12 @@ export type ScreenHeaderProps = {
 
 /** Back button plus an optional title — the standard top bar for stack screens. */
 export function ScreenHeader({ title, gutter = 24 }: ScreenHeaderProps) {
-  const router = useRouter();
+  const goBack = useGoBack();
 
   return (
     <View className="flex-row items-center gap-3 pt-2" style={{ paddingHorizontal: gutter }}>
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack()}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel="Go back"

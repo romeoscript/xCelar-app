@@ -10,13 +10,23 @@ import { tapFeedback } from '@/lib/haptics';
  * The customer tabs as a floating pill. The active tab grows a tinted capsule
  * with its name beside the icon; the others show the icon alone.
  */
-export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function FloatingTabBar({
+  state,
+  descriptors,
+  navigation,
+  compact = false,
+}: BottomTabBarProps & {
+  /** A smaller, centred pill that hugs its tabs instead of spanning the screen. */
+  compact?: boolean;
+}) {
   const insets = useSafeAreaInsets();
+  const itemHeight = compact ? 'h-10' : 'h-12';
+  const iconOnlyWidth = compact ? 'w-12' : 'w-14';
 
   return (
-    <View className="bg-white px-5 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+    <View className={`bg-white px-5 pt-2 ${compact ? 'items-center' : ''}`} style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
       <View
-        className="flex-row items-center justify-between rounded-full bg-white p-1.5"
+        className={`flex-row items-center rounded-full bg-white ${compact ? 'gap-1 p-1' : 'justify-between p-1.5'}`}
         style={{
           shadowColor: Brand.navy,
           shadowOpacity: 0.12,
@@ -48,9 +58,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={label}
-                className={`h-12 flex-row items-center justify-center gap-2 rounded-full ${focused ? 'bg-brand-blue-tint px-4' : 'w-14'}`}
+                className={`${itemHeight} flex-row items-center justify-center gap-2 rounded-full ${focused ? 'bg-brand-blue-tint px-4' : iconOnlyWidth}`}
               >
-                {options.tabBarIcon?.({ focused, color, size: 22 })}
+                {options.tabBarIcon?.({ focused, color, size: compact ? 20 : 22 })}
                 {focused ? <Text className="text-sm font-bold text-brand-blue">{label}</Text> : null}
               </Pressable>
             </Animated.View>

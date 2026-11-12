@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { BiometricGate } from '@/components/biometric-gate';
+import { CustomerLiveUpdates } from '@/components/customer-live-updates';
 import { FloatingTabBar } from '@/components/floating-tab-bar';
 import { HomeIcon, PackageIcon, StorefrontIcon, UserIcon } from '@/components/icons';
 import { useAuthStore } from '@/lib/auth-store';
@@ -20,6 +21,7 @@ export default function AppTabsLayout() {
 
   return (
     <BiometricGate>
+      <CustomerLiveUpdates />
       <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false }}>
         <Tabs.Screen
           name="home"

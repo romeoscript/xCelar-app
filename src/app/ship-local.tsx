@@ -41,6 +41,7 @@ import {
   type ShipmentUpdate,
 } from '@/lib/shipment-api';
 import { getWalletBalance, type VerifyResult } from '@/lib/wallet-api';
+import { useGoBack } from '@/hooks/use-go-back';
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -188,6 +189,7 @@ function patchForStep(step: number, form: Form): ShipmentUpdate {
 
 export default function ShipLocalScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const queryClient = useQueryClient();
   const status = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -343,7 +345,7 @@ export default function ShipLocalScreen() {
   const handleBack = () => {
     setErrors({});
     if (step === 0) {
-      router.back();
+      goBack();
     } else {
       setStep((current) => current - 1);
     }
@@ -502,7 +504,7 @@ export default function ShipLocalScreen() {
                 onPress={handlePay}
               />
               <Pressable
-                onPress={() => router.back()}
+                onPress={() => goBack()}
                 className="items-center py-2 active:opacity-70"
               >
                 <Text className="text-sm font-medium text-gray-500">Save as draft</Text>

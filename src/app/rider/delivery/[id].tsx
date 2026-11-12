@@ -21,16 +21,20 @@ import { getCurrentPosition } from '@/lib/location';
 import {
   collectParcel,
   completeLeg,
+  type DeliveryProblemReason,
   getDelivery,
   markArrived,
+  markDeliverySeen,
   reportDeliveryLocation,
   reportDeliveryProblem,
-  type DeliveryProblemReason,
   type RiderJob,
   type Stop,
 } from '@/lib/rider-api';
 import { canReportProblem, legStep, nextStop } from '@/lib/rider-jobs';
 import { uploadFile } from '@/lib/uploads';
+import { useGoBack } from '@/hooks/use-go-back';
+
+import { IncomingJob } from '../../../../modules/incoming-job';
 
 const POSITION_STALE_MS = 10_000;
 const POSITION_INTERVAL_MS = 15_000;
@@ -43,9 +47,10 @@ function callNumber(phone: string | null) {
 
 export default function RiderJobScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, incoming } = useLocalSearchParams<{ id: string; incoming?: string }>();
   const vehicleType = useRiderVehicle();
 
   const [focus, setFocus] = useState<{ lat: number; lng: number; label: string } | null>(null);
@@ -81,6 +86,17 @@ export default function RiderJobScreen() {
     }
     reportDeliveryLocation(id, position.latitude, position.longitude).catch(() => undefined);
   }, [id, isActive, position, positionUpdatedAt]);
+
+  // Opening the job (e.g. from the push) stops the server ringing about it.
+  // From Android's call-style alert, it also stops the ring and shows over the lock screen.
+  useEffect(() => {
+    if (!id) return;
+    void markDeliverySeen(id).catch(() => undefined);
+    IncomingJob.cancel(id);
+    if (incoming !== '1') return;
+    IncomingJob.showOverLockScreen(true);
+    return () => IncomingJob.showOverLockScreen(false);
+  }, [id, incoming]);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['rider-delivery', id] });
@@ -189,7 +205,7 @@ export default function RiderJobScreen() {
       />
 
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack()}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel="Back"

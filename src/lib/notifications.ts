@@ -9,12 +9,17 @@ import { api } from './api';
  */
 export function setupNotificationHandler(): void {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+      // With the app open, a new-job alert takes over the screen and rings
+      // itself, so the system banner and sound would only double it up.
+      const ringsInApp = notification.request.content.data?.kind === 'assigned';
+      return {
+        shouldShowBanner: !ringsInApp,
+        shouldShowList: true,
+        shouldPlaySound: !ringsInApp,
+        shouldSetBadge: false,
+      };
+    },
   });
 }
 
@@ -45,6 +50,16 @@ export async function getPushToken(): Promise<string | null> {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
       importance: Notifications.AndroidImportance.HIGH,
+    });
+    // New jobs for riders: the assignment ringtone, a long buzz, shown on the lock screen.
+    await Notifications.setNotificationChannelAsync('assignments', {
+      name: 'New jobs',
+      description: 'Rings when dispatch assigns you a delivery.',
+      importance: Notifications.AndroidImportance.MAX,
+      sound: 'assignment.wav',
+      vibrationPattern: [0, 700, 300, 700, 1200, 700, 300, 700],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: true,
     });
   }
 

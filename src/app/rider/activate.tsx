@@ -13,6 +13,7 @@ import { Brand } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { activateRider } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const CODE_LENGTH = 8;
 const MIN_PASSWORD_LENGTH = 8;
@@ -23,6 +24,7 @@ const MIN_PASSWORD_LENGTH = 8;
  */
 export default function ActivateRiderScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const startSession = useAuthStore((state) => state.startSession);
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -52,7 +54,7 @@ export default function ActivateRiderScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
           <View className="flex-1 px-6 pt-2">
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => goBack()}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Back"

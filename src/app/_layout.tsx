@@ -1,4 +1,6 @@
 import '../global.css';
+// Defines the background task Android wakes for new-job alerts; must load before render.
+import '@/lib/incoming-job-task';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';

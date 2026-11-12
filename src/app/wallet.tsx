@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -16,11 +15,12 @@ import { useAuthStore } from '@/lib/auth-store';
 import { formatNaira } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
 import { getTransactions, topupWallet, type Transaction } from '@/lib/wallet-api';
+import { useGoBack } from '@/hooks/use-go-back';
 
 const QUICK_AMOUNTS = [1000, 2000, 5000, 10000];
 
 export default function WalletScreen() {
-  const router = useRouter();
+  const goBack = useGoBack();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
@@ -63,7 +63,7 @@ export default function WalletScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="px-6 pt-2">
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack()}
             hitSlop={8}
             className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 active:opacity-70"
           >
