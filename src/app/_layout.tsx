@@ -19,7 +19,9 @@ import { usePreferencesStore } from '@/lib/preferences-store';
 import { queryClient } from '@/lib/query-client';
 
 // Keep the native splash up until the session is restored.
-SplashScreen.preventAutoHideAsync();
+// Hold the native launch screen until we know whether the user is signed in.
+// After a reload it's already gone, so neither call has anything to act on.
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export default function RootLayout() {
   const status = useAuthStore((state) => state.status);
@@ -43,7 +45,7 @@ export default function RootLayout() {
   // screens redirect themselves based on `status`.
   useEffect(() => {
     if (status !== 'loading') {
-      void SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => undefined);
     }
   }, [status]);
 

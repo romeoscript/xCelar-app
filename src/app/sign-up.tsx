@@ -15,9 +15,11 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { register, type AuthSession, type RegisterInput } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { identifierIcon, isEmailIdentifier } from '@/lib/identifier';
+import { useGoBack } from '@/hooks/use-go-back';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const startSession = useAuthStore((state) => state.startSession);
   const reduceMotion = useReducedMotion();
   /** Each block of the form rises in a beat after the one above it. */
@@ -59,7 +61,7 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Sign-up is often opened in place of sign-in, so Back falls back to sign-in. */}
-          <CourierHeader onBack={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
+          <CourierHeader onBack={() => goBack('/sign-in')} />
           <View className="flex-1 rounded-t-[32px] bg-white px-6 pt-7" style={{ marginTop: -HEADER_OVERLAP }}>
             <Animated.View entering={rise(0)} className="gap-1.5">
               <Text className="text-3xl font-extrabold text-brand-navy">Create your account</Text>

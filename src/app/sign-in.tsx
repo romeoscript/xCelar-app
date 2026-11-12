@@ -15,9 +15,11 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { login, type AuthSession, type LoginInput } from '@/lib/auth-api';
 import { useAuthStore } from '@/lib/auth-store';
 import { identifierIcon } from '@/lib/identifier';
+import { useGoBack } from '@/hooks/use-go-back';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const { next } = useLocalSearchParams<{ next?: string }>();
   const startSession = useAuthStore((state) => state.startSession);
 
@@ -59,7 +61,7 @@ export default function SignInScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Sign-in is the first screen, so only offer Back when there's somewhere to go. */}
-          <CourierHeader onBack={router.canGoBack() ? () => router.back() : undefined} />
+          <CourierHeader onBack={router.canGoBack() ? () => goBack() : undefined} />
           <View className="flex-1 rounded-t-[32px] bg-white px-6 pb-8 pt-7" style={{ marginTop: -HEADER_OVERLAP }}>
             <Animated.View entering={rise(0)} className="gap-2">
               <Text className="text-3xl font-extrabold text-brand-navy">Welcome back</Text>
