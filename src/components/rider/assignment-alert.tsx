@@ -1,4 +1,5 @@
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { Modal, Pressable, Text, Vibration, View } from 'react-native';
@@ -13,10 +14,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BikeIcon, ChevronRightIcon } from '@/components/icons';
+import { ChevronRightIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 
 const ringtone = require('@/assets/sounds/assignment.wav');
+/** The courier glancing at his ringing phone; shown at the image's 511×600 proportions. */
+const courier = require('@/assets/images/courier-alert.png');
 
 /** Ring for at most a minute, the same as the push repeats on the server. */
 const RING_FOR_MS = 60_000;
@@ -71,7 +74,7 @@ export function AssignmentAlert({
         >
           <View className="flex-1 items-center justify-center">
             <Pulse />
-            <Text className="mt-10 text-center text-3xl font-extrabold text-white" accessibilityRole="header">
+            <Text className="mt-4 text-center text-3xl font-extrabold text-white" accessibilityRole="header">
               {alert.title}
             </Text>
             <Text className="mt-3 text-center text-base leading-6 text-white/85">{alert.body}</Text>
@@ -94,7 +97,7 @@ export function AssignmentAlert({
   );
 }
 
-/** The courier icon with rings spreading out from it, like an incoming call. */
+/** The courier with rings spreading out behind him, like an incoming call. */
 function Pulse() {
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(0);
@@ -109,12 +112,11 @@ function Pulse() {
   const inner = useAnimatedStyle(() => ({ opacity: 0.6 * (1 - progress.value), transform: [{ scale: 1 + progress.value * 0.45 }] }));
 
   return (
-    <View className="h-36 w-36 items-center justify-center">
-      <Animated.View style={outer} className="absolute h-36 w-36 rounded-full bg-white" />
-      <Animated.View style={inner} className="absolute h-36 w-36 rounded-full bg-white" />
-      <View className="h-28 w-28 items-center justify-center rounded-full bg-white">
-        <BikeIcon size={48} color={Brand.blue} />
-      </View>
+    <View className="h-72 w-72 items-center justify-center">
+      <Animated.View style={outer} className="absolute h-52 w-52 rounded-full bg-white" />
+      <Animated.View style={inner} className="absolute h-52 w-52 rounded-full bg-white" />
+      <View className="absolute h-52 w-52 rounded-full bg-white/20" />
+      <Image source={courier} style={{ width: 230, height: 270 }} contentFit="contain" accessible={false} />
     </View>
   );
 }

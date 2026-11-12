@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.82-38-4-185.sslip.io/api/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.xcelargeneralenterprise.com/api/v1"
       }
     },
     "preview": {
@@ -17,7 +17,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.82-38-4-185.sslip.io/api/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.xcelargeneralenterprise.com/api/v1"
       }
     },
     "production": {
@@ -26,7 +26,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.82-38-4-185.sslip.io/api/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.xcelargeneralenterprise.com/api/v1"
       }
     }
   },

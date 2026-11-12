@@ -19,3 +19,7 @@ Top-down courier on a scooter, used in the launch animation.
 ## Home screen art (`assets/images/home/`)
 
 `ship-local.png`, `export.png`, `import.png` and `quote.png` are photorealistic studio renders generated for Xcelar with Higgsfield (model `gpt_image_2_6`) on 2026-11-11, then cropped and resized. Generated for this app; no third-party artwork.
+
+## Rider new-job alert art (`assets/images/courier-alert.png`)
+
+A 3D Xcelar courier on a scooter with a ringing phone, generated for Xcelar with Higgsfield (model `gpt_image_2_6`) on 2026-11-12, then cropped. Generated for this app; no third-party artwork.

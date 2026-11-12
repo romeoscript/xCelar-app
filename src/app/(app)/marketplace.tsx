@@ -30,6 +30,11 @@ const CATEGORY_IMAGE: Record<string, string> = {
   Pharmacy: categoryImage('1587854692152-cbe660dbde88'),
 };
 
+/** A category without its own picture borrows the cover of one of its shops. */
+function categoryCover(vendors: Vendor[], category: string): string | null {
+  return vendors.find((vendor) => vendor.category === category && vendor.coverImageUrl)?.coverImageUrl ?? null;
+}
+
 type SortBy = 'recommended' | 'rating';
 
 export default function MarketplaceScreen() {
@@ -96,7 +101,7 @@ export default function MarketplaceScreen() {
               {categories.map((item) => (
                 <CategoryCircle
                   key={item}
-                  image={CATEGORY_IMAGE[item] ?? ALL_IMAGE}
+                  image={CATEGORY_IMAGE[item] ?? categoryCover(vendors, item) ?? ALL_IMAGE}
                   label={item}
                   active={category === item}
                   onPress={() => setCategory(item)}
