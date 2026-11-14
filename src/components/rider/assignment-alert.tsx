@@ -19,7 +19,7 @@ import { Brand } from '@/constants/theme';
 
 const ringtone = require('@/assets/sounds/assignment.wav');
 /** The courier glancing at his ringing phone; shown at the image's 511×600 proportions. */
-const courier = require('@/assets/images/courier-alert.png');
+const courier = require('@/assets/images/courier-alert.webp');
 
 /** Ring for at most a minute, the same as the push repeats on the server. */
 const RING_FOR_MS = 60_000;

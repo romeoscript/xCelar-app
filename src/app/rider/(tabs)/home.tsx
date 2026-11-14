@@ -27,7 +27,7 @@ import { isCompletedDelivery, jobBadge, nextStop } from '@/lib/rider-jobs';
 
 import { IncomingJob } from '../../../../modules/incoming-job';
 
-const courier = require('@/assets/images/courier-character.png');
+const courier = require('@/assets/images/courier-character.webp');
 
 /** How often the position dispatch sees is refreshed, and new jobs are checked
  *  for, while the app is open. Push notifications are the fast path. */

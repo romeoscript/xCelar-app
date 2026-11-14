@@ -12,7 +12,7 @@ import { tapFeedback } from '@/lib/haptics';
 import { type Shipment } from '@/lib/shipment-api';
 import { areaName, journeyFor, shipmentStatusMeta } from '@/lib/shipment-status';
 
-const courier = require('@/assets/images/courier-character.png');
+const courier = require('@/assets/images/courier-character.webp');
 
 /** How far the tracking search overlaps the bottom of the header. */
 export const SEARCH_OVERLAP = TAB_HEADER_OVERLAP;

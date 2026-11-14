@@ -12,10 +12,10 @@ type QuickAction = {
 };
 
 const ACTIONS: QuickAction[] = [
-  { key: 'ship-local', label: 'Ship locally', art: require('@/assets/images/home/ship-local.png'), tileClassName: 'bg-brand-surface' },
-  { key: 'export', label: 'Export', art: require('@/assets/images/home/export.png'), tileClassName: 'bg-brand-surface' },
-  { key: 'import', label: 'Import', art: require('@/assets/images/home/import.png'), tileClassName: 'bg-brand-surface' },
-  { key: 'quote', label: 'Get a quote', art: require('@/assets/images/home/quote.png'), tileClassName: 'bg-brand-surface' },
+  { key: 'ship-local', label: 'Ship locally', art: require('@/assets/images/home/ship-local.webp'), tileClassName: 'bg-brand-surface' },
+  { key: 'export', label: 'Export', art: require('@/assets/images/home/export.webp'), tileClassName: 'bg-brand-surface' },
+  { key: 'import', label: 'Import', art: require('@/assets/images/home/import.webp'), tileClassName: 'bg-brand-surface' },
+  { key: 'quote', label: 'Get a quote', art: require('@/assets/images/home/quote.webp'), tileClassName: 'bg-brand-surface' },
 ];
 
 export type QuickActionsProps = {

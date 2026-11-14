@@ -30,7 +30,7 @@ const FILTERS: { key: Filter; label: string; matches: (shipment: Shipment) => bo
 ];
 
 const GUTTER = 20;
-const courier = require('@/assets/images/courier-character.png');
+const courier = require('@/assets/images/courier-character.webp');
 
 export default function ShipmentsScreen() {
   const router = useRouter();

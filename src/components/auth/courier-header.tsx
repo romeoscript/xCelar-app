@@ -18,7 +18,7 @@ import { ChevronLeftIcon } from '@/components/icons';
 import { Brand } from '@/constants/theme';
 
 const logo = require('@/assets/images/logo.png');
-const character = require('@/assets/images/courier-character.png');
+const character = require('@/assets/images/courier-character.webp');
 
 /** Shown at the image's own proportions (540×675). */
 const CHARACTER = { width: 196, height: 245 } as const;

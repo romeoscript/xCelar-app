@@ -15,7 +15,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Brand } from '@/constants/theme';
 
-const courier = require('@/assets/images/courier-top.png');
+const courier = require('@/assets/images/courier-top.webp');
 
 /**
  * The launch animation: an Xcelar courier, seen from above, rides through the
